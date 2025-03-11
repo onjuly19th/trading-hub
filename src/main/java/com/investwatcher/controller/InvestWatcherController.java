@@ -1,13 +1,20 @@
 package com.investwatcher.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.investwatcher.service.CryptoService;
 import com.investwatcher.service.StockService;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
+@RequestMapping("/api")
 public class InvestWatcherController {
     private final CryptoService cryptoService;
     private final StockService stockService;
@@ -18,12 +25,22 @@ public class InvestWatcherController {
     }
 
     @GetMapping("/crypto")
-    public String getCryptoPrice(@RequestParam String symbol) {
-        return cryptoService.getCryptoPrice(symbol);
+    public Map<String, Double> getCryptoPrice(@RequestParam String symbol) {
+        String priceInfo = cryptoService.getCryptoPrice(symbol);
+        return parsePriceInfo(priceInfo);
     }
 
     @GetMapping("/stock")
-    public String getStockPrice(@RequestParam String symbol) {
-        return stockService.getStockPrice(symbol);
-    }    
+    public Map<String, Double> getStockPrice(@RequestParam String symbol) {
+        String priceInfo = stockService.getStockPrice(symbol);
+        return parsePriceInfo(priceInfo);
+    }
+    
+    private Map<String, Double> parsePriceInfo(String priceInfo) {
+        String[] parts = priceInfo.split(", ");
+        Map<String, Double> response = new HashMap<>();
+        response.put("USD", Double.parseDouble(parts[0].split(": ")[1]));
+        response.put("KRW", Double.parseDouble(parts[1].split(": ")[1]));
+        return response;
+    }
 }

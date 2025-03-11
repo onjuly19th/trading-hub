@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export const content = [
-  "./src/**/*.{html,js,jsx,ts,tsx}", // 여기에 JSX 파일 경로를 포함시켜야 함
+  "./src/**/*.{html,js,jsx,ts,tsx}",
 ];
 export const theme = {
   extend: {},

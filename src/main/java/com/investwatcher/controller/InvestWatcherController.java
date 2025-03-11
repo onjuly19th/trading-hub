@@ -25,22 +25,23 @@ public class InvestWatcherController {
     }
 
     @GetMapping("/crypto")
-    public Map<String, Double> getCryptoPrice(@RequestParam String symbol) {
+    public Map<String, Object> getCryptoPrice(@RequestParam String symbol) {
         String priceInfo = cryptoService.getCryptoPrice(symbol);
-        return parsePriceInfo(priceInfo);
+        return parsePriceInfo(priceInfo);        
     }
 
     @GetMapping("/stock")
-    public Map<String, Double> getStockPrice(@RequestParam String symbol) {
+    public Map<String, Object> getStockPrice(@RequestParam String symbol) {
         String priceInfo = stockService.getStockPrice(symbol);
         return parsePriceInfo(priceInfo);
     }
     
-    private Map<String, Double> parsePriceInfo(String priceInfo) {
+    private Map<String, Object> parsePriceInfo(String priceInfo) {
         String[] parts = priceInfo.split(", ");
-        Map<String, Double> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
         response.put("USD", Double.parseDouble(parts[0].split(": ")[1]));
         response.put("KRW", Double.parseDouble(parts[1].split(": ")[1]));
+        response.put("image", parts[2].split(": ")[1]);
         return response;
     }
 }

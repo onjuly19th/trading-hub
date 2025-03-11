@@ -1,9 +1,11 @@
 package com.investwatcher.service;
 
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -24,28 +26,27 @@ public class CryptoService {
     }
     
     public String getCryptoPrice(String symbol) {
-        String url = apiUrl + symbol + "&vs_currencies=usd";
+        String url = apiUrl + "?ids=" + symbol + "&vs_currency=" + "usd";
         /*System.out.println("Request URL: " + url);
         System.out.println("API Response: " + responseEntity.getBody());
         System.out.println("Parsed Response: " + response);*/
-        ResponseEntity<String> responseEntity = restTemplate.getForEntity(url, String.class);
-        CryptoResponse response = restTemplate.getForObject(url, CryptoResponse.class);
+        List<CryptoResponse> responseList = restTemplate.exchange(
+            url, 
+            HttpMethod.GET,
+            null, 
+            new ParameterizedTypeReference<List<CryptoResponse>>() {}
+        ).getBody();
+        CryptoResponse response = responseList.get(0);
         // 응답 데이터가 없거나, 해당 심볼이 없으면 예외 처리
-        if (response == null || response.getData() == null) {
-            throw new RuntimeException("Invalid API response or symbol not found. Response: " 
-                    + responseEntity.getBody() + ", Symbol: " + symbol);
+
+        BigDecimal usdPrice = response.getCurrentPrice();
+        if (response == null || usdPrice == null) {
+            throw new RuntimeException("Invalid API response or price not found.");
         }
 
-        Map<String, CryptoResponse.PriceData> data = response.getData();
-        CryptoResponse.PriceData priceData = data.get(symbol);
-        if (priceData == null) {
-            throw new RuntimeException("Price data for symbol not found: " + symbol);
-        }
-
-        double usdPrice = priceData.getUsd();
         double krwRate = exchangeRateService.getKRWRate();
-        double krwPrice = usdPrice * krwRate;
+        double krwPrice = usdPrice.doubleValue() * krwRate;
 
-        return String.format("USD: %.2f, KRW: %.2f", usdPrice, krwPrice);
+        return String.format("USD: %.2f, KRW: %.2f, IMAGE: %s", usdPrice, krwPrice, response.getImage());
     }
 }

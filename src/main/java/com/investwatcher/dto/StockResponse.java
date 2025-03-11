@@ -31,8 +31,4 @@ public class StockResponse {
 
     @JsonProperty("t")
     private long timestamp;       // 타임스탬프 (t)
-
-    public double getCurrentPrice() {
-        return currentPrice;
-    }
 }

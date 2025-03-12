@@ -104,7 +104,7 @@ function FixedPlugin(props) {
             </Button>
           </li>
           <li className="header-title">Want more components?</li>
-          <li className="button-container">
+          {/*<li className="button-container">
             <Button
               href="https://www.creative-tim.com/product/black-dashboard-pro-react"
               className="btn-round"
@@ -114,7 +114,7 @@ function FixedPlugin(props) {
             >
               Get pro version
             </Button>
-          </li>
+          </li>*/}
         </ul>
       </Dropdown>
     </div>

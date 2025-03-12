@@ -1,12 +1,12 @@
 /*!
 
 =========================================================
-* Now UI Dashboard React - v1.5.2
+* Black Dashboard React v1.2.2
 =========================================================
 
-* Product Page: https://www.creative-tim.com/product/now-ui-dashboard-react
+* Product Page: https://www.creative-tim.com/product/black-dashboard-react
 * Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/now-ui-dashboard-react/blob/main/LICENSE.md)
+* Licensed under MIT (https://github.com/creativetimofficial/black-dashboard-react/blob/master/LICENSE.md)
 
 * Coded by Creative Tim
 
@@ -15,110 +15,108 @@
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 */
-/*eslint-disable*/
-import React, { Component } from "react";
+import React from "react";
+
+// reactstrap components
+import { Button, Dropdown, DropdownToggle, Badge } from "reactstrap";
+import { ThemeContext, themes } from "contexts/ThemeContext";
+import { backgroundColors } from "contexts/BackgroundColorContext";
 
 function FixedPlugin(props) {
-  const [classes, setClasses] = React.useState("dropdown show");
+  const [dropDownIsOpen, setdropDownIsOpen] = React.useState(false);
   const handleClick = () => {
-    if (classes === "dropdown") {
-      setClasses("dropdown show");
-    } else {
-      setClasses("dropdown");
-    }
+    setdropDownIsOpen(!dropDownIsOpen);
   };
   return (
     <div className="fixed-plugin">
-      <div className={classes}>
-        <div onClick={handleClick}>
+      <Dropdown isOpen={dropDownIsOpen} toggle={handleClick}>
+        <DropdownToggle tag="div">
           <i className="fa fa-cog fa-2x" />
-        </div>
+        </DropdownToggle>
         <ul className="dropdown-menu show">
           <li className="header-title">SIDEBAR BACKGROUND</li>
           <li className="adjustments-line">
             <div className="badge-colors text-center">
-              <span
+              <Badge
+                color="primary"
                 className={
-                  props.bgColor === "yellow"
-                    ? "badge filter badge-yellow active"
-                    : "badge filter badge-yellow"
+                  props.bgColor === backgroundColors.primary ? "active" : ""
                 }
-                data-color="yellow"
                 onClick={() => {
-                  props.handleColorClick("yellow");
+                  props.handleBgClick(backgroundColors.primary);
                 }}
-              />
-              <span
+              />{" "}
+              <Badge
+                color="info"
                 className={
-                  props.bgColor === "blue"
-                    ? "badge filter badge-blue active"
-                    : "badge filter badge-blue"
+                  props.bgColor === backgroundColors.blue ? "active" : ""
                 }
-                data-color="blue"
                 onClick={() => {
-                  props.handleColorClick("blue");
+                  props.handleBgClick(backgroundColors.blue);
                 }}
-              />
-              <span
+              />{" "}
+              <Badge
+                color="success"
                 className={
-                  props.bgColor === "green"
-                    ? "badge filter badge-green active"
-                    : "badge filter badge-green"
+                  props.bgColor === backgroundColors.green ? "active" : ""
                 }
-                data-color="green"
                 onClick={() => {
-                  props.handleColorClick("green");
+                  props.handleBgClick(backgroundColors.green);
                 }}
-              />
-              <span
-                className={
-                  props.bgColor === "orange"
-                    ? "badge filter badge-orange active"
-                    : "badge filter badge-orange"
-                }
-                data-color="orange"
-                onClick={() => {
-                  props.handleColorClick("orange");
-                }}
-              />
-              <span
-                className={
-                  props.bgColor === "red"
-                    ? "badge filter badge-red active"
-                    : "badge filter badge-red"
-                }
-                data-color="red"
-                onClick={() => {
-                  props.handleColorClick("red");
-                }}
-              />
+              />{" "}
             </div>
           </li>
-
+          <li className="adjustments-line text-center color-change">
+            <ThemeContext.Consumer>
+              {({ changeTheme }) => (
+                <>
+                  <span className="color-label">LIGHT MODE</span>{" "}
+                  <Badge
+                    className="light-badge mr-2"
+                    onClick={() => changeTheme(themes.light)}
+                  />{" "}
+                  <Badge
+                    className="dark-badge ml-2"
+                    onClick={() => changeTheme(themes.dark)}
+                  />{" "}
+                  <span className="color-label">DARK MODE</span>{" "}
+                </>
+              )}
+            </ThemeContext.Consumer>
+          </li>
           <li className="button-container">
-            <a
-              href="https://www.creative-tim.com/product/now-ui-dashboard-pro-react?ref=nudr-fixed-plugin"
-              target="_blank"
-              className="btn btn-primary btn-block btn-round"
+            <Button
+              href="https://www.creative-tim.com/product/black-dashboard-react"
+              color="primary"
+              block
+              className="btn-round"
             >
-              Buy pro
-            </a>
-            <a
-              href="https://www.creative-tim.com/product/now-ui-dashboard-react?ref=nudr-fixed-plugin"
-              target="_blank"
-              className="btn btn-warning btn-block btn-round"
-            >
-              Download free
-            </a>
-            <a
-              href="https://demos.creative-tim.com/now-ui-dashboard-react/#/documentation/tutorial?ref=nudr-fixed-plugin"
-              className="btn btn-block btn-round btn-info"
+              Download Now
+            </Button>
+            <Button
+              color="default"
+              block
+              className="btn-round"
+              outline
+              href="https://demos.creative-tim.com/black-dashboard-react/#/documentation/tutorial"
             >
               Documentation
-            </a>
+            </Button>
+          </li>
+          <li className="header-title">Want more components?</li>
+          <li className="button-container">
+            <Button
+              href="https://www.creative-tim.com/product/black-dashboard-pro-react"
+              className="btn-round"
+              disabled
+              block
+              color="danger"
+            >
+              Get pro version
+            </Button>
           </li>
         </ul>
-      </div>
+      </Dropdown>
     </div>
   );
 }

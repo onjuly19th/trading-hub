@@ -1,12 +1,12 @@
 /*!
 
 =========================================================
-* Now UI Dashboard React - v1.5.2
+* Black Dashboard React v1.2.2
 =========================================================
 
-* Product Page: https://www.creative-tim.com/product/now-ui-dashboard-react
+* Product Page: https://www.creative-tim.com/product/black-dashboard-react
 * Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/now-ui-dashboard-react/blob/main/LICENSE.md)
+* Licensed under MIT (https://github.com/creativetimofficial/black-dashboard-react/blob/master/LICENSE.md)
 
 * Coded by Creative Tim
 
@@ -17,78 +17,159 @@
 */
 /*eslint-disable*/
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { Nav } from "reactstrap";
+import { NavLink, Link, useLocation } from "react-router-dom";
+// nodejs library to set properties for components
+import { PropTypes } from "prop-types";
+
 // javascript plugin used to create scrollbars on windows
 import PerfectScrollbar from "perfect-scrollbar";
 
-import logo from "logo-white.svg";
+// reactstrap components
+import { Nav, NavLink as ReactstrapNavLink } from "reactstrap";
+import {
+  BackgroundColorContext,
+  backgroundColors,
+} from "contexts/BackgroundColorContext";
 
 var ps;
 
 function Sidebar(props) {
-  const sidebar = React.useRef();
   const location = useLocation();
+  const sidebarRef = React.useRef(null);
   // verifies if routeName is the one active (in browser input)
   const activeRoute = (routeName) => {
-    return location.pathname.indexOf(routeName) > -1 ? "active" : "";
+    return location.pathname === routeName ? "active" : "";
   };
   React.useEffect(() => {
     if (navigator.platform.indexOf("Win") > -1) {
-      ps = new PerfectScrollbar(sidebar.current, {
+      ps = new PerfectScrollbar(sidebarRef.current, {
         suppressScrollX: true,
         suppressScrollY: false,
       });
     }
+    // Specify how to clean up after this effect:
     return function cleanup() {
       if (navigator.platform.indexOf("Win") > -1) {
         ps.destroy();
       }
     };
   });
-  return (
-    <div className="sidebar" data-color={props.backgroundColor}>
-      <div className="logo">
+  const linkOnClick = () => {
+    document.documentElement.classList.remove("nav-open");
+  };
+  const { routes, rtlActive, logo } = props;
+  let logoImg = null;
+  let logoText = null;
+  if (logo !== undefined) {
+    if (logo.outterLink !== undefined) {
+      logoImg = (
         <a
-          href="https://www.creative-tim.com?ref=nudr-sidebar"
+          href={logo.outterLink}
           className="simple-text logo-mini"
           target="_blank"
+          onClick={props.toggleSidebar}
         >
           <div className="logo-img">
-            <img src={logo} alt="react-logo" />
+            <img src={logo.imgSrc} alt="react-logo" />
           </div>
         </a>
+      );
+      logoText = (
         <a
-          href="https://www.creative-tim.com?ref=nudr-sidebar"
+          href={logo.outterLink}
           className="simple-text logo-normal"
           target="_blank"
+          onClick={props.toggleSidebar}
         >
-          Creative Tim
+          {logo.text}
         </a>
-      </div>
-      <div className="sidebar-wrapper" ref={sidebar}>
-        <Nav>
-          {props.routes.map((prop, key) => {
-            if (prop.redirect) return null;
-            return (
-              <li
-                className={
-                  activeRoute(prop.layout + prop.path) +
-                  (prop.pro ? " active active-pro" : "")
-                }
-                key={key}
-              >
-                <NavLink to={prop.layout + prop.path} className="nav-link">
-                  <i className={"now-ui-icons " + prop.icon} />
-                  <p>{prop.name}</p>
-                </NavLink>
+      );
+    } else {
+      logoImg = (
+        <Link
+          to={logo.innerLink}
+          className="simple-text logo-mini"
+          onClick={props.toggleSidebar}
+        >
+          <div className="logo-img">
+            <img src={logo.imgSrc} alt="react-logo" />
+          </div>
+        </Link>
+      );
+      logoText = (
+        <Link
+          to={logo.innerLink}
+          className="simple-text logo-normal"
+          onClick={props.toggleSidebar}
+        >
+          {logo.text}
+        </Link>
+      );
+    }
+  }
+  return (
+    <BackgroundColorContext.Consumer>
+      {({ color }) => (
+        <div className="sidebar" data={color}>
+          <div className="sidebar-wrapper" ref={sidebarRef}>
+            {logoImg !== null || logoText !== null ? (
+              <div className="logo">
+                {logoImg}
+                {logoText}
+              </div>
+            ) : null}
+            <Nav>
+              {routes.map((prop, key) => {
+                if (prop.redirect) return null;
+                return (
+                  <li
+                    className={
+                      activeRoute(prop.path) + (prop.pro ? " active-pro" : "")
+                    }
+                    key={key}
+                  >
+                    <NavLink
+                      to={prop.layout + prop.path}
+                      className="nav-link"
+                      onClick={props.toggleSidebar}
+                    >
+                      <i className={prop.icon} />
+                      <p>{rtlActive ? prop.rtlName : prop.name}</p>
+                    </NavLink>
+                  </li>
+                );
+              })}
+              <li className="active-pro">
+                <ReactstrapNavLink href="https://www.creative-tim.com/product/black-dashboard-pro-react?ref=bdr-user-archive-sidebar-upgrade-pro">
+                  <i className="tim-icons icon-spaceship" />
+                  <p>Upgrade to PRO</p>
+                </ReactstrapNavLink>
               </li>
-            );
-          })}
-        </Nav>
-      </div>
-    </div>
+            </Nav>
+          </div>
+        </div>
+      )}
+    </BackgroundColorContext.Consumer>
   );
 }
+
+Sidebar.propTypes = {
+  // if true, then instead of the routes[i].name, routes[i].rtlName will be rendered
+  // insde the links of this component
+  rtlActive: PropTypes.bool,
+  routes: PropTypes.arrayOf(PropTypes.object),
+  logo: PropTypes.shape({
+    // innerLink is for links that will direct the user within the app
+    // it will be rendered as <Link to="...">...</Link> tag
+    innerLink: PropTypes.string,
+    // outterLink is for links that will direct the user outside the app
+    // it will be rendered as simple <a href="...">...</a> tag
+    outterLink: PropTypes.string,
+    // the text of the logo
+    text: PropTypes.node,
+    // the image src of the logo
+    imgSrc: PropTypes.string,
+  }),
+};
 
 export default Sidebar;

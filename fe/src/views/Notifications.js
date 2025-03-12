@@ -1,12 +1,12 @@
 /*!
 
 =========================================================
-* Now UI Dashboard React - v1.5.2
+* Black Dashboard React v1.2.2
 =========================================================
 
-* Product Page: https://www.creative-tim.com/product/now-ui-dashboard-react
+* Product Page: https://www.creative-tim.com/product/black-dashboard-react
 * Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/now-ui-dashboard-react/blob/main/LICENSE.md)
+* Licensed under MIT (https://github.com/creativetimofficial/black-dashboard-react/blob/master/LICENSE.md)
 
 * Coded by Creative Tim
 
@@ -22,20 +22,18 @@ import NotificationAlert from "react-notification-alert";
 // reactstrap components
 import {
   Alert,
+  UncontrolledAlert,
+  Button,
   Card,
-  CardTitle,
-  CardBody,
   CardHeader,
+  CardBody,
+  CardTitle,
   Row,
   Col,
-  Button,
 } from "reactstrap";
 
-// core components
-import PanelHeader from "components/PanelHeader/PanelHeader.js";
-
 function Notifications() {
-  const notificationAlert = React.useRef();
+  const notificationAlertRef = React.useRef(null);
   const notify = (place) => {
     var color = Math.floor(Math.random() * 5 + 1);
     var type;
@@ -64,41 +62,25 @@ function Notifications() {
       message: (
         <div>
           <div>
-            Welcome to <b>Now UI Dashboard React</b> - a beautiful freebie for
+            Welcome to <b>Black Dashboard React</b> - a beautiful freebie for
             every web developer.
           </div>
         </div>
       ),
       type: type,
-      icon: "now-ui-icons ui-1_bell-53",
+      icon: "tim-icons icon-bell-55",
       autoDismiss: 7,
     };
-    notificationAlert.current.notificationAlert(options);
+    notificationAlertRef.current.notificationAlert(options);
   };
   return (
     <>
-      <PanelHeader
-        content={
-          <div className="header text-center">
-            <h2 className="title">Notifications</h2>
-            <p className="category">
-              Please Checkout{" "}
-              <a
-                href="https://github.com/creativetimofficial/react-notification-alert"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                The Full Documentation
-              </a>
-              .
-            </p>
-          </div>
-        }
-      />
       <div className="content">
-        <NotificationAlert ref={notificationAlert} />
+        <div className="react-notification-alert-container">
+          <NotificationAlert ref={notificationAlertRef} />
+        </div>
         <Row>
-          <Col md={6} xs={12}>
+          <Col md="6">
             <Card>
               <CardHeader>
                 <CardTitle tag="h4">Notifications Style</CardTitle>
@@ -107,88 +89,72 @@ function Notifications() {
                 <Alert color="info">
                   <span>This is a plain notification</span>
                 </Alert>
-                <Alert color="info" isOpen={true} toggle={() => {}}>
+                <UncontrolledAlert color="info">
                   <span>This is a notification with close button.</span>
-                </Alert>
-                <Alert
-                  color="info"
-                  className="alert-with-icon"
-                  isOpen={true}
-                  toggle={() => {}}
-                >
-                  <span
-                    data-notify="icon"
-                    className="now-ui-icons ui-1_bell-53"
-                  />
+                </UncontrolledAlert>
+                <UncontrolledAlert className="alert-with-icon" color="info">
+                  <span className="tim-icons icon-bell-55" data-notify="icon" />
                   <span data-notify="message">
                     This is a notification with close button and icon.
                   </span>
-                </Alert>
-                <Alert
-                  color="info"
-                  className="alert-with-icon"
-                  isOpen={true}
-                  toggle={() => {}}
-                >
-                  <span
-                    data-notify="icon"
-                    className="now-ui-icons ui-1_bell-53"
-                  />
+                </UncontrolledAlert>
+                <UncontrolledAlert className="alert-with-icon" color="info">
+                  <span className="tim-icons icon-bell-55" data-notify="icon" />
                   <span data-notify="message">
                     This is a notification with close button and icon and have
                     many lines. You can see that the icon and the close button
                     are always vertically aligned. This is a beautiful
                     notification. So you don't have to worry about the style.
                   </span>
-                </Alert>
+                </UncontrolledAlert>
               </CardBody>
             </Card>
           </Col>
-          <Col md={6} xs={12}>
+          <Col md="6">
             <Card>
               <CardHeader>
                 <CardTitle tag="h4">Notification states</CardTitle>
               </CardHeader>
               <CardBody>
-                <Alert color="primary" isOpen={true} toggle={() => {}}>
+                <UncontrolledAlert color="primary">
                   <span>
-                    <b> Primary - </b> This is a regular notification made with
-                    color="primary"
+                    <b>Primary - </b>
+                    This is a regular notification made with ".alert-primary"
                   </span>
-                </Alert>
-                <Alert color="info" isOpen={true} toggle={() => {}}>
+                </UncontrolledAlert>
+                <UncontrolledAlert color="info">
                   <span>
-                    <b> Info - </b> This is a regular notification made with
-                    color="info"
+                    <b>Info - </b>
+                    This is a regular notification made with ".alert-info"
                   </span>
-                </Alert>
-                <Alert color="success" isOpen={true} toggle={() => {}}>
+                </UncontrolledAlert>
+                <UncontrolledAlert color="success">
                   <span>
-                    <b> Success - </b> This is a regular notification made with
-                    color="success"
+                    <b>Success - </b>
+                    This is a regular notification made with ".alert-success"
                   </span>
-                </Alert>
-                <Alert color="warning" isOpen={true} toggle={() => {}}>
+                </UncontrolledAlert>
+                <UncontrolledAlert color="warning">
                   <span>
-                    <b> Warning - </b> This is a regular notification made with
-                    color="warning"
+                    <b>Warning - </b>
+                    This is a regular notification made with ".alert-warning"
                   </span>
-                </Alert>
-                <Alert color="danger" isOpen={true} toggle={() => {}}>
+                </UncontrolledAlert>
+                <UncontrolledAlert color="danger">
                   <span>
-                    <b> Danger - </b> This is a regular notification made with
-                    color="danger"
+                    <b>Danger - </b>
+                    This is a regular notification made with ".alert-danger"
                   </span>
-                </Alert>
+                </UncontrolledAlert>
               </CardBody>
             </Card>
           </Col>
-          <Col md={12} xs={12}>
+          <Col md="12">
             <Card>
               <CardBody>
                 <div className="places-buttons">
                   <Row>
-                    <Col md={6} className="ml-auto mr-auto text-center">
+                    <Col className="ml-auto mr-auto text-center" md="6">
                       <CardTitle tag="h4">
                         Notifications Places
                         <p className="category">Click to view notifications</p>
@@ -196,30 +162,30 @@ function Notifications() {
                     </Col>
                   </Row>
                   <Row>
-                    <Col lg={8} xs={12} className="ml-auto mr-auto">
+                    <Col className="ml-auto mr-auto" lg="8">
                       <Row>
-                        <Col md={4} xs={12}>
+                        <Col md="4">
                           <Button
-                            color="primary"
                             block
+                            color="primary"
                             onClick={() => notify("tl")}
                           >
                             Top Left
                           </Button>
                         </Col>
-                        <Col md={4} xs={12}>
+                        <Col md="4">
                           <Button
-                            color="primary"
                             block
+                            color="primary"
                             onClick={() => notify("tc")}
                           >
                             Top Center
                           </Button>
                         </Col>
-                        <Col md={4} xs={12}>
+                        <Col md="4">
                           <Button
-                            color="primary"
                             block
+                            color="primary"
                             onClick={() => notify("tr")}
                           >
                             Top Right
@@ -229,30 +195,30 @@ function Notifications() {
                     </Col>
                   </Row>
                   <Row>
-                    <Col lg={8} xs={12} className="ml-auto mr-auto">
+                    <Col className="ml-auto mr-auto" lg="8">
                       <Row>
-                        <Col md={4} xs={12}>
+                        <Col md="4">
                           <Button
-                            color="primary"
                             block
+                            color="primary"
                             onClick={() => notify("bl")}
                           >
                             Bottom Left
                           </Button>
                         </Col>
-                        <Col md={4} xs={12}>
+                        <Col md="4">
                           <Button
-                            color="primary"
                             block
+                            color="primary"
                             onClick={() => notify("bc")}
                           >
                             Bottom Center
                           </Button>
                         </Col>
-                        <Col md={4} xs={12}>
+                        <Col md="4">
                           <Button
-                            color="primary"
                             block
+                            color="primary"
                             onClick={() => notify("br")}
                           >
                             Bottom Right

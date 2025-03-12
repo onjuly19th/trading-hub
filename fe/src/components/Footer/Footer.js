@@ -1,12 +1,12 @@
 /*!
 
 =========================================================
-* Now UI Dashboard React - v1.5.2
+* Black Dashboard React v1.2.2
 =========================================================
 
-* Product Page: https://www.creative-tim.com/product/now-ui-dashboard-react
+* Product Page: https://www.creative-tim.com/product/black-dashboard-react
 * Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/now-ui-dashboard-react/blob/main/LICENSE.md)
+* Licensed under MIT (https://github.com/creativetimofficial/black-dashboard-react/blob/master/LICENSE.md)
 
 * Coded by Creative Tim
 
@@ -17,69 +17,45 @@
 */
 /*eslint-disable*/
 import React from "react";
-import { Container } from "reactstrap";
-// used for making the prop types of this component
-import PropTypes from "prop-types";
 
-function Footer(props) {
+// reactstrap components
+import { Container, Nav, NavItem, NavLink } from "reactstrap";
+
+function Footer() {
   return (
-    <footer className={"footer" + (props.default ? " footer-default" : "")}>
-      <Container fluid={props.fluid ? true : false}>
-        <nav>
-          <ul>
-            <li>
-              <a
-                href="https://www.creative-tim.com?ref=nudr-footer"
-                target="_blank"
-              >
-                Creative Tim
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://presentation.creative-tim.com?ref=nudr-footer"
-                target="_blank"
-              >
-                About Us
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://blog.creative-tim.com?ref=nudr-footer"
-                target="_blank"
-              >
-                Blog
-              </a>
-            </li>
-          </ul>
-        </nav>
+    <footer className="footer">
+      <Container fluid>
+        <Nav>
+          <NavItem>
+            <NavLink href="https://www.creative-tim.com/?ref=bdr-user-archive-footer">
+              Creative Tim
+            </NavLink>
+          </NavItem>
+          <NavItem>
+            <NavLink href="https://www.creative-tim.com/presentation?ref=bdr-user-archive-footer">
+              About Us
+            </NavLink>
+          </NavItem>
+          <NavItem>
+            <NavLink href="https://www.creative-tim.com/blog?ref=bdr-user-archive-footer">
+              Blog
+            </NavLink>
+          </NavItem>
+        </Nav>
         <div className="copyright">
-          &copy; {1900 + new Date().getYear()}, Designed by{" "}
+          © {new Date().getFullYear()} made with{" "}
+          <i className="tim-icons icon-heart-2" /> by{" "}
           <a
-            href="https://www.invisionapp.com"
+            href="https://www.creative-tim.com/?ref=bdr-user-archive-footer"
             target="_blank"
-            rel="noopener noreferrer"
-          >
-            Invision
-          </a>
-          . Coded by{" "}
-          <a
-            href="https://www.creative-tim.com?ref=nudr-footer"
-            target="_blank"
-            rel="noopener noreferrer"
           >
             Creative Tim
-          </a>
-          .
+          </a>{" "}
+          for a better web.
         </div>
       </Container>
     </footer>
   );
 }
-
-Footer.propTypes = {
-  default: PropTypes.bool,
-  fluid: PropTypes.bool,
-};
 
 export default Footer;

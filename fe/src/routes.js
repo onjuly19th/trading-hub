@@ -1,12 +1,12 @@
 /*!
 
 =========================================================
-* Now UI Dashboard React - v1.5.2
+* Black Dashboard React v1.2.2
 =========================================================
 
-* Product Page: https://www.creative-tim.com/product/now-ui-dashboard-react
+* Product Page: https://www.creative-tim.com/product/black-dashboard-react
 * Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/now-ui-dashboard-react/blob/main/LICENSE.md)
+* Licensed under MIT (https://github.com/creativetimofficial/black-dashboard-react/blob/master/LICENSE.md)
 
 * Coded by Creative Tim
 
@@ -16,71 +16,78 @@
 
 */
 import Dashboard from "views/Dashboard.js";
-import Notifications from "views/Notifications.js";
 import Icons from "views/Icons.js";
-import Typography from "views/Typography.js";
+import Map from "views/Map.js";
+import Notifications from "views/Notifications.js";
+import Rtl from "views/Rtl.js";
 import TableList from "views/TableList.js";
-import Maps from "views/Maps.js";
-import Upgrade from "views/Upgrade.js";
-import UserPage from "views/UserPage.js";
+import Typography from "views/Typography.js";
+import UserProfile from "views/UserProfile.js";
 
-var dashRoutes = [
+var routes = [
   {
     path: "/dashboard",
     name: "Dashboard",
-    icon: "design_app",
+    rtlName: "لوحة القيادة",
+    icon: "tim-icons icon-chart-pie-36",
     component: <Dashboard />,
     layout: "/admin",
   },
   {
     path: "/icons",
     name: "Icons",
-    icon: "design_image",
+    rtlName: "الرموز",
+    icon: "tim-icons icon-atom",
     component: <Icons />,
     layout: "/admin",
   },
   {
-    path: "/maps",
-    name: "Maps",
-    icon: "location_map-big",
-    component: <Maps />,
+    path: "/map",
+    name: "Map",
+    rtlName: "خرائط",
+    icon: "tim-icons icon-pin",
+    component: <Map />,
     layout: "/admin",
   },
   {
     path: "/notifications",
     name: "Notifications",
-    icon: "ui-1_bell-53",
+    rtlName: "إخطارات",
+    icon: "tim-icons icon-bell-55",
     component: <Notifications />,
     layout: "/admin",
   },
   {
-    path: "/user-page",
+    path: "/user-profile",
     name: "User Profile",
-    icon: "users_single-02",
-    component: <UserPage />,
+    rtlName: "ملف تعريفي للمستخدم",
+    icon: "tim-icons icon-single-02",
+    component: <UserProfile />,
     layout: "/admin",
   },
   {
-    path: "/extended-tables",
+    path: "/tables",
     name: "Table List",
-    icon: "files_paper",
+    rtlName: "قائمة الجدول",
+    icon: "tim-icons icon-puzzle-10",
     component: <TableList />,
     layout: "/admin",
   },
   {
     path: "/typography",
     name: "Typography",
-    icon: "design-2_ruler-pencil",
+    rtlName: "طباعة",
+    icon: "tim-icons icon-align-center",
     component: <Typography />,
     layout: "/admin",
   },
-  /*{
-    pro: true,
-    path: "/upgrade",
-    name: "Upgrade to PRO",
-    icon: "objects_spaceship",
-    component: <Upgrade />,
-    layout: "/admin",
-  },*/
+  {
+    path: "/rtl-support",
+    name: "RTL Support",
+    rtlName: "ار تي ال",
+    icon: "tim-icons icon-world",
+    component: <Rtl />,
+    layout: "/rtl",
+  },
 ];
-export default dashRoutes;
+export default routes;

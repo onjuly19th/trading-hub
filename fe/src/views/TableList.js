@@ -1,12 +1,12 @@
 /*!
 
 =========================================================
-* Now UI Dashboard React - v1.5.2
+* Black Dashboard React v1.2.2
 =========================================================
 
-* Product Page: https://www.creative-tim.com/product/now-ui-dashboard-react
+* Product Page: https://www.creative-tim.com/product/black-dashboard-react
 * Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/now-ui-dashboard-react/blob/main/LICENSE.md)
+* Licensed under MIT (https://github.com/creativetimofficial/black-dashboard-react/blob/master/LICENSE.md)
 
 * Coded by Creative Tim
 
@@ -20,103 +20,141 @@ import React from "react";
 // reactstrap components
 import {
   Card,
-  CardBody,
   CardHeader,
+  CardBody,
   CardTitle,
   Table,
   Row,
   Col,
 } from "reactstrap";
 
-// core components
-import PanelHeader from "components/PanelHeader/PanelHeader.js";
-
-import { thead, tbody } from "variables/general";
-
-function RegularTables() {
+function Tables() {
   return (
     <>
-      <PanelHeader size="sm" />
       <div className="content">
         <Row>
-          <Col xs={12}>
+          <Col md="12">
             <Card>
               <CardHeader>
                 <CardTitle tag="h4">Simple Table</CardTitle>
               </CardHeader>
               <CardBody>
-                <Table responsive>
+                <Table className="tablesorter" responsive>
                   <thead className="text-primary">
                     <tr>
-                      {thead.map((prop, key) => {
-                        if (key === thead.length - 1)
-                          return (
-                            <th key={key} className="text-right">
-                              {prop}
-                            </th>
-                          );
-                        return <th key={key}>{prop}</th>;
-                      })}
+                      <th>Name</th>
+                      <th>Country</th>
+                      <th>City</th>
+                      <th className="text-center">Salary</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {tbody.map((prop, key) => {
-                      return (
-                        <tr key={key}>
-                          {prop.data.map((prop, key) => {
-                            if (key === thead.length - 1)
-                              return (
-                                <td key={key} className="text-right">
-                                  {prop}
-                                </td>
-                              );
-                            return <td key={key}>{prop}</td>;
-                          })}
-                        </tr>
-                      );
-                    })}
+                    <tr>
+                      <td>Dakota Rice</td>
+                      <td>Niger</td>
+                      <td>Oud-Turnhout</td>
+                      <td className="text-center">$36,738</td>
+                    </tr>
+                    <tr>
+                      <td>Minerva Hooper</td>
+                      <td>Curaçao</td>
+                      <td>Sinaai-Waas</td>
+                      <td className="text-center">$23,789</td>
+                    </tr>
+                    <tr>
+                      <td>Sage Rodriguez</td>
+                      <td>Netherlands</td>
+                      <td>Baileux</td>
+                      <td className="text-center">$56,142</td>
+                    </tr>
+                    <tr>
+                      <td>Philip Chaney</td>
+                      <td>Korea, South</td>
+                      <td>Overland Park</td>
+                      <td className="text-center">$38,735</td>
+                    </tr>
+                    <tr>
+                      <td>Doris Greene</td>
+                      <td>Malawi</td>
+                      <td>Feldkirchen in Kärnten</td>
+                      <td className="text-center">$63,542</td>
+                    </tr>
+                    <tr>
+                      <td>Mason Porter</td>
+                      <td>Chile</td>
+                      <td>Gloucester</td>
+                      <td className="text-center">$78,615</td>
+                    </tr>
+                    <tr>
+                      <td>Jon Porter</td>
+                      <td>Portugal</td>
+                      <td>Gloucester</td>
+                      <td className="text-center">$98,615</td>
+                    </tr>
                   </tbody>
                 </Table>
               </CardBody>
             </Card>
           </Col>
-          <Col xs={12}>
+          <Col md="12">
             <Card className="card-plain">
               <CardHeader>
                 <CardTitle tag="h4">Table on Plain Background</CardTitle>
-                <p className="category"> Here is a subtitle for this table</p>
+                <p className="category">Here is a subtitle for this table</p>
               </CardHeader>
               <CardBody>
-                <Table responsive>
+                <Table className="tablesorter" responsive>
                   <thead className="text-primary">
                     <tr>
-                      {thead.map((prop, key) => {
-                        if (key === thead.length - 1)
-                          return (
-                            <th key={key} className="text-right">
-                              {prop}
-                            </th>
-                          );
-                        return <th key={key}>{prop}</th>;
-                      })}
+                      <th>Name</th>
+                      <th>Country</th>
+                      <th>City</th>
+                      <th className="text-center">Salary</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {tbody.map((prop, key) => {
-                      return (
-                        <tr key={key}>
-                          {prop.data.map((prop, key) => {
-                            if (key === thead.length - 1)
-                              return (
-                                <td key={key} className="text-right">
-                                  {prop}
-                                </td>
-                              );
-                            return <td key={key}>{prop}</td>;
-                          })}
-                        </tr>
-                      );
-                    })}
+                    <tr>
+                      <td>Dakota Rice</td>
+                      <td>Niger</td>
+                      <td>Oud-Turnhout</td>
+                      <td className="text-center">$36,738</td>
+                    </tr>
+                    <tr>
+                      <td>Minerva Hooper</td>
+                      <td>Curaçao</td>
+                      <td>Sinaai-Waas</td>
+                      <td className="text-center">$23,789</td>
+                    </tr>
+                    <tr>
+                      <td>Sage Rodriguez</td>
+                      <td>Netherlands</td>
+                      <td>Baileux</td>
+                      <td className="text-center">$56,142</td>
+                    </tr>
+                    <tr>
+                      <td>Philip Chaney</td>
+                      <td>Korea, South</td>
+                      <td>Overland Park</td>
+                      <td className="text-center">$38,735</td>
+                    </tr>
+                    <tr>
+                      <td>Doris Greene</td>
+                      <td>Malawi</td>
+                      <td>Feldkirchen in Kärnten</td>
+                      <td className="text-center">$63,542</td>
+                    </tr>
+                    <tr>
+                      <td>Mason Porter</td>
+                      <td>Chile</td>
+                      <td>Gloucester</td>
+                      <td className="text-center">$78,615</td>
+                    </tr>
+                    <tr>
+                      <td>Jon Porter</td>
+                      <td>Portugal</td>
+                      <td>Gloucester</td>
+                      <td className="text-center">$98,615</td>
+                    </tr>
                   </tbody>
                 </Table>
               </CardBody>
@@ -128,4 +166,4 @@ function RegularTables() {
   );
 }
 
-export default RegularTables;
+export default Tables;

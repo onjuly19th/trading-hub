@@ -39,9 +39,19 @@ public class InvestWatcherController {
     private Map<String, Object> parsePriceInfo(String priceInfo) {
         String[] parts = priceInfo.split(", ");
         Map<String, Object> response = new HashMap<>();
-        response.put("USD", Double.parseDouble(parts[0].split(": ")[1]));
-        response.put("KRW", Double.parseDouble(parts[1].split(": ")[1]));
-        response.put("image", parts[2].split(": ")[1]);
+        
+        for (String part : parts) {
+            String[] keyValue = part.split(": ");
+            String key = keyValue[0];
+            String value = keyValue[1];
+            
+            if (value.endsWith("%")) {
+                value = value.substring(0, value.length() - 1);
+            }
+            
+            response.put(key, Double.parseDouble(value));
+        }
+        
         return response;
     }
 }

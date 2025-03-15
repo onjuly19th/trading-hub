@@ -1,21 +1,30 @@
-import { useEffect, useRef, useState } from 'react';
-import { createBinanceWebSocket } from '@/lib/websocket';
+import { useState, useEffect, useRef } from 'react';
+import { WebSocketManager } from '@/lib/websocket';
 
-export const useWebSocket = (symbol) => {
+export function useWebSocket(symbol, streamType = 'kline_1s') {
   const [data, setData] = useState(null);
-  const ws = useRef(null);
+  const [error, setError] = useState(null);
+  const wsManager = useRef(null);
 
   useEffect(() => {
-    ws.current = createBinanceWebSocket(symbol, (data) => {
-      setData(data);
-    });
+    wsManager.current = new WebSocketManager(
+      symbol,
+      streamType,
+      (data) => {
+        setData(data);
+        setError(null);
+      },
+      (error) => setError(error)
+    );
+
+    wsManager.current.connect();
 
     return () => {
-      if (ws.current) {
-        ws.current.close();
+      if (wsManager.current) {
+        wsManager.current.disconnect();
       }
     };
-  }, [symbol]);
+  }, [symbol, streamType]);
 
-  return data;
-};
+  return { data, error };
+}

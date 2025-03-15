@@ -5,7 +5,6 @@ import com.tradinghub.domain.user.UserRepository;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.trading.dto.TradeRequest;
-import com.tradinghub.infrastructure.websocket.CryptoMarketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,19 +17,22 @@ public class OrderService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final PortfolioService portfolioService;
-    private final CryptoMarketService cryptoMarketService;
+    //private final CryptoMarketService cryptoMarketService;
     private final TradeRepository tradeRepository;
 
     /**
-     * 시장가 주문을 생성하고 즉시 체결합니다.
-     * Order 테이블에 저장하지 않고 바로 Trade로 생성됩니다.
+     * 시장가 주문 생성 후 즉시 체결
+     * Order 테이블에 저장 X -> 바로 Trade로 생성
      */
     @Transactional
     public Trade createMarketOrder(Long userId, String symbol, Order.OrderSide side, BigDecimal amount) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
-        BigDecimal currentPrice = cryptoMarketService.getCurrentPrice(symbol);
+        //BigDecimal currentPrice = cryptoMarketService.getCurrentPrice(symbol);
+        // TODO: 시장가 주문 시 현재 시장 가격 조회 (웹소켓)
+        // 예시 가격 = $85000
+        BigDecimal currentPrice = new BigDecimal("85000");
         
         // 주문 가능 여부 확인
         validateOrder(user, side, currentPrice, amount);
@@ -48,8 +50,8 @@ public class OrderService {
     }
 
     /**
-     * 지정가 주문을 생성합니다.
-     * Order 테이블에 저장되며, 가격 조건 충족 시 체결됩니다.
+     * 지정가 주문 생성
+     * Order 테이블에 저장, 가격 조건 충족 시 체결
      */
     @Transactional
     public Order createLimitOrder(Long userId, String symbol, Order.OrderSide side, 

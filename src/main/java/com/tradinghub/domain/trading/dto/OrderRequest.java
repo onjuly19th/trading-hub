@@ -8,7 +8,7 @@ import com.tradinghub.domain.trading.Order;
 @Getter
 @Setter
 public class OrderRequest {
-    private String symbol;          // 거래 쌍 (예: BTC/USD)
+    private String symbol;          // 티커
     private Order.OrderType type;   // 주문 유형 (MARKET, LIMIT)
     private Order.OrderSide side;   // 주문 방향 (BUY, SELL)
     private BigDecimal price;       // 주문 가격

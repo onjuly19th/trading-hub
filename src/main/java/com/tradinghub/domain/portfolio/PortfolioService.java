@@ -57,15 +57,26 @@ public class PortfolioService {
 
         BigDecimal tradeAmount = request.getAmount().multiply(request.getPrice());
 
+        // 주문 생성
+        Trade trade = createTrade(portfolio, request);
+        
         if (request.isBuy()) {
             validateBuyTrade(portfolio, tradeAmount);
-            executeBuyTrade(portfolio, request.getSymbol(), request.getAmount(), request.getPrice());
+            // 매수 처리
+            portfolio.processBuyTrade(trade);
+            // 자산 업데이트
+            updateAssetOnBuyTrade(portfolio, request.getSymbol(), request.getAmount(), request.getPrice());
         } else {
             PortfolioAsset asset = validateSellTrade(portfolio, request.getSymbol(), request.getAmount());
-            executeSellTrade(portfolio, asset, request.getAmount(), request.getPrice());
+            // 매도 처리
+            portfolio.processSellTrade(trade);
+            // 자산 업데이트
+            updateAssetOnSellTrade(portfolio, asset, request.getAmount(), request.getPrice());
         }
 
-        Trade trade = createTrade(portfolio, request);
+        // 포트폴리오 저장
+        portfolioRepository.save(portfolio);
+        
         log.info("Trade executed successfully with id: {}", trade.getId());
         return trade;
     }
@@ -97,10 +108,7 @@ public class PortfolioService {
         return asset;
     }
 
-    private void executeBuyTrade(Portfolio portfolio, String symbol, BigDecimal amount, BigDecimal price) {
-        BigDecimal tradeAmount = amount.multiply(price);
-        portfolio.setAvailableBalance(portfolio.getAvailableBalance().subtract(tradeAmount));
-
+    private void updateAssetOnBuyTrade(Portfolio portfolio, String symbol, BigDecimal amount, BigDecimal price) {
         PortfolioAsset asset = assetRepository.findByPortfolioIdAndSymbol(portfolio.getId(), symbol)
             .orElseGet(() -> {
                 PortfolioAsset newAsset = new PortfolioAsset();
@@ -113,10 +121,7 @@ public class PortfolioService {
         assetRepository.save(asset);
     }
 
-    private void executeSellTrade(Portfolio portfolio, PortfolioAsset asset, BigDecimal amount, BigDecimal price) {
-        BigDecimal tradeAmount = amount.multiply(price);
-        portfolio.setAvailableBalance(portfolio.getAvailableBalance().add(tradeAmount));
-
+    private void updateAssetOnSellTrade(Portfolio portfolio, PortfolioAsset asset, BigDecimal amount, BigDecimal price) {
         asset.setAmount(asset.getAmount().subtract(amount));
         if (asset.getAmount().compareTo(BigDecimal.ZERO) == 0) {
             assetRepository.delete(asset);

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AuthGuard from '../Common/AuthGuard';
+import { API_CONFIG } from '@/config/constants';
 
-const PortfolioContent = () => {
+const Portfolio = () => {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,7 +18,7 @@ const PortfolioContent = () => {
         throw new Error('로그인이 필요합니다.');
       }
 
-      const response = await fetch('http://localhost:8080/api/portfolio/summary', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/portfolio`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -45,7 +45,7 @@ const PortfolioContent = () => {
 
   useEffect(() => {
     loadPortfolio();
-    const interval = setInterval(loadPortfolio, 60000);
+    const interval = setInterval(loadPortfolio, 60000); // 1분마다 갱신
     return () => clearInterval(interval);
   }, []);
 
@@ -111,10 +111,4 @@ const PortfolioContent = () => {
   );
 };
 
-export default function Portfolio() {
-  return (
-    <AuthGuard>
-      <PortfolioContent />
-    </AuthGuard>
-  );
-} 
+export default Portfolio; 

@@ -1,129 +1,44 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authService } from '@/lib/authService';
+import LoadingSpinner from '@/components/Common/LoadingSpinner';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isLoading } = useAuthCheck();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
   });
   const [error, setError] = useState('');
-  const [loggedInUser, setLoggedInUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch('http://localhost:8080/api/auth/user/info', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.username) {
-            setLoggedInUser(data);
-            localStorage.setItem('username', data.username);
-            router.push('/trading');
-          }
-        }
-      } catch (err) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkLoginStatus();
-  }, [router]);
+  const [message, setMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setMessage('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-          return;
-        }
-        setError('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
-        return;
-      }
-
-      const data = await response.json();
-
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', formData.username);
+      await authService.login(formData);
+      setMessage('로그인이 완료되었습니다. 잠시 후 거래 페이지로 이동합니다.');
+      setTimeout(() => {
         router.push('/trading');
-      } else {
-        setError('토큰을 받지 못했습니다.');
-      }
+      }, 1500);
     } catch (err) {
       console.error('Login error:', err);
-      setError('서버와의 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      if (err.status === 401) {
+        setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+      } else {
+        setError(err.message || '서버와의 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    router.push('/auth/login');
-  };
-
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
-      </div>
-    );
-  }
-
-  if (loggedInUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-          <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">
-            Welcome back, {loggedInUser.username}!
-          </h2>
-          
-          <button
-            onClick={() => router.push('/trading')}
-            className="w-full mb-4 bg-black text-white font-bold py-3 px-4 rounded-md hover:bg-gray-800 transition-colors"
-          >
-            Go to Trading
-          </button>
-          
-          <button
-            onClick={handleLogout}
-            className="w-full bg-red-500 text-white font-bold py-3 px-4 rounded-md hover:bg-red-600 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -167,6 +82,11 @@ export default function LoginPage() {
           {error && (
             <div className="text-red-500 text-sm text-center">
               {error}
+            </div>
+          )}
+          {message && (
+            <div className="text-green-500 text-sm text-center">
+              {message}
             </div>
           )}
 

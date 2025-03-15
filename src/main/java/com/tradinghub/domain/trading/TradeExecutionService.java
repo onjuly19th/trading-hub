@@ -2,27 +2,39 @@ package com.tradinghub.domain.trading;
 
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.trading.dto.TradeRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TradeExecutionService {
+    // Temporary fixed price for testing until WebSocket implementation
+    private static final BigDecimal DEFAULT_PRICE = new BigDecimal("85000");
+    
     private final OrderRepository orderRepository;
     private final TradeRepository tradeRepository;
     private final PortfolioService portfolioService;
+    
+    public TradeExecutionService(
+            OrderRepository orderRepository,
+            TradeRepository tradeRepository,
+            PortfolioService portfolioService) {
+        this.orderRepository = orderRepository;
+        this.tradeRepository = tradeRepository;
+        this.portfolioService = portfolioService;
+    }
 
     /**
-     * 현재가에 따라 체결 가능한 지정가 주문들을 확인하고 거래를 체결합니다.
-     * 매수 주문: 현재가가 지정가 이하일 때 체결
-     * 매도 주문: 현재가가 지정가 이상일 때 체결
+     * Check and execute limit orders based on current market price.
+     * Buy orders: Execute when current price is less than or equal to limit price
+     * Sell orders: Execute when current price is greater than or equal to limit price
      *
-     * @param symbol 거래 심볼 (예: BTC/USD)
-     * @param currentPrice 현재 시장 가격
+     * @param symbol Trading symbol (e.g., BTC/USD)
+     * @param currentPrice Current market price
      */
     @Transactional
     public void checkAndExecuteTrades(String symbol, BigDecimal currentPrice) {
@@ -30,28 +42,59 @@ public class TradeExecutionService {
         executableOrders.forEach(this::executeTrade);
     }
 
-    private void executeTrade(Order order) {
-        // TradeRequest 생성
-        TradeRequest tradeRequest = new TradeRequest();
-        tradeRequest.setSymbol(order.getSymbol());
-        tradeRequest.setAmount(order.getAmount());
-        tradeRequest.setPrice(order.getPrice());
-        tradeRequest.setType(order.getSide() == Order.OrderSide.BUY ? Trade.TradeType.BUY : Trade.TradeType.SELL);
-
-        // 포트폴리오 업데이트 및 거래 생성
-        Trade trade = portfolioService.executeTrade(order.getUser().getId(), tradeRequest);
-
-        // 주문 상태 업데이트
-        order.fill();
-        order.setExecutedPrice(order.getPrice());
-        orderRepository.save(order);
+    /**
+     * Periodically process orders for execution
+     */
+    @Scheduled(fixedRate = 10000) // Run every 10 seconds
+    @Transactional
+    public void processOrders() {
+        // Get all pending orders
+        List<Order> pendingOrders = orderRepository.findByStatus(Order.OrderStatus.PENDING);
         
-        // 거래 기록 저장
-        trade.setOrder(order);
-        tradeRepository.save(trade);
-        
-        log.info("Trade executed: orderId={}, symbol={}, side={}, amount={}, price={}", 
-            order.getId(), order.getSymbol(), order.getSide(), 
-            order.getAmount(), order.getPrice());
+        // Group by symbol and process each symbol
+        pendingOrders.stream()
+            .map(Order::getSymbol)
+            .distinct()
+            .forEach(symbol -> {
+                try {
+                    // Using fixed price for now until WebSocket implementation
+                    BigDecimal currentPrice = DEFAULT_PRICE;
+                    checkAndExecuteTrades(symbol, currentPrice);
+                    log.info("Processed orders for symbol: {} with price: {}", symbol, currentPrice);
+                } catch (Exception e) {
+                    log.error("Error processing symbol {}", symbol, e);
+                }
+            });
     }
-} 
+
+    private void executeTrade(Order order) {
+        try {
+            // Create TradeRequest
+            TradeRequest tradeRequest = new TradeRequest();
+            tradeRequest.setSymbol(order.getSymbol());
+            tradeRequest.setAmount(order.getAmount());
+            tradeRequest.setPrice(order.getPrice());
+            tradeRequest.setType(order.getSide() == Order.OrderSide.BUY ? Trade.TradeType.BUY : Trade.TradeType.SELL);
+
+            // Update portfolio and create trade
+            Trade trade = portfolioService.executeTrade(order.getUser().getId(), tradeRequest);
+
+            // Update order status
+            order.fill();
+            order.setExecutedPrice(order.getPrice());
+            orderRepository.save(order);
+            
+            // Save trade record
+            trade.setOrder(order);
+            tradeRepository.save(trade);
+            
+            log.info("Order executed: orderId={}, symbol={}, price={}, amount={}", 
+                order.getId(), order.getSymbol(), order.getPrice(), order.getAmount());
+        } catch (Exception e) {
+            // Revert order status on failure
+            order.setStatus(Order.OrderStatus.PENDING);
+            orderRepository.save(order);
+            log.error("Order execution failed: orderId={}", order.getId(), e);
+        }
+    }
+}

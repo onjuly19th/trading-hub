@@ -13,7 +13,7 @@ public class OrderResponse {
     private final String side;
     private final BigDecimal price;
     private final BigDecimal amount;
-    // TODO: 부분 체결 구현시 주석 해제
+    // TODO: 부분 체결 구현
     // private final BigDecimal filledAmount;
     private final String status;
     private final LocalDateTime createdAt;
@@ -26,7 +26,7 @@ public class OrderResponse {
         this.side = order.getSide().name();
         this.price = order.getPrice();
         this.amount = order.getAmount();
-        // TODO: 부분 체결 구현시 주석 해제
+        // TODO: 부분 체결 구현
         // this.filledAmount = order.getFilledAmount();
         this.status = order.getStatus().name();
         this.createdAt = order.getCreatedAt();

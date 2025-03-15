@@ -18,6 +18,6 @@ public class SignupRequest {
     private String password;
 
     public BigDecimal getInitialBalance() {
-        return new BigDecimal("1000000.00");
+        return new BigDecimal("1000000.00"); // 초기 자산 1,000,000.00 USD
     }
 }

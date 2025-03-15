@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
+import { WebSocketManager } from '@/lib/websocket';
+import { COLORS } from '@/config/constants';
 
 const COINS = [
   {
@@ -35,9 +37,9 @@ const CoinPriceCard = ({ coin, price, priceChange }) => {
       const prevPrice = parseFloat(previousPriceRef.current);
       
       if (currentPrice > prevPrice) {
-        setPriceColor('#26a69a'); // 녹색
+        setPriceColor(COLORS.BUY);
       } else if (currentPrice < prevPrice) {
-        setPriceColor('#ef5350'); // 적색
+        setPriceColor(COLORS.SELL);
       }
     }
     previousPriceRef.current = price;
@@ -49,7 +51,7 @@ const CoinPriceCard = ({ coin, price, priceChange }) => {
   }) : '0.00';
 
   const changeValue = parseFloat(priceChange || 0);
-  const changeColor = changeValue >= 0 ? '#26a69a' : '#ef5350';
+  const changeColor = changeValue >= 0 ? COLORS.BUY : COLORS.SELL;
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow">
@@ -77,47 +79,42 @@ const CoinPriceCard = ({ coin, price, priceChange }) => {
 
 const CoinPriceList = () => {
   const [prices, setPrices] = useState({});
-  const [prevPrices, setPrevPrices] = useState({});
   const [priceChanges, setPriceChanges] = useState({});
+  const [error, setError] = useState(null);
+  const wsManager = useRef(null);
 
   useEffect(() => {
-    const ws = new WebSocket('wss://stream.binance.com:9443/ws');
+    const symbols = COINS.map(coin => coin.symbol);
+    wsManager.current = new WebSocketManager(
+      symbols,
+      'ticker',
+      (data) => {
+        if (data.s && data.c) {
+          setPrices(prev => ({
+            ...prev,
+            [data.s]: data.c
+          }));
+          setPriceChanges(prev => ({
+            ...prev,
+            [data.s]: data.P
+          }));
+        }
+      },
+      (error) => setError(error)
+    );
 
-    ws.onopen = () => {
-      const subscribeMsg = {
-        method: "SUBSCRIBE",
-        params: COINS.map(coin => `${coin.symbol.toLowerCase()}@ticker`),
-        id: 1
-      };
-      ws.send(JSON.stringify(subscribeMsg));
-    };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.s && data.c) {
-        setPrices(prev => ({
-          ...prev,
-          [data.s]: data.c
-        }));
-        setPriceChanges(prev => ({
-          ...prev,
-          [data.s]: data.P
-        }));
-      }
-    };
+    wsManager.current.connect();
 
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        const unsubscribeMsg = {
-          method: "UNSUBSCRIBE",
-          params: COINS.map(coin => `${coin.symbol.toLowerCase()}@ticker`),
-          id: 1
-        };
-        ws.send(JSON.stringify(unsubscribeMsg));
-        ws.close();
+      if (wsManager.current) {
+        wsManager.current.disconnect();
       }
     };
   }, []);
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

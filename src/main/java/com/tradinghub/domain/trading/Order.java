@@ -23,7 +23,7 @@ public class Order {
     private User user;
 
     @Column(nullable = false)
-    private String symbol;  // 거래 쌍 (예: BTC/USD)
+    private String symbol;  // 티커
     
     @Column(nullable = false)
     private BigDecimal amount;  // 주문 수량
@@ -42,7 +42,7 @@ public class Order {
     @Column(nullable = false)
     private OrderSide side;  // BUY, SELL
     
-    // TODO: 부분 체결 구현시 주석 해제
+    // TODO: 부분 체결 구현
     // private BigDecimal filledAmount;  // 체결된 수량
     
     @Enumerated(EnumType.STRING)
@@ -66,7 +66,7 @@ public class Order {
         this.side = side;
         this.price = price;
         this.amount = amount;
-        // TODO: 부분 체결 구현시 주석 해제
+        // TODO: 부분 체결 구현
         // this.filledAmount = BigDecimal.ZERO;
         this.status = status != null ? status : OrderStatus.PENDING;
         this.createdAt = LocalDateTime.now();
@@ -79,7 +79,7 @@ public class Order {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // TODO: 부분 체결 구현시 수정
+    // TODO: 부분 체결 구현
     public void fill() {
         validateCanFill();
         // this.filledAmount = this.amount;
@@ -93,7 +93,7 @@ public class Order {
         }
     }
 
-    // TODO: 부분 체결 구현시 수정
+    // TODO: 부분 체결 구현
     private void validateCanFill() {
         if (status == OrderStatus.CANCELLED) {
             throw new IllegalStateException("Cannot fill cancelled order");
@@ -125,7 +125,7 @@ public class Order {
 
     public enum OrderStatus {
         PENDING,           // 대기
-        // TODO: 부분 체결 구현시 주석 해제
+        // TODO: 부분 체결 구현
         // PARTIALLY_FILLED,  // 일부 체결
         FILLED,           // 완전 체결
         CANCELLED         // 취소됨

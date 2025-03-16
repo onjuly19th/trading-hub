@@ -16,8 +16,15 @@ const TradingViewChart = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const chartContainerRef = useRef();
-  const chartRef = useRef();
-  const candleSeriesRef = useRef();
+  const chartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const currentSymbolRef = useRef(symbol);
+
+  // symbol이 변경될 때마다 콘솔에 로그 출력
+  useEffect(() => {
+    // console.log('Chart symbol changed to:', symbol);
+    currentSymbolRef.current = symbol;
+  }, [symbol]);
 
   const { data: wsData, error: wsError } = useWebSocket(symbol);
 
@@ -27,7 +34,7 @@ const TradingViewChart = ({
 
   // 실시간 데이터 업데이트
   useEffect(() => {
-    if (wsData?.k && candleSeriesRef.current) {
+    if (wsData?.k && candleSeriesRef.current && currentSymbolRef.current === symbol) {
       const candle = wsData.k;
       const candleData = {
         time: candle.t / 1000,
@@ -37,9 +44,10 @@ const TradingViewChart = ({
         close: parseFloat(candle.c)
       };
 
+      // console.log(`Updating chart with data for ${symbol}:`, candleData);
       candleSeriesRef.current.update(candleData);
     }
-  }, [wsData]);
+  }, [wsData, symbol]);
 
   // WebSocket 에러 처리
   useEffect(() => {
@@ -48,18 +56,32 @@ const TradingViewChart = ({
     }
   }, [wsError]);
 
+  // 차트 생성 및 초기 데이터 로드
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     setIsLoading(true);
     setError(null);
 
-    const handleResize = () => {
-      chartRef.current?.applyOptions({
-        width: chartContainerRef.current.clientWidth,
-      });
+    // 기존 차트 정리
+    const cleanupChart = () => {
+      if (chartRef.current) {
+        try {
+          // console.log('Removing existing chart');
+          chartRef.current.remove();
+        } catch (e) {
+          console.error('Error removing chart:', e);
+        }
+        chartRef.current = null;
+        candleSeriesRef.current = null;
+      }
     };
 
+    // 기존 차트 정리
+    cleanupChart();
+
+    // 새 차트 생성
+    // console.log('Creating new chart for symbol:', symbol);
     const colors = isDarkMode ? CHART_CONFIG.COLORS.DARK : CHART_CONFIG.COLORS.LIGHT;
 
     const chart = createChart(chartContainerRef.current, {
@@ -109,11 +131,23 @@ const TradingViewChart = ({
 
     candleSeriesRef.current = candleSeries;
 
+    const handleResize = () => {
+      if (chartRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
     // 초기 데이터 로드
     const fetchInitialData = async () => {
       try {
+        // symbol에서 '/'를 제거하여 API 요청에 사용
+        const formattedSymbol = symbol.replace('/', '');
+        // console.log('Fetching data for symbol:', formattedSymbol);
+        
         const response = await fetch(
-          `${API_CONFIG.BINANCE_REST_URL}?symbol=${symbol.replace('/', '')}&interval=${interval}&limit=100`
+          `${API_CONFIG.BINANCE_REST_URL}?symbol=${formattedSymbol}&interval=${interval}&limit=100`
         );
         if (!response.ok) {
           throw new Error('차트 데이터를 불러오는데 실패했습니다.');
@@ -128,8 +162,12 @@ const TradingViewChart = ({
           close: parseFloat(candle[4])
         }));
         
-        candleSeries.setData(formattedData);
-        setError(null);
+        // 현재 심볼이 변경되지 않았는지 확인
+        if (currentSymbolRef.current === symbol && candleSeriesRef.current) {
+          // console.log(`Setting initial data for ${symbol}, ${formattedData.length} candles`);
+          candleSeriesRef.current.setData(formattedData);
+          setError(null);
+        }
       } catch (error) {
         console.error('Error fetching historical data:', error);
         setError(error.message);
@@ -143,7 +181,7 @@ const TradingViewChart = ({
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      chart.remove();
+      cleanupChart();
     };
   }, [isDarkMode, symbol, interval]);
 

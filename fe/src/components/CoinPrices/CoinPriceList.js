@@ -27,7 +27,7 @@ const COINS = [
   }
 ];
 
-const CoinPriceCard = ({ coin, price, priceChange }) => {
+const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
   const previousPriceRef = useRef(null);
   const [priceColor, setPriceColor] = useState('#000000');
 
@@ -53,8 +53,18 @@ const CoinPriceCard = ({ coin, price, priceChange }) => {
   const changeValue = parseFloat(priceChange || 0);
   const changeColor = changeValue >= 0 ? COLORS.BUY : COLORS.SELL;
 
+  const handleClick = () => {
+    console.log('Coin clicked:', coin.name);
+    if (onSelect) {
+      onSelect(coin);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow">
+    <div 
+      className="bg-white rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow cursor-pointer"
+      onClick={handleClick}
+    >
       <div className="flex items-center gap-3 mb-2">
         <div className="relative w-8 h-8">
           <Image
@@ -77,7 +87,7 @@ const CoinPriceCard = ({ coin, price, priceChange }) => {
   );
 };
 
-const CoinPriceList = () => {
+const CoinPriceList = ({ onCoinSelect }) => {
   const [prices, setPrices] = useState({});
   const [priceChanges, setPriceChanges] = useState({});
   const [error, setError] = useState(null);
@@ -112,6 +122,13 @@ const CoinPriceList = () => {
     };
   }, []);
 
+  const handleCoinSelect = (coin) => {
+    console.log('Selected coin in CoinPriceList:', coin.name);
+    if (onCoinSelect) {
+      onCoinSelect(coin);
+    }
+  };
+
   if (error) {
     return <div className="text-red-500">Error: {error}</div>;
   }
@@ -124,6 +141,7 @@ const CoinPriceList = () => {
           coin={coin}
           price={prices[coin.symbol]}
           priceChange={priceChanges[coin.symbol]}
+          onSelect={handleCoinSelect}
         />
       ))}
     </div>

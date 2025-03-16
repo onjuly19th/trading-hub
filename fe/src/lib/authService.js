@@ -29,9 +29,7 @@ export const authService = {
   checkAuth: () => {
     const token = authService.getToken();
     const username = authService.getUsername();
-    const isAuthenticated = token && username ? { username } : null;
-    console.log('Checking auth:', { token, username, isAuthenticated });
-    return isAuthenticated;
+    return !!(token && username); // 토큰과 사용자명이 모두 있으면 true, 아니면 false
   },
 
   // 회원가입

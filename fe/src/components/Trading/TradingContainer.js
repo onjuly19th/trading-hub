@@ -9,11 +9,12 @@ import { TRADING_CONFIG } from '@/config/constants';
 import TradingViewChart from '@/components/Chart/TradingViewChart';
 import OrderForm from '@/components/Trading/OrderForm';
 import OrderBook from '@/components/Trading/OrderBook';
+import LoadingSpinner from '@/components/Common/LoadingSpinner';
 
 export default function TradingContainer() {
   const router = useRouter();
   const { currentPrice, isConnected, error: wsError } = usePriceWebSocket(TRADING_CONFIG.DEFAULT_SYMBOL);
-  const { userBalance, error: portfolioError, formatUSD, refreshBalance } = usePortfolio();
+  const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading } = usePortfolio();
   const username = authService.getUsername();
 
   //console.log('Trading container render:', { userBalance, currentPrice, isConnected });
@@ -23,7 +24,16 @@ export default function TradingContainer() {
     router.push('/auth/login');
   };
 
-  const availableBalance = userBalance?.availableBalance ?? 1000000;
+  const availableBalance = userBalance?.availableBalance ?? 0;
+
+  // 포트폴리오 로딩 중일 때 로딩 스피너 표시
+  if (portfolioLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 min-h-screen bg-gray-50">

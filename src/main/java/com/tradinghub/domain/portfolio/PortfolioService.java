@@ -126,8 +126,9 @@ public class PortfolioService {
         if (asset.getAmount().compareTo(BigDecimal.ZERO) == 0) {
             assetRepository.delete(asset);
         } else {
-            asset.setCurrentPrice(price);
-            asset.updateProfitLoss();
+            //TODO: 웹소켓 비활성화로 인해 주석 처리
+            //asset.setCurrentPrice(price);
+            //asset.updateProfitLoss();
             assetRepository.save(asset);
         }
     }
@@ -154,7 +155,8 @@ public class PortfolioService {
         
         asset.setAmount(newAmount);
         asset.setAveragePrice(newAveragePrice);
-        asset.setCurrentPrice(price);
-        asset.updateProfitLoss();
+        //TODO: 웹소켓 비활성화로 인해 주석 처리
+        //asset.setCurrentPrice(price);
+        //asset.updateProfitLoss();
     }
 } 

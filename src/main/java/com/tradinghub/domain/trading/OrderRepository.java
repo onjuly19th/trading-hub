@@ -17,8 +17,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     
     @Query("SELECT o FROM Order o WHERE o.symbol = :symbol AND o.status = :status " +
            "AND o.side = :side AND o.type = 'LIMIT' " +
-           "ORDER BY o.price " + 
-           "CASE WHEN :side = 'BUY' THEN DESC ELSE ASC END")
+           "ORDER BY CASE WHEN :side = 'BUY' THEN o.price END DESC, " +
+           "CASE WHEN :side = 'SELL' THEN o.price END ASC")
     List<Order> findMatchingOrdersBySide(
             @Param("symbol") String symbol,
             @Param("status") Order.OrderStatus status,

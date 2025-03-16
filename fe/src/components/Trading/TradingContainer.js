@@ -25,6 +25,34 @@ export default function TradingContainer() {
   };
 
   const availableBalance = userBalance?.availableBalance ?? 0;
+  
+  // assets 배열에서 BTC 자산 찾기
+  const btcAsset = userBalance?.assets?.find(asset => 
+    asset.symbol === 'BTC' || asset.symbol === 'BTCUSDT'
+  );
+  
+  // BTC 보유량 (없으면 0)
+  const coinAmount = btcAsset?.amount ?? 0;
+  
+  // 코인의 USD 가치 계산 (웹소켓 현재가 사용)
+  const coinValueUSD = coinAmount * (currentPrice || 0);
+  
+  // 수익/손실 정보 (웹소켓 현재가 기준으로 계산)
+  const averagePrice = btcAsset?.averagePrice ?? 0;
+  let profitLoss = 0;
+  let profitLossPercentage = 0;
+  
+  if (coinAmount > 0 && currentPrice && averagePrice > 0) {
+    // 현재 가치 - 구매 가치
+    profitLoss = (currentPrice - averagePrice) * coinAmount;
+    // 수익률 계산 (%)
+    profitLossPercentage = ((currentPrice - averagePrice) / averagePrice) * 100;
+  }
+  
+  const isProfitable = profitLoss >= 0;
+  
+  // 총 자산 가치 계산 (USD 잔액 + 코인 가치)
+  const totalPortfolioValue = availableBalance + coinValueUSD;
 
   // 포트폴리오 로딩 중일 때 로딩 스피너 표시
   if (portfolioLoading) {
@@ -49,6 +77,17 @@ export default function TradingContainer() {
             </p>
             <p className="font-semibold text-gray-800">
               USD Balance: ${formatUSD(availableBalance)}
+            </p>
+            <p className="text-gray-800">
+              BTC: {parseFloat(coinAmount).toFixed(8)} <span className="text-gray-600">(${formatUSD(coinValueUSD)})</span>
+            </p>
+            {coinAmount > 0 && (
+              <p className={`text-sm ${isProfitable ? 'text-green-600' : 'text-red-600'}`}>
+                {isProfitable ? '+' : ''}{formatUSD(profitLoss)} ({profitLossPercentage.toFixed(2)}%)
+              </p>
+            )}
+            <p className="font-bold text-gray-800 mt-1">
+              Total Value: ${formatUSD(totalPortfolioValue)}
             </p>
           </div>
           <button

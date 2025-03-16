@@ -34,6 +34,7 @@ public class OrderController {
                 user.getId(),
                 request.getSymbol(),
                 request.getSide(),
+                request.getPrice(),
                 request.getAmount()
             );
             log.info("Market order processed successfully - Trade ID: {}", trade.getId());

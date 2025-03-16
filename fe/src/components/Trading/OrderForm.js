@@ -32,7 +32,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
         symbol,
         type: orderType.toUpperCase(),
         side: side.toUpperCase(),
-        price: orderType === 'market' ? null : parseFloat(price),
+        price: orderType === 'market' ? currentPrice : parseFloat(price),
         amount: parseFloat(amount)
       };
 
@@ -138,7 +138,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
       </div>
 
       <div className="mb-4 p-2 bg-gray-50 rounded">
-        <div className="text-sm text-gray-600">사용 가능 USD</div>
+        <div className="text-sm text-gray-600">보유 USD</div>
         <div className="text-lg font-semibold">
           ${userBalance?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
         </div>

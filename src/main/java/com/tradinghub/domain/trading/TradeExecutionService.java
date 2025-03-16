@@ -17,11 +17,11 @@ public class TradeExecutionService {
     private final PortfolioService portfolioService;
 
     /**
-     * 현재가에 따라 체결 가능한 지정가 주문들을 확인하고 거래를 체결합니다.
+     * 현재가에 따라 체결 가능한 지정가 주문들을 확인하고 거래 체결
      * 매수 주문: 현재가가 지정가 이하일 때 체결
      * 매도 주문: 현재가가 지정가 이상일 때 체결
      *
-     * @param symbol 거래 심볼 (예: BTC/USD)
+     * @param symbol 거래 심볼 (예: BTC/USDT)
      * @param currentPrice 현재 시장 가격
      */
     @Transactional

@@ -25,14 +25,15 @@ public class OrderService {
      * Order 테이블에 저장 X -> 바로 Trade로 생성
      */
     @Transactional
-    public Trade createMarketOrder(Long userId, String symbol, Order.OrderSide side, BigDecimal amount) {
+    public Trade createMarketOrder(Long userId, String symbol, Order.OrderSide side,
+                                   BigDecimal price, BigDecimal amount) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
         //BigDecimal currentPrice = cryptoMarketService.getCurrentPrice(symbol);
         // TODO: 시장가 주문 시 현재 시장 가격 조회 (웹소켓)
         // 예시 가격 = $85000
-        BigDecimal currentPrice = new BigDecimal("85000");
+        BigDecimal currentPrice = price;
         
         // 주문 가능 여부 확인
         validateOrder(user, side, currentPrice, amount);
@@ -55,7 +56,7 @@ public class OrderService {
      */
     @Transactional
     public Order createLimitOrder(Long userId, String symbol, Order.OrderSide side, 
-                                BigDecimal price, BigDecimal amount) {
+                                  BigDecimal price, BigDecimal amount) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -69,7 +70,7 @@ public class OrderService {
             .side(side)
             .price(price)
             .amount(amount)
-            // TODO: 부분 체결 구현시 주석 해제
+            // TODO: 부분 체결 구현
             // .filledAmount(BigDecimal.ZERO)
             .status(Order.OrderStatus.PENDING)
             .build();

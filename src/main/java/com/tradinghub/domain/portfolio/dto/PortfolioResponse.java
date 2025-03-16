@@ -13,11 +13,15 @@ import java.util.stream.Collectors;
 @Builder
 public class PortfolioResponse {
     private BigDecimal usdBalance;
+    // 웹소켓 비활성화로 인해 프론트엔드에서 계산하므로 응답에서 제외
+    // private BigDecimal totalBalance;
     private List<AssetResponse> assets;
 
     public static PortfolioResponse from(Portfolio portfolio) {
         return PortfolioResponse.builder()
                 .usdBalance(portfolio.getUsdBalance())
+                // 웹소켓 비활성화로 인해 프론트엔드에서 계산하므로 응답에서 제외
+                // .totalBalance(portfolio.getTotalBalance())
                 .assets(portfolio.getAssets().stream()
                         .map(AssetResponse::from)
                         .collect(Collectors.toList()))
@@ -29,19 +33,23 @@ public class PortfolioResponse {
     public static class AssetResponse {
         private String symbol;
         private BigDecimal amount;
-        private BigDecimal currentPrice;
+        // 웹소켓 비활성화로 인해 프론트엔드에서 계산하므로 응답에서 제외
+        // private BigDecimal currentPrice;
         private BigDecimal averagePrice;
-        private BigDecimal profitLoss;
-        private BigDecimal profitLossPercentage;
+        // 웹소켓 비활성화로 인해 프론트엔드에서 계산하므로 응답에서 제외
+        // private BigDecimal profitLoss;
+        // private BigDecimal profitLossPercentage;
 
         public static AssetResponse from(PortfolioAsset asset) {
             return AssetResponse.builder()
                     .symbol(asset.getSymbol())
                     .amount(asset.getAmount())
-                    .currentPrice(asset.getCurrentPrice())
+                    // 웹소켓 비활성화로 인해 프론트엔드에서 계산하므로 응답에서 제외
+                    // .currentPrice(asset.getCurrentPrice())
                     .averagePrice(asset.getAveragePrice())
-                    .profitLoss(asset.getProfitLoss())
-                    .profitLossPercentage(asset.getProfitLossPercentage())
+                    // 웹소켓 비활성화로 인해 프론트엔드에서 계산하므로 응답에서 제외
+                    // .profitLoss(asset.getProfitLoss())
+                    // .profitLossPercentage(asset.getProfitLossPercentage())
                     .build();
         }
     }

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <circle cx="12" cy="12" r="10" fill="#F0F9FF" stroke="#0EA5E9" stroke-width="1.5"/>
+  
+  <!-- 왼쪽에서 오른쪽으로 향하는 화살표 -->
+  <path d="M7 9.5L17 9.5" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"/>
+  <path d="M14 6.5L17 9.5L14 12.5" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- 오른쪽에서 왼쪽으로 향하는 화살표 -->
+  <path d="M17 14.5L7 14.5" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"/>
+  <path d="M10 11.5L7 14.5L10 17.5" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

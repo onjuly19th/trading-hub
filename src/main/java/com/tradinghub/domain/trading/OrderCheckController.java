@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/trading/check")
+@RequestMapping("/api/trading/check")
 @RequiredArgsConstructor
 @Slf4j
 public class OrderCheckController {

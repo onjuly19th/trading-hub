@@ -13,11 +13,19 @@ import LoadingSpinner from '@/components/Common/LoadingSpinner';
 
 export default function TradingContainer() {
   const router = useRouter();
-  const { currentPrice, isConnected, error: wsError } = usePriceWebSocket(TRADING_CONFIG.DEFAULT_SYMBOL);
-  const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading } = usePortfolio();
   const username = authService.getUsername();
+  const isTrader = true; // 거래 페이지에서는 항상 trader로 간주
+  const isAuthenticated = authService.isAuthenticated();
+  
+  const { currentPrice, isConnected, error: wsError } = usePriceWebSocket(
+    TRADING_CONFIG.DEFAULT_SYMBOL,
+    isTrader,
+    isAuthenticated ? { username } : null
+  );
+  
+  const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading } = usePortfolio();
 
-  //console.log('Trading container render:', { userBalance, currentPrice, isConnected });
+  // console.log('Trading container render:', { userBalance, currentPrice, isConnected });
 
   const handleLogout = () => {
     authService.logout();
@@ -34,19 +42,22 @@ export default function TradingContainer() {
   // BTC 보유량 (없으면 0)
   const coinAmount = btcAsset?.amount ?? 0;
   
-  // 코인의 USD 가치 계산 (웹소켓 현재가 사용)
-  const coinValueUSD = coinAmount * (currentPrice || 0);
-  
   // 수익/손실 정보 (웹소켓 현재가 기준으로 계산)
   const averagePrice = btcAsset?.averagePrice ?? 0;
   let profitLoss = 0;
   let profitLossPercentage = 0;
   
-  if (coinAmount > 0 && currentPrice && averagePrice > 0) {
+  // 문자열로 된 가격을 숫자로 변환
+  const numericCurrentPrice = currentPrice ? parseFloat(currentPrice) : 0;
+  
+  // 코인의 USD 가치 계산 (웹소켓 현재가 사용)
+  const coinValueUSD = coinAmount * numericCurrentPrice;
+  
+  if (coinAmount > 0 && numericCurrentPrice > 0 && averagePrice > 0) {
     // 현재 가치 - 구매 가치
-    profitLoss = (currentPrice - averagePrice) * coinAmount;
+    profitLoss = (numericCurrentPrice - averagePrice) * coinAmount;
     // 수익률 계산 (%)
-    profitLossPercentage = ((currentPrice - averagePrice) / averagePrice) * 100;
+    profitLossPercentage = ((numericCurrentPrice - averagePrice) / averagePrice) * 100;
   }
   
   const isProfitable = profitLoss >= 0;
@@ -69,6 +80,11 @@ export default function TradingContainer() {
         <div>
           <h1 className="text-3xl font-bold text-gray-800">{TRADING_CONFIG.DEFAULT_SYMBOL}</h1>
           <p className="text-gray-600 mt-1">실시간 비트코인 차트</p>
+          {numericCurrentPrice > 0 && (
+            <p className="text-xl font-semibold text-gray-800">
+              ${numericCurrentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-6">
           <div className="text-right">
@@ -121,7 +137,7 @@ export default function TradingContainer() {
         <div className="lg:col-span-1 space-y-6 mt-[50px]">
           <OrderForm 
             symbol={TRADING_CONFIG.DEFAULT_SYMBOL}
-            currentPrice={currentPrice}
+            currentPrice={numericCurrentPrice}
             isConnected={isConnected}
             userBalance={availableBalance}
             refreshBalance={refreshBalance}

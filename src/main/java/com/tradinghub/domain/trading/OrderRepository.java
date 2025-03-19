@@ -25,9 +25,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("side") Order.OrderSide side
     );
     
+    /**
+     * 현재 가격에 따라 체결 가능한 주문 조회
+     * 매수(BUY): 현재 가격 <= 주문 가격 (현재 가격이 주문 가격보다 싸거나 같을 때 체결)
+     * 매도(SELL): 현재 가격 >= 주문 가격 (현재 가격이 주문 가격보다 비싸거나 같을 때 체결)
+     */
     @Query("SELECT o FROM Order o WHERE o.symbol = :symbol AND o.status = 'PENDING' AND " +
-           "((o.side = 'BUY' AND o.price >= :currentPrice) OR " +
-           "(o.side = 'SELL' AND o.price <= :currentPrice)) " +
+           "o.type = 'LIMIT' AND " +
+           "((o.side = 'BUY' AND :currentPrice <= o.price) OR " +
+           "(o.side = 'SELL' AND :currentPrice >= o.price)) " +
            "ORDER BY " +
            "CASE WHEN o.side = 'BUY' THEN o.price END DESC, " +
            "CASE WHEN o.side = 'SELL' THEN o.price END ASC, " +

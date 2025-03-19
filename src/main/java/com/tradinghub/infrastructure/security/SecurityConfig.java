@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
+                .requestMatchers("/api/trading/check/price").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

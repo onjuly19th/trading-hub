@@ -4,7 +4,7 @@ export const authService = {
   // 토큰 관리
   getToken: () => {
     const token = localStorage.getItem('token');
-    console.log('Getting token:', token);
+    //console.log('Getting token:', token);
     return token;
   },
   setToken: (token) => {
@@ -30,6 +30,11 @@ export const authService = {
     const token = authService.getToken();
     const username = authService.getUsername();
     return !!(token && username); // 토큰과 사용자명이 모두 있으면 true, 아니면 false
+  },
+
+  // 인증 상태 확인 (checkAuth와 동일 - 더 직관적인 이름)
+  isAuthenticated: () => {
+    return authService.checkAuth();
   },
 
   // 회원가입

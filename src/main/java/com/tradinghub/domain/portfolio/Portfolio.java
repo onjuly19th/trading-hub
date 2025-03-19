@@ -43,7 +43,7 @@ public class Portfolio {
     @Column(nullable = false, precision = USD_PRECISION, scale = USD_SCALE)
     private BigDecimal usdBalance = BigDecimal.ZERO;
 
-    // 웹소켓 비활성화로 인해 프론트엔드에서 계산하지만, DB 스키마 변경 방지를 위해 필드 유지
+    // 웹소켓 비활성화
     /* 
     @Column(nullable = false)
     private BigDecimal totalBalance = BigDecimal.ZERO;
@@ -53,11 +53,11 @@ public class Portfolio {
     private BigDecimal availableBalance = BigDecimal.ZERO;
 
     /*
-    // 웹소켓 비활성화로 인해 프론트엔드에서 계산하지만, DB 스키마 변경 방지를 위해 필드 유지
+    // 웹소켓 비활성화
     @Column(nullable = false)
     private BigDecimal totalProfitLoss = BigDecimal.ZERO;
 
-    // 웹소켓 비활성화로 인해 프론트엔드에서 계산하지만, DB 스키마 변경 방지를 위해 필드 유지
+    // 웹소켓 비활성화
     @Column(nullable = false)
     private BigDecimal profitLossPercentage = BigDecimal.ZERO;
     */

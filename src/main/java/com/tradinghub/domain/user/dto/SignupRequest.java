@@ -1,10 +1,12 @@
 package com.tradinghub.domain.user.dto;
 
+import java.math.BigDecimal;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
 import lombok.Getter;
 import lombok.Setter;
-import java.math.BigDecimal;
 
 @Getter
 @Setter

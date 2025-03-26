@@ -1,8 +1,10 @@
 package com.tradinghub.domain.trading.dto;
 
+import java.math.BigDecimal;
+
 import lombok.Getter;
 import lombok.Setter;
-import java.math.BigDecimal;
+
 import com.tradinghub.domain.trading.Order;
 
 @Getter

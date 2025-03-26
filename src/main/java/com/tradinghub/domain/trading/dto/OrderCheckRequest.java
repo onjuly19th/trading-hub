@@ -4,9 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 
-/**
- * 주문 체결 확인 요청 DTO
- */
+// 주문 체결 확인 요청 DTO
 @Getter
 @Setter
 @NoArgsConstructor

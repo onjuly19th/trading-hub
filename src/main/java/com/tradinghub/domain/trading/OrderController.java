@@ -1,17 +1,18 @@
 package com.tradinghub.domain.trading;
 
-import com.tradinghub.domain.user.User;
-import com.tradinghub.infrastructure.security.CurrentUser;
-import com.tradinghub.domain.trading.dto.OrderRequest;
-import com.tradinghub.domain.trading.dto.OrderResponse;
-import com.tradinghub.domain.trading.dto.TradeResponse;
+//import java.util.List;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import com.tradinghub.domain.trading.dto.OrderRequest;
+import com.tradinghub.domain.trading.dto.OrderResponse;
+import com.tradinghub.domain.trading.dto.TradeResponse;
+import com.tradinghub.domain.user.User;
+import com.tradinghub.infrastructure.security.CurrentUser;
 
 @Slf4j
 @RestController
@@ -23,8 +24,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<?> createOrder(@CurrentUser User user, @RequestBody OrderRequest request) {
         log.info("Order request received - User: {}, Symbol: {}, Type: {}, Side: {}, Amount: {}, Price: {}",
-            user.getId(), request.getSymbol(), request.getType(), request.getSide(), 
-            request.getAmount(), request.getPrice());
+            user.getId(), request.getSymbol(), request.getType(), request.getSide(), request.getAmount(), request.getPrice());
         
         validateOrderRequest(request);
 
@@ -52,7 +52,8 @@ public class OrderController {
             return ResponseEntity.ok(new OrderResponse(order));
         }
     }
-
+    // FE 미구현
+    /*
     @GetMapping
     public ResponseEntity<List<OrderResponse>> getUserOrders(@CurrentUser User user) {
         List<Order> orders = orderService.getUserOrders(user.getId());
@@ -74,6 +75,7 @@ public class OrderController {
         orderService.cancelOrder(orderId, user.getId());
         return ResponseEntity.ok().build();
     }
+    */
 
     private void validateOrderRequest(OrderRequest request) {
         if (request.getSymbol() == null || request.getSymbol().isBlank()) {

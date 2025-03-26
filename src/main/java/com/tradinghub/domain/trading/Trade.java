@@ -1,13 +1,15 @@
 package com.tradinghub.domain.trading;
 
-import com.tradinghub.domain.portfolio.Portfolio;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import com.tradinghub.domain.portfolio.Portfolio;
 
 @Entity
 @Table(name = "trades")

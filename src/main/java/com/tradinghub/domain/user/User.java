@@ -1,16 +1,18 @@
 package com.tradinghub.domain.user;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.Setter;
 
 import com.tradinghub.domain.portfolio.Portfolio;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "users")
-@Getter @Setter
+@Getter 
+@Setter
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

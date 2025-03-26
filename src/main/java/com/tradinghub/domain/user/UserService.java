@@ -1,5 +1,18 @@
 package com.tradinghub.domain.user;
 
+import java.util.Collections;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
+
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.user.dto.LoginRequest;
@@ -7,21 +20,6 @@ import com.tradinghub.domain.user.dto.LoginResponse;
 import com.tradinghub.domain.user.dto.SignupRequest;
 import com.tradinghub.domain.user.dto.SignupResponse;
 import com.tradinghub.infrastructure.security.JwtService;
-
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +29,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final PortfolioService portfolioService;
     private final JwtService jwtService;
-
 
     private UserDetails convertToUserDetails(User user) {
         return org.springframework.security.core.userdetails.User
@@ -70,7 +67,7 @@ public class UserService {
                 Portfolio portfolio = portfolioService.createPortfolio(user, "BTC", request.getInitialBalance());
                 user.setPortfolio(portfolio);
                 
-                // 사용자 다시 저장
+                // 사용자 업데이트
                 user = userRepository.save(user);
                 logger.info("Portfolio created and user updated successfully");
             } catch (Exception e) {
@@ -131,36 +128,5 @@ public class UserService {
             logger.error("Error during login process for username: {}", request.getUsername(), e);
             throw e;
         }
-    }
-
-    /**
-     * 인증된 사용자 조회
-     * 
-     * @return 인증된 사용자
-     * @throws UsernameNotFoundException 사용자를 찾을 수 없는 경우
-     */
-    @Transactional(readOnly = true)
-    public User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UsernameNotFoundException("No authenticated user found");
-        }
-        
-        String username = authentication.getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-    }
-    
-    /**
-     * 사용자명으로 사용자 정보를 조회
-     * 
-     * @param username 사용자명
-     * @return 사용자 정보
-     * @throws UsernameNotFoundException 사용자를 찾을 수 없는 경우
-     */
-    @Transactional(readOnly = true)
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 } 

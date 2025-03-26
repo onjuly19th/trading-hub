@@ -1,13 +1,16 @@
 package com.tradinghub.domain.trading;
 
-import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.tradinghub.domain.user.User;
-import lombok.Getter;
+
+import jakarta.persistence.*;
+
 import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
+import com.tradinghub.domain.user.User;
 
 @Entity
 @Table(name = "orders")

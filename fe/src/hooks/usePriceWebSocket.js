@@ -57,12 +57,19 @@ export function usePriceWebSocket(symbol = 'BTC/USD') {
   const checkOrders = async (symbol, price) => {
     try {
       const fullUrl = `${API_CONFIG.BASE_URL}${ENDPOINTS.TRADING.CHECK_ORDERS}`;
-      console.log(`Sending price update to backend: ${fullUrl}, Symbol: ${symbol}, Price: ${price}`);
+      //console.log(`Sending price update to backend: ${fullUrl}, Symbol: ${symbol}, Price: ${price}`);
       
-      await api.post(ENDPOINTS.TRADING.CHECK_ORDERS, {
-        symbol: symbol,
-        price: price.toString()
-      }, { skipAuthError: true });
+      // 직접 fetch를 사용하여 토큰 없이 요청
+      await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          symbol: symbol,
+          price: price.toString()
+        })
+      });
     } catch (error) {
       console.error('Failed to check orders with current price:', error);
     }

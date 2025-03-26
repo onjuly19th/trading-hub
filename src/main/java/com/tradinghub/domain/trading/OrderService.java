@@ -1,15 +1,18 @@
 package com.tradinghub.domain.trading;
 
+import java.math.BigDecimal;
+//import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
+
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.trading.dto.TradeRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -99,6 +102,8 @@ public class OrderService {
         }
     }
 
+    // FE 미구현
+    /*
     @Transactional(readOnly = true)
     public List<Order> getUserOrders(Long userId) {
         return orderRepository.findByUserIdAndStatus(userId, Order.OrderStatus.PENDING);
@@ -108,6 +113,7 @@ public class OrderService {
     public List<Order> getOrderBook(String symbol) {
         return orderRepository.findBySymbolAndStatusOrderByPriceDesc(symbol, Order.OrderStatus.PENDING);
     }
+    */
 
     @Transactional
     public void cancelOrder(Long orderId, Long userId) {

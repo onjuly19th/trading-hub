@@ -1,8 +1,27 @@
 import { API_CONFIG } from '@/config/constants';
 
+// 로깅 유틸리티
+const logger = {
+  log: (...args) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(...args);
+    }
+  },
+  error: (...args) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(...args);
+    }
+  },
+  warn: (...args) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(...args);
+    }
+  }
+};
+
 // 공통 에러 처리
 const handleResponse = async (response, endpoint, options = {}) => {
-  console.log(`API Response for ${endpoint}:`, {
+  logger.log(`API Response for ${endpoint}:`, {
     status: response.status,
     statusText: response.statusText,
     headers: Object.fromEntries([...response.headers]),
@@ -15,11 +34,11 @@ const handleResponse = async (response, endpoint, options = {}) => {
       
       // skipAuthError 옵션이 설정된 경우 인증 오류를 무시
       if (options.skipAuthError) {
-        console.warn(`Ignoring auth error for endpoint ${endpoint} due to skipAuthError option`);
+        logger.warn(`Ignoring auth error for endpoint ${endpoint} due to skipAuthError option`);
         return { status: 'ignored_auth_error' };
       }
       
-      console.error('Authentication error:', response.status);
+      logger.error('Authentication error:', response.status);
       localStorage.removeItem('token');
       throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.');
     }
@@ -27,14 +46,14 @@ const handleResponse = async (response, endpoint, options = {}) => {
     // 응답 본문을 텍스트로 로깅
     const clonedResponse = response.clone();
     const text = await clonedResponse.text();
-    console.error(`Error response raw text for ${endpoint}:`, text);
+    logger.error(`Error response raw text for ${endpoint}:`, text);
     
     let errorData;
     try {
       errorData = JSON.parse(text);
-      console.error(`Error response for ${endpoint}:`, errorData);
+      logger.error(`Error response for ${endpoint}:`, errorData);
     } catch (e) {
-      console.error('Failed to parse error response as JSON:', e);
+      logger.error('Failed to parse error response as JSON:', e);
       errorData = null;
     }
     
@@ -44,24 +63,24 @@ const handleResponse = async (response, endpoint, options = {}) => {
       data: errorData
     };
     
-    console.error('Throwing API error:', error);
+    logger.error('Throwing API error:', error);
     throw error;
   }
   
   try {
     const text = await response.text();
-    console.log(`Raw response text for ${endpoint}:`, text);
+    logger.log(`Raw response text for ${endpoint}:`, text);
     
     if (!text) {
-      console.warn(`Empty response body for ${endpoint}`);
+      logger.warn(`Empty response body for ${endpoint}`);
       return null;
     }
     
     const data = JSON.parse(text);
-    console.log(`API Success data for ${endpoint}:`, data);
+    logger.log(`API Success data for ${endpoint}:`, data);
     return data;
   } catch (e) {
-    console.error(`Error parsing JSON for ${endpoint}:`, e);
+    logger.error(`Error parsing JSON for ${endpoint}:`, e);
     throw new Error('응답 데이터 처리 중 오류가 발생했습니다.');
   }
 };
@@ -103,8 +122,8 @@ export const api = {
       ...options.headers,
     };
     
-    console.log(`Making GET request to: ${url}`);
-    console.log('Request headers:', headers);
+    logger.log(`Making GET request to: ${url}`);
+    logger.log('Request headers:', headers);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -125,9 +144,9 @@ export const api = {
       ...options.headers,
     };
     
-    console.log(`Making POST request to: ${url} (endpoint: ${endpoint})`);
-    console.log('Request headers:', headers);
-    console.log('Request data:', data);
+    logger.log(`Making POST request to: ${url} (endpoint: ${endpoint})`);
+    logger.log('Request headers:', headers);
+    logger.log('Request data:', data);
     
     try {
       const response = await fetch(url, {
@@ -136,32 +155,32 @@ export const api = {
         body: JSON.stringify(data)
       });
 
-      console.log(`Raw response status: ${response.status} ${response.statusText}`);
-      console.log(`Response headers:`, Object.fromEntries([...response.headers]));
+      logger.log(`Raw response status: ${response.status} ${response.statusText}`);
+      logger.log(`Response headers:`, Object.fromEntries([...response.headers]));
       
       // Clone the response to log the raw text without consuming the original
       const responseClone = response.clone();
       const rawText = await responseClone.text();
-      console.log(`Raw response text (${rawText.length} bytes):`, rawText);
+      logger.log(`Raw response text (${rawText.length} bytes):`, rawText);
       
       // Check if the response is empty or non-JSON
       if (!rawText || rawText.trim() === '') {
-        console.error('Empty response received from server');
+        logger.error('Empty response received from server');
         return { status: 'error', message: '서버로부터 빈 응답이 수신되었습니다' };
       }
       
       // Try to parse manually to check JSON validity before passing to handleResponse
       try {
         JSON.parse(rawText);
-        console.log('Response is valid JSON');
+        logger.log('Response is valid JSON');
       } catch (jsonError) {
-        console.error('Response is not valid JSON:', jsonError);
+        logger.error('Response is not valid JSON:', jsonError);
         return { status: 'error', message: '서버 응답이 유효한 JSON 형식이 아닙니다' };
       }
       
       return handleResponse(response, endpoint, options);
     } catch (networkError) {
-      console.error(`Network error for ${endpoint}:`, networkError);
+      logger.error(`Network error for ${endpoint}:`, networkError);
       throw new Error('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
     }
   },
@@ -177,8 +196,8 @@ export const api = {
       ...options.headers,
     };
     
-    console.log(`Making PUT request to: ${url}`);
-    console.log('Request headers:', headers);
+    logger.log(`Making PUT request to: ${url}`);
+    logger.log('Request headers:', headers);
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -199,8 +218,8 @@ export const api = {
       ...options.headers,
     };
     
-    console.log(`Making DELETE request to: ${url}`);
-    console.log('Request headers:', headers);
+    logger.log(`Making DELETE request to: ${url}`);
+    logger.log('Request headers:', headers);
     
     const response = await fetch(url, {
       method: 'DELETE',

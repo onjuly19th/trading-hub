@@ -1,12 +1,15 @@
 package com.tradinghub.domain.trading;
 
-import com.tradinghub.domain.portfolio.PortfolioService;
-import com.tradinghub.domain.trading.dto.TradeRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import com.tradinghub.domain.portfolio.PortfolioService;
+import com.tradinghub.domain.trading.dto.TradeRequest;
 
 @Slf4j
 @Service
@@ -39,8 +42,8 @@ public class TradeExecutionService {
             tradeRequest.setPrice(order.getPrice());
             tradeRequest.setType(order.getSide() == Order.OrderSide.BUY ? Trade.TradeType.BUY : Trade.TradeType.SELL);
 
-        // 포트폴리오 업데이트 및 거래 생성
-        Trade trade = portfolioService.executeTrade(order.getUser().getId(), tradeRequest);
+            // 포트폴리오 업데이트 및 거래 생성
+            Trade trade = portfolioService.executeTrade(order.getUser().getId(), tradeRequest);
 
             // 주문 상태 업데이트
             order.fill();

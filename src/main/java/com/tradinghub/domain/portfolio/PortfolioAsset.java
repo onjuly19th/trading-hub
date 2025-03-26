@@ -1,15 +1,18 @@
 package com.tradinghub.domain.portfolio;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
 import java.math.BigDecimal;
 //import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.*;
+
+import lombok.Getter;
+import lombok.Setter;
+
 @Entity
 @Table(name = "portfolio_assets")
-@Getter @Setter
+@Getter
+@Setter
 public class PortfolioAsset {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,16 +30,6 @@ public class PortfolioAsset {
 
     @Column(nullable = false)
     private BigDecimal averagePrice = BigDecimal.ZERO;
-
-    // 웹소켓 비활성화로 인해 주석 처리
-    // @Column(nullable = false)
-    // private BigDecimal currentPrice = BigDecimal.ZERO;
-
-    // @Column(nullable = false)
-    // private BigDecimal profitLoss = BigDecimal.ZERO;
-
-    // @Column(nullable = false)
-    // private BigDecimal profitLossPercentage = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -58,7 +51,20 @@ public class PortfolioAsset {
         updatedAt = LocalDateTime.now();
     }
 
-    // 웹소켓 비활성화로 인해 주석 처리
+    // ==================== 미구현 코드 ===============================
+    
+    // 실제 총 자산 가치와 수익/손실은 프론트엔드에서 계산
+    /*
+    @Column(nullable = false)
+    private BigDecimal currentPrice = BigDecimal.ZERO;
+
+    @Column(nullable = false)
+    private BigDecimal profitLoss = BigDecimal.ZERO;
+
+    @Column(nullable = false)
+    private BigDecimal profitLossPercentage = BigDecimal.ZERO;
+    */
+
     /*
     public void updateProfitLoss() {
         BigDecimal currentValue = amount.multiply(currentPrice);
@@ -70,10 +76,7 @@ public class PortfolioAsset {
                 .multiply(new BigDecimal("100"));
         }
     }
-    */
 
-    // 현재 가치는 프론트엔드에서 계산
-    /*
     public BigDecimal getCurrentValue() {
         return amount.multiply(currentPrice);
     }

@@ -1,3 +1,4 @@
+/*
 package com.tradinghub.infrastructure.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -16,4 +17,5 @@ public class WebConfig implements WebMvcConfigurer {
             .allowCredentials(true)
             .maxAge(3600);
     }
-} 
+}
+*/ 

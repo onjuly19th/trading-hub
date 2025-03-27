@@ -90,17 +90,17 @@ export const ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
     SIGNUP: '/auth/signup',
+    REFRESH: '/auth/refresh'
   },
   PORTFOLIO: {
     SUMMARY: '/portfolio',
     TRADES: '/portfolio/trades'
   },
   TRADING: {
-    ORDER: '/order',
-    CANCEL_ORDER: (orderId) => `/order/${orderId}`,
-    ORDER_BOOK: (symbol) => `/order/book/${symbol}`,
-    CHECK_ORDERS: '/trading/check/price',
-  },
+    ORDER: '/trading/order',
+    CANCEL_ORDER: (orderId) => `/trading/order/${orderId}`,
+    CHECK_PRICE: '/trading/check/price'
+  }
 };
 
 // 인증 헤더 생성 함수

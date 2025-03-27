@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { TRADING_CONFIG, COLORS } from '@/config/constants';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { api, ENDPOINTS } from '@/lib/api';
 import ErrorMessage from '@/components/Common/ErrorMessage';
 import TradeHistory from './TradeHistory';
 
@@ -46,7 +47,7 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
     }
   }, [depthData]);
 
-  // 현재가 데이터 업데이트
+  // 현재가 데이터 업데이트 및 서버로 전송
   useEffect(() => {
     if (tickerData) {
       const currentPrice = parseFloat(tickerData.c);
@@ -57,8 +58,23 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
         currentPrice,
         priceChange
       }));
+
+      // 서버로 현재가 전송
+      sendPriceUpdate(symbol, currentPrice);
     }
-  }, [tickerData]);
+  }, [tickerData, symbol]);
+
+  // 현재가를 서버로 전송하는 함수
+  const sendPriceUpdate = async (symbol, price) => {
+    try {
+      await api.post(ENDPOINTS.TRADING.CHECK_PRICE, {
+        symbol,
+        price: price.toString()
+      });
+    } catch (error) {
+      console.error('Failed to send price update:', error);
+    }
+  };
 
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -110,4 +126,4 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
       <TradeHistory />
     </div>
   );
-} 
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TRADING_CONFIG, COLORS } from '@/config/constants';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { api, ENDPOINTS } from '@/lib/api';
@@ -15,6 +15,10 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
     priceChange: 0
   });
 
+  // 현재 심볼 추적을 위한 ref
+  const currentSymbolRef = useRef(symbol);
+  const isFirstMount = useRef(true);
+
   // 호가창 WebSocket
   const { data: depthData, error: depthError } = useWebSocket(
     symbol,
@@ -27,41 +31,56 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
     'ticker'
   );
 
+  // 심볼이 변경될 때마다 orderBook 초기화
+  useEffect(() => {
+    if (!isFirstMount.current) {
+      currentSymbolRef.current = symbol;
+      setOrderBook({
+        asks: [],
+        bids: [],
+        currentPrice: 0,
+        priceChange: 0
+      });
+    }
+    isFirstMount.current = false;
+  }, [symbol]);
+
   // 호가창 데이터 업데이트
   useEffect(() => {
-    if (depthData?.asks && depthData?.bids) {
-      const asks = depthData.asks.map(ask => ({
-        price: parseFloat(ask[0]),
-        amount: parseFloat(ask[1])
-      }));
-      const bids = depthData.bids.map(bid => ({
-        price: parseFloat(bid[0]),
-        amount: parseFloat(bid[1])
-      }));
-      
-      setOrderBook(prev => ({
-        ...prev,
-        asks,
-        bids
-      }));
-    }
-  }, [depthData]);
+    if (!depthData?.asks || !depthData?.bids || currentSymbolRef.current !== symbol) return;
+
+    const asks = depthData.asks.map(ask => ({
+      price: parseFloat(ask[0]),
+      amount: parseFloat(ask[1])
+    })).filter(ask => ask.amount > 0);  // 수량이 0인 호가 제거
+
+    const bids = depthData.bids.map(bid => ({
+      price: parseFloat(bid[0]),
+      amount: parseFloat(bid[1])
+    })).filter(bid => bid.amount > 0);  // 수량이 0인 호가 제거
+    
+    setOrderBook(prev => ({
+      ...prev,
+      asks,
+      bids
+    }));
+  }, [depthData, symbol]);
 
   // 현재가 데이터 업데이트 및 서버로 전송
   useEffect(() => {
-    if (tickerData) {
-      const currentPrice = parseFloat(tickerData.c);
-      const priceChange = parseFloat(tickerData.p);
-      
-      setOrderBook(prev => ({
-        ...prev,
-        currentPrice,
-        priceChange
-      }));
+    if (!tickerData || currentSymbolRef.current !== symbol) return;
 
-      // 서버로 현재가 전송
-      sendPriceUpdate(symbol, currentPrice);
-    }
+    const currentPrice = parseFloat(tickerData.c);
+    const priceChange = parseFloat(tickerData.p);
+    
+    setOrderBook(prev => ({
+      ...prev,
+      currentPrice,
+      priceChange
+    }));
+
+    // 서버로 현재가 전송
+    sendPriceUpdate(symbol, currentPrice);
   }, [tickerData, symbol]);
 
   // 현재가를 서버로 전송하는 함수

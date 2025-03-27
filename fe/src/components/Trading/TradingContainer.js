@@ -12,6 +12,7 @@ import OrderForm from '@/components/Trading/OrderForm';
 import OrderBook from '@/components/Trading/OrderBook';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import TopCoins from '@/components/Trading/TopCoins';
+import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 export default function TradingContainer() {
   const router = useRouter();
@@ -20,6 +21,8 @@ export default function TradingContainer() {
   const [priceChange, setPriceChange] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [isAssetsExpanded, setIsAssetsExpanded] = useState(true);
+  const [isOtherAssetsExpanded, setIsOtherAssetsExpanded] = useState(false);
   const ws = useRef(null);
   const prevSymbolRef = useRef('BTCUSDT');
   const prevPriceRef = useRef('0');
@@ -94,42 +97,31 @@ export default function TradingContainer() {
 
   const availableBalance = userBalance?.availableBalance ?? 0;
   
-  // assets 배열에서 BTC 자산 찾기
-  const btcAsset = userBalance?.assets?.find(asset => 
-    asset.symbol === 'BTC' || asset.symbol === 'BTCUSDT'
+  // 자산 정보 처리
+  const assets = userBalance?.assets || [];
+  const majorAssets = assets.filter(asset => 
+    ['BTC', 'ETH', 'XRP'].includes(asset.symbol.replace('USDT', ''))
   );
+  const otherAssets = assets.filter(asset => 
+    !['BTC', 'ETH', 'XRP'].includes(asset.symbol.replace('USDT', ''))
+  );
+
+  // 총 자산 가치 계산
+  const totalAssetsValue = assets.reduce((total, asset) => {
+    const price = parseFloat(asset.symbol === currentSymbol ? currentPrice : asset.currentPrice);
+    return total + (asset.amount * price);
+  }, 0);
   
-  // BTC 보유량 (없으면 0)
-  const coinAmount = btcAsset?.amount ?? 0;
-  
-  // 수익/손실 정보 (웹소켓 현재가 기준으로 계산)
-  const averagePrice = btcAsset?.averagePrice ?? 0;
-  let profitLoss = 0;
-  let profitLossPercentage = 0;
-  
-  // 문자열로 된 가격을 숫자로 변환
-  const numericCurrentPrice = parseFloat(currentPrice);
-  
-  // 코인의 USD 가치 계산 (웹소켓 현재가 사용)
-  const coinValueUSD = coinAmount * numericCurrentPrice;
-  
-  if (coinAmount > 0 && numericCurrentPrice > 0 && averagePrice > 0) {
-    // 현재 가치 - 구매 가치
-    profitLoss = (numericCurrentPrice - averagePrice) * coinAmount;
-    // 수익률 계산 (%)
-    profitLossPercentage = ((numericCurrentPrice - averagePrice) / averagePrice) * 100;
-  }
-  
-  const isProfitable = profitLoss >= 0;
-  
-  // 총 자산 가치 계산 (USD 잔액 + 코인 가치)
-  const totalPortfolioValue = availableBalance + coinValueUSD;
+  const totalPortfolioValue = availableBalance + totalAssetsValue;
 
   const handleCoinSelect = (coin) => {
     prevSymbolRef.current = currentSymbol;
     setCurrentSymbol(coin.symbol);
     setCurrentPrice('0'); // 새로운 코인 선택시 가격 초기화
   };
+
+  // 문자열로 된 가격을 숫자로 변환
+  const numericCurrentPrice = parseFloat(currentPrice);
 
   // 포트폴리오 로딩 중일 때 로딩 스피너 표시
   if (portfolioLoading) {
@@ -140,11 +132,45 @@ export default function TradingContainer() {
     );
   }
 
+  const renderAssetItem = (asset) => {
+    const symbol = asset.symbol.replace('USDT', '');
+    const price = asset.symbol === currentSymbol ? parseFloat(currentPrice) : asset.currentPrice;
+    const value = asset.amount * price;
+    const profitLoss = asset.amount > 0 ? ((price - asset.averagePrice) * asset.amount) : 0;
+    const profitLossPercentage = asset.averagePrice > 0 ? ((price - asset.averagePrice) / asset.averagePrice) * 100 : 0;
+    const isProfitable = profitLoss >= 0;
+
+    return (
+      <div key={asset.symbol} className="ml-4 mb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image
+              src={MAJOR_COINS.find(coin => coin.symbol === asset.symbol)?.logo || `${API_CONFIG.BINANCE_LOGO_URL}/GENERIC.png`}
+              alt={symbol}
+              width={20}
+              height={20}
+              className="rounded-full"
+            />
+            <span className="font-medium">{symbol}:</span>
+          </div>
+          <div className="text-right">
+            <div>{asset.amount.toFixed(8)} (${formatUSD(value)})</div>
+            {asset.amount > 0 && (
+              <div className={`text-sm ${isProfitable ? 'text-green-600' : 'text-red-600'}`}>
+                {isProfitable ? '+' : ''}{formatUSD(profitLoss)} ({profitLossPercentage.toFixed(2)}%)
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <TopCoins onSelectCoin={handleCoinSelect} currentSymbol={currentSymbol} />
       
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-start mb-6">
         <div>
           <div className="flex items-center gap-2">
             <div className="relative w-8 h-8">
@@ -171,32 +197,65 @@ export default function TradingContainer() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col items-end gap-2 bg-white p-4 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between w-full">
+            <p className="text-sm text-gray-600">Welcome, {username}</p>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+            >
+              로그아웃
+            </button>
+          </div>
+          
           <div className="text-right">
-            <p className="text-sm text-gray-600">
-              Welcome, {username}
-            </p>
             <p className="font-semibold text-gray-800">
               USD Balance: ${formatUSD(availableBalance)}
             </p>
-            <p className="text-gray-800">
-              BTC: {parseFloat(coinAmount).toFixed(8)} <span className="text-gray-600">(${formatUSD(coinValueUSD)})</span>
-            </p>
-            {coinAmount > 0 && (
-              <p className={`text-sm ${isProfitable ? 'text-green-600' : 'text-red-600'}`}>
-                {isProfitable ? '+' : ''}{formatUSD(profitLoss)} ({profitLossPercentage.toFixed(2)}%)
-              </p>
-            )}
-            <p className="font-bold text-gray-800 mt-1">
+            <p className="font-bold text-gray-800">
               Total Value: ${formatUSD(totalPortfolioValue)}
             </p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-          >
-            로그아웃
-          </button>
+
+          <div className="w-full">
+            <button
+              onClick={() => setIsAssetsExpanded(!isAssetsExpanded)}
+              className="flex items-center justify-between w-full px-2 py-1 hover:bg-gray-50 rounded transition-colors"
+            >
+              <span className="font-medium">Major Assets</span>
+              {isAssetsExpanded ? (
+                <ChevronDownIcon className="w-4 h-4" />
+              ) : (
+                <ChevronRightIcon className="w-4 h-4" />
+              )}
+            </button>
+            {isAssetsExpanded && (
+              <div className="mt-2">
+                {majorAssets.map(renderAssetItem)}
+              </div>
+            )}
+          </div>
+
+          {otherAssets.length > 0 && (
+            <div className="w-full">
+              <button
+                onClick={() => setIsOtherAssetsExpanded(!isOtherAssetsExpanded)}
+                className="flex items-center justify-between w-full px-2 py-1 hover:bg-gray-50 rounded transition-colors"
+              >
+                <span className="font-medium">Other Assets ({otherAssets.length})</span>
+                {isOtherAssetsExpanded ? (
+                  <ChevronDownIcon className="w-4 h-4" />
+                ) : (
+                  <ChevronRightIcon className="w-4 h-4" />
+                )}
+              </button>
+              {isOtherAssetsExpanded && (
+                <div className="mt-2">
+                  {otherAssets.map(renderAssetItem)}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

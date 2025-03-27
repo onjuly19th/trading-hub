@@ -14,34 +14,36 @@ export default function TopCoins({ onSelectCoin, currentSymbol }) {
   })));
 
   // 각 코인에 대한 WebSocket 연결 설정
-  const connections = MAJOR_COINS.map(coin => {
-    return useWebSocket(coin.symbol, 'ticker');
-  });
+  const connection = useWebSocket('!ticker', 'arr');  // 스트림 타입을 'arr'로 변경
 
   // WebSocket 데이터 업데이트 처리
   useEffect(() => {
-    const updatedCoins = [...topCoins];
-    let hasUpdates = false;
+    if (!connection.data) return;
 
-    connections.forEach((connection, index) => {
-      if (connection.data) {
-        const data = connection.data;
-        if (data.s === MAJOR_COINS[index].symbol) {
-          updatedCoins[index] = {
-            ...updatedCoins[index],
-            price: data.c, // 현재가
-            priceChange: data.p, // 가격 변동
-            priceChangePercent: data.P // 가격 변동률
+    const data = Array.isArray(connection.data) ? connection.data : [connection.data];
+    
+    setTopCoins(prevCoins => {
+      const updatedCoins = [...prevCoins];
+      let hasUpdates = false;
+
+      data.forEach(tickerData => {
+        const symbol = tickerData.s;
+        const coinIndex = MAJOR_COINS.findIndex(coin => coin.symbol === symbol);
+        
+        if (coinIndex !== -1) {
+          updatedCoins[coinIndex] = {
+            ...updatedCoins[coinIndex],
+            price: tickerData.c || '0',
+            priceChange: tickerData.p || '0',
+            priceChangePercent: tickerData.P || '0'
           };
           hasUpdates = true;
         }
-      }
-    });
+      });
 
-    if (hasUpdates) {
-      setTopCoins(updatedCoins);
-    }
-  }, [connections.map(c => c.data)]);
+      return hasUpdates ? updatedCoins : prevCoins;
+    });
+  }, [connection.data]); // topCoins 의존성 제거
 
   return (
     <div className="flex flex-wrap gap-2 p-3 bg-white rounded-lg shadow mb-6">

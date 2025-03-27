@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { WebSocketManager } from '@/lib/websocket';
 
 export function useWebSocket(symbol, streamType = 'kline_1s') {
@@ -6,34 +6,54 @@ export function useWebSocket(symbol, streamType = 'kline_1s') {
   const [error, setError] = useState(null);
   const wsManager = useRef(null);
   const currentSymbolRef = useRef(symbol);
+  const isFirstMount = useRef(true);
+
+  const handleData = useCallback((newData) => {
+    // 현재 심볼에 대한 데이터만 처리
+    if (currentSymbolRef.current === symbol) {
+      setData(newData);
+      setError(null);
+    }
+  }, [symbol]);
+
+  const handleError = useCallback((err) => {
+    if (currentSymbolRef.current === symbol) {
+      console.error('WebSocket error for', symbol, ':', err);
+      setError(err);
+    }
+  }, [symbol]);
+
+  // 심볼이 변경될 때 데이터 초기화
+  useEffect(() => {
+    if (!isFirstMount.current) {
+      setData(null);
+      setError(null);
+    }
+    isFirstMount.current = false;
+  }, [symbol]);
 
   useEffect(() => {
-    // console.log('Setting up WebSocket for symbol:', symbol);
+    let isMounted = true;
     currentSymbolRef.current = symbol;
-    setData(null); // 심볼 변경 시 이전 데이터 초기화
     
     // 기존 연결 정리
     if (wsManager.current) {
-      // console.log('Disconnecting previous WebSocket');
       wsManager.current.disconnect();
       wsManager.current = null;
     }
     
     // 새 WebSocket 연결 설정
     const newWsManager = new WebSocketManager(
-      symbol,
+      symbol, 
       streamType,
       (newData) => {
-        // 현재 심볼에 대한 데이터만 처리
-        if (currentSymbolRef.current === symbol) {
-          setData(newData);
-          setError(null);
+        if (isMounted && currentSymbolRef.current === symbol) {
+          handleData(newData);
         }
       },
       (err) => {
-        if (currentSymbolRef.current === symbol) {
-          console.error('WebSocket error for', symbol, ':', err);
-          setError(err);
+        if (isMounted && currentSymbolRef.current === symbol) {
+          handleError(err);
         }
       }
     );
@@ -42,12 +62,13 @@ export function useWebSocket(symbol, streamType = 'kline_1s') {
     newWsManager.connect();
 
     return () => {
-      // console.log('Cleaning up WebSocket for symbol:', symbol);
+      isMounted = false;
       if (wsManager.current) {
         wsManager.current.disconnect();
+        wsManager.current = null;
       }
     };
-  }, [symbol, streamType]);
+  }, [symbol, streamType, handleData, handleError]);
 
   return { data, error };
 }

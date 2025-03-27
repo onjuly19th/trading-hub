@@ -16,7 +16,7 @@ import com.tradinghub.infrastructure.security.CurrentUser;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping("/api/trading/order")
 @RequiredArgsConstructor
 public class OrderController {
     private final OrderService orderService;

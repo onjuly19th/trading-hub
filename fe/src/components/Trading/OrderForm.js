@@ -16,7 +16,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
 
   const initialPosition = {
     x: Math.max((window.innerWidth * 0.66), window.innerWidth - 550),
-    y: 300
+    y: 500
   };
 
   const { position, handleMouseDown } = useDraggable(initialPosition);

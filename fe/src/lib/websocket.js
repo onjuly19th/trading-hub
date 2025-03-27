@@ -47,19 +47,30 @@ export class WebSocketManager {
       this.ws.onmessage = (event) => {
         try {
           const parsedData = JSON.parse(event.data);
+          // console.log('WebSocket received data:', parsedData);  // 로그 주석 처리
+          
           // 구독/구독 해제 응답 처리
           if (parsedData.result === null) {
             if (parsedData.id === 1) {
-              if (parsedData.method === "SUBSCRIBE") {
+              if (this.getSubscribeMessage().method === "SUBSCRIBE") {
                 this.isSubscribed = true;
-              } else if (parsedData.method === "UNSUBSCRIBE") {
+                // console.log('Successfully subscribed to stream');  // 로그 주석 처리
+              } else if (this.getSubscribeMessage().method === "UNSUBSCRIBE") {
                 this.isSubscribed = false;
               }
             }
             return;
           }
-          // 실제 데이터 처리
-          this.onMessage(parsedData);
+
+          // 스트림 타입에 따른 데이터 처리
+          if (this.streamType === '') {
+            // 전체 데이터 스트림 (!ticker@arr 등)
+            // console.log('Processing array stream data:', parsedData.data || parsedData);  // 로그 주석 처리
+            this.onMessage(parsedData.data || parsedData);
+          } else {
+            // 개별 심볼 스트림 (symbol@kline_1m 등)
+            this.onMessage(parsedData);
+          }
         } catch (err) {
           console.error('WebSocket data parse error:', err);
           this.onError('데이터 처리 중 오류가 발생했습니다.');

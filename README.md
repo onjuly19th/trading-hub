@@ -20,3 +20,7 @@ Trading Hub는 실시간 암호화폐 가격 정보를 제공하고 모의 투�
 ## 4. 기술 스택
 - **프론트엔드**: JavaScript, Next.js
 - **백엔드**: Java, Spring Boot
+
+## 5. 시연
+https://github.com/user-attachments/assets/02799a78-99c7-4721-9290-8c5285ec7ae4
+

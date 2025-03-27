@@ -2,30 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { WebSocketManager } from '@/lib/websocket';
-import { COLORS } from '@/config/constants';
-
-const COINS = [
-  {
-    symbol: 'BTCUSDT',
-    name: 'BTC/USDT',
-    logo: 'https://bin.bnbstatic.com/static/assets/logos/BTC.png'
-  },
-  {
-    symbol: 'ETHUSDT',
-    name: 'ETH/USDT',
-    logo: 'https://bin.bnbstatic.com/static/assets/logos/ETH.png'
-  },
-  {
-    symbol: 'XRPUSDT',
-    name: 'XRP/USDT',
-    logo: 'https://bin.bnbstatic.com/static/assets/logos/XRP.png'
-  },
-  {
-    symbol: 'SOLUSDT',
-    name: 'SOL/USDT',
-    logo: 'https://bin.bnbstatic.com/static/assets/logos/SOL.png'
-  }
-];
+import { COLORS, MAJOR_COINS } from '@/config/constants';
 
 const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
   const previousPriceRef = useRef(null);
@@ -62,25 +39,25 @@ const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
 
   return (
     <div 
-      className="bg-white rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow cursor-pointer"
+      className="bg-white rounded-lg shadow-lg p-3 hover:shadow-xl transition-shadow cursor-pointer"
       onClick={handleClick}
     >
-      <div className="flex items-center gap-3 mb-2">
-        <div className="relative w-8 h-8">
+      <div className="flex items-center gap-2 mb-1">
+        <div className="relative w-6 h-6">
           <Image
             src={coin.logo}
             alt={coin.name}
-            width={32}
-            height={32}
+            width={24}
+            height={24}
             className="rounded-full"
           />
         </div>
-        <div className="font-bold text-lg">{coin.name}</div>
+        <div className="font-bold text-base">{coin.name}</div>
       </div>
-      <div className="text-2xl mt-2" style={{ color: priceColor, transition: 'color 0.3s ease' }}>
+      <div className="text-lg mt-1" style={{ color: priceColor, transition: 'color 0.3s ease' }}>
         ${formattedPrice}
       </div>
-      <div style={{ color: changeColor }} className="text-sm mt-1 font-medium">
+      <div style={{ color: changeColor }} className="text-xs mt-0.5 font-medium">
         {changeValue >= 0 ? '+' : ''}{changeValue.toFixed(2)}%
       </div>
     </div>
@@ -94,7 +71,7 @@ const CoinPriceList = ({ onCoinSelect }) => {
   const wsManager = useRef(null);
 
   useEffect(() => {
-    const symbols = COINS.map(coin => coin.symbol);
+    const symbols = MAJOR_COINS.map(coin => coin.symbol);
     wsManager.current = new WebSocketManager(
       symbols,
       'ticker',
@@ -134,8 +111,8 @@ const CoinPriceList = ({ onCoinSelect }) => {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {COINS.map(coin => (
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      {MAJOR_COINS.map(coin => (
         <CoinPriceCard 
           key={coin.symbol}
           coin={coin}

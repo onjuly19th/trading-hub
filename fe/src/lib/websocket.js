@@ -10,6 +10,7 @@ export class WebSocketManager {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
+    this.isSubscribed = false;
   }
 
   getSubscribeMessage() {
@@ -46,10 +47,19 @@ export class WebSocketManager {
       this.ws.onmessage = (event) => {
         try {
           const parsedData = JSON.parse(event.data);
-          // 구독 응답 메시지가 아닌 경우에만 데이터 전달
-          if (!parsedData.result) {
-            this.onMessage(parsedData);
+          // 구독/구독 해제 응답 처리
+          if (parsedData.result === null) {
+            if (parsedData.id === 1) {
+              if (parsedData.method === "SUBSCRIBE") {
+                this.isSubscribed = true;
+              } else if (parsedData.method === "UNSUBSCRIBE") {
+                this.isSubscribed = false;
+              }
+            }
+            return;
           }
+          // 실제 데이터 처리
+          this.onMessage(parsedData);
         } catch (err) {
           console.error('WebSocket data parse error:', err);
           this.onError('데이터 처리 중 오류가 발생했습니다.');
@@ -63,6 +73,7 @@ export class WebSocketManager {
 
       this.ws.onclose = () => {
         console.log('WebSocket connection closed');
+        this.isSubscribed = false;
         this.reconnect();
       };
     } catch (error) {
@@ -86,9 +97,17 @@ export class WebSocketManager {
 
   disconnect() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      // 구독 해제 메시지 전송 후 연결 종료
-      this.ws.send(JSON.stringify(this.getUnsubscribeMessage()));
-      this.ws.close();
+      if (this.isSubscribed) {
+        // 구독 해제 메시지 전송 후 일정 시간 후에 연결 종료
+        this.ws.send(JSON.stringify(this.getUnsubscribeMessage()));
+        setTimeout(() => {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.close();
+          }
+        }, 100); // 100ms 대기 후 연결 종료
+      } else {
+        this.ws.close();
+      }
     }
   }
 }

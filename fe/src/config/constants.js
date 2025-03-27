@@ -4,7 +4,25 @@ export const API_CONFIG = {
   BINANCE_WS_URL: 'wss://stream.binance.com:9443/ws',
   BINANCE_REST_URL: 'https://api.binance.com/api/v3/klines',
   SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL || 'ws://localhost:8080/ws',
+  BINANCE_LOGO_URL: 'https://bin.bnbstatic.com/static/assets/logos'
 };
+
+// 주요 코인 설정
+export const MAJOR_COINS = [
+  { symbol: 'BTCUSDT', name: 'BTC/USDT', ticker: 'BTC' },
+  { symbol: 'ETHUSDT', name: 'ETH/USDT', ticker: 'ETH' },
+  { symbol: 'BNBUSDT', name: 'BNB/USDT', ticker: 'BNB' },
+  { symbol: 'XRPUSDT', name: 'XRP/USDT', ticker: 'XRP' },
+  { symbol: 'ADAUSDT', name: 'ADA/USDT', ticker: 'ADA' },
+  { symbol: 'DOGEUSDT', name: 'DOGE/USDT', ticker: 'DOGE' },
+  { symbol: 'SOLUSDT', name: 'SOL/USDT', ticker: 'SOL' },
+  { symbol: 'DOTUSDT', name: 'DOT/USDT', ticker: 'DOT' },
+  { symbol: 'LTCUSDT', name: 'LTC/USDT', ticker: 'LTC' },
+  { symbol: 'TRXUSDT', name: 'TRX/USDT', ticker: 'TRX' }
+].map(coin => ({
+  ...coin,
+  logo: `${API_CONFIG.BINANCE_LOGO_URL}/${coin.ticker}.png`
+}));
 
 // 거래 설정
 export const TRADING_CONFIG = {

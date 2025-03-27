@@ -5,7 +5,7 @@ import { TRADING_CONFIG, COLORS } from '@/config/constants';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import ErrorMessage from '@/components/Common/ErrorMessage';
 
-export default function OrderBook() {
+export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
   const [orderBook, setOrderBook] = useState({
     asks: [],
     bids: [],
@@ -15,13 +15,13 @@ export default function OrderBook() {
 
   // 호가창 WebSocket
   const { data: depthData, error: depthError } = useWebSocket(
-    TRADING_CONFIG.DEFAULT_SYMBOL,
+    symbol,
     'depth20'
   );
 
   // 현재가 WebSocket
   const { data: tickerData, error: tickerError } = useWebSocket(
-    TRADING_CONFIG.DEFAULT_SYMBOL,
+    symbol,
     'ticker'
   );
 
@@ -61,7 +61,7 @@ export default function OrderBook() {
 
   return (
     <div className="bg-white p-4 rounded-lg shadow">
-      <h2 className="text-lg font-semibold mb-4">호가 ({TRADING_CONFIG.DEFAULT_SYMBOL})</h2>
+      <h2 className="text-lg font-semibold mb-4">호가 ({symbol.replace('USDT', '/USDT')})</h2>
       
       <ErrorMessage message={depthError || tickerError} />
 

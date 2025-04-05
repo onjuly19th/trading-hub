@@ -1,10 +1,23 @@
 "use client";
+
+// React core
 import { useState } from 'react';
+
+// Next.js
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+// Internal services and hooks
 import { authService } from '@/lib/authService';
-import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
+
+// Components
+import LoadingSpinner from '@/components/Common/LoadingSpinner';
+import Button from '@/components/Common/Button';
+import AuthInput from '@/components/Auth/AuthInput';
+import StatusMessage from '@/components/Auth/StatusMessage';
+import AuthLayout from '@/components/Auth/AuthLayout';
+import AuthTitle from '@/components/Auth/AuthTitle';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,70 +55,39 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            로그인
-          </h2>
+    <AuthLayout>
+      <AuthTitle>로그인</AuthTitle>
+      <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <div className="rounded-md shadow-sm -space-y-px">
+          <AuthInput
+            id="username"
+            placeholder="아이디"
+            value={formData.username}
+            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            className="rounded-t-md"
+          />
+          <AuthInput
+            id="password"
+            type="password"
+            placeholder="비밀번호"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            className="rounded-b-md"
+          />
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="username" className="sr-only">아이디</label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="아이디"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">비밀번호</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="비밀번호"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
-            </div>
-          </div>
 
-          {error && (
-            <div className="text-red-500 text-sm text-center">
-              {error}
-            </div>
-          )}
-          {message && (
-            <div className="text-green-500 text-sm text-center">
-              {message}
-            </div>
-          )}
+        <StatusMessage error={error} success={message} />
 
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              로그인
-            </button>
-          </div>
-        </form>
+        <Button type="submit">
+          로그인
+        </Button>
+      </form>
 
-        <div className="text-center">
-          <Link href="/auth/signup" className="text-indigo-600 hover:text-indigo-500">
-            회원가입
-          </Link>
-        </div>
+      <div className="text-center">
+        <Link href="/auth/signup" className="text-indigo-600 hover:text-indigo-500">
+          회원가입
+        </Link>
       </div>
-    </div>
+    </AuthLayout>
   );
 } 

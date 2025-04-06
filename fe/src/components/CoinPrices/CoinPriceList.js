@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import Image from 'next/image';
-import { WebSocketManager } from '@/lib/websocket';
-import { COLORS, MAJOR_COINS } from '@/config/constants';
+import { COLORS, MAJOR_COINS, TRADING_CONFIG } from '@/config/constants';
+import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
 
 const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
   const previousPriceRef = useRef(null);
@@ -18,20 +18,26 @@ const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
       } else if (currentPrice < prevPrice) {
         setPriceColor(COLORS.SELL);
       }
+
+      // 3초 후 색상 리셋
+      const timer = setTimeout(() => {
+        setPriceColor('#000000');
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
     previousPriceRef.current = price;
-  }, [price]);
+  }, [price, coin.symbol]);
 
   const formattedPrice = price ? parseFloat(price).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS,
+    maximumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS
   }) : '0.00';
 
   const changeValue = parseFloat(priceChange || 0);
   const changeColor = changeValue >= 0 ? COLORS.BUY : COLORS.SELL;
 
   const handleClick = () => {
-    console.log('Coin clicked:', coin.name);
     if (onSelect) {
       onSelect(coin);
     }
@@ -66,61 +72,51 @@ const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
 
 const CoinPriceList = ({ onCoinSelect }) => {
   const [prices, setPrices] = useState({});
-  const [priceChanges, setPriceChanges] = useState({});
-  const [error, setError] = useState(null);
-  const wsManager = useRef(null);
-
+  
+  // 심볼 목록
+  const symbols = useMemo(() => MAJOR_COINS.map(coin => coin.symbol), []);
+  
   useEffect(() => {
-    const symbols = MAJOR_COINS.map(coin => coin.symbol);
-    wsManager.current = new WebSocketManager(
-      symbols,
-      'ticker',
-      (data) => {
-        if (data.s && data.c) {
+    const manager = WebSocketManager.getInstance();
+    const callbacks = {};
+    
+    symbols.forEach(symbol => {
+      callbacks[symbol] = (data) => {
+        if (data && data.price !== undefined && data.priceChangePercent !== undefined) {
           setPrices(prev => ({
             ...prev,
-            [data.s]: data.c
-          }));
-          setPriceChanges(prev => ({
-            ...prev,
-            [data.s]: data.P
+            [symbol]: {
+              price: data.price,
+              change: data.priceChangePercent
+            }
           }));
         }
-      },
-      (error) => setError(error)
-    );
-
-    wsManager.current.connect();
-
+      };
+      
+      manager.subscribe(symbol, 'ticker', callbacks[symbol]);
+    });
+    
     return () => {
-      if (wsManager.current) {
-        wsManager.current.disconnect();
-      }
+      symbols.forEach(symbol => {
+        manager.unsubscribe(symbol, 'ticker', callbacks[symbol]);
+      });
     };
-  }, []);
-
-  const handleCoinSelect = (coin) => {
-    console.log('Selected coin in CoinPriceList:', coin.name);
-    if (onCoinSelect) {
-      onCoinSelect(coin);
-    }
-  };
-
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
-  }
+  }, [symbols]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-      {MAJOR_COINS.map(coin => (
-        <CoinPriceCard 
-          key={coin.symbol}
-          coin={coin}
-          price={prices[coin.symbol]}
-          priceChange={priceChanges[coin.symbol]}
-          onSelect={handleCoinSelect}
-        />
-      ))}
+      {MAJOR_COINS.map(coin => {
+        const priceData = prices[coin.symbol] || { price: 0, change: 0 };
+        return (
+          <CoinPriceCard 
+            key={coin.symbol}
+            coin={coin}
+            price={priceData.price}
+            priceChange={priceData.change}
+            onSelect={onCoinSelect}
+          />
+        );
+      })}
     </div>
   );
 };

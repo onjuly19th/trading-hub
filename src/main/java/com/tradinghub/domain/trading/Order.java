@@ -131,6 +131,7 @@ public class Order {
         // TODO: 부분 체결 구현
         // PARTIALLY_FILLED,  // 일부 체결
         FILLED,           // 완전 체결
-        CANCELLED         // 취소됨
+        CANCELLED,        // 취소됨
+        FAILED            // 실패
     }
 } 

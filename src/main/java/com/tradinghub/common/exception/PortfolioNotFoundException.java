@@ -1,11 +1,16 @@
 package com.tradinghub.common.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public class PortfolioNotFoundException extends RuntimeException {
+public class PortfolioNotFoundException extends BusinessException {
+    private static final String ERROR_CODE = "PORTFOLIO_NOT_FOUND";
+    private static final String MESSAGE = "포트폴리오를 찾을 수 없습니다";
+    
+    public PortfolioNotFoundException() {
+        super(MESSAGE, ERROR_CODE, HttpStatus.NOT_FOUND);
+    }
+    
     public PortfolioNotFoundException(String message) {
-        super(message);
+        super(message, ERROR_CODE, HttpStatus.NOT_FOUND);
     }
 } 

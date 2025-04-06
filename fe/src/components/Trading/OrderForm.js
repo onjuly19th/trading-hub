@@ -38,7 +38,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
 
       console.log('Submitting order:', orderData);
 
-      const response = await api.post(ENDPOINTS.TRADING.ORDER, orderData);
+      const response = await api.post(ENDPOINTS.ORDERS.CREATE, orderData);
       console.log('Order response:', response);
       
       // 주문 성공

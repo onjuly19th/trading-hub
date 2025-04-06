@@ -94,12 +94,17 @@ export const ENDPOINTS = {
   },
   PORTFOLIO: {
     SUMMARY: '/portfolio',
-    TRADES: '/portfolio/trades'
+    TRADES: '/portfolio/history'
   },
-  TRADING: {
-    ORDER: '/trading/order',
-    CANCEL_ORDER: (orderId) => `/trading/order/${orderId}`,
-    CHECK_PRICE: '/trading/check/price'
+  ORDERS: {
+    CREATE: '/orders',
+    CANCEL: (orderId) => `/orders/${orderId}`,
+    LIST: '/orders',
+    BOOK: '/orders/book'
+  },
+  TRADES: {
+    LIST: '/trades',
+    PRICE: '/trades/price'
   }
 };
 

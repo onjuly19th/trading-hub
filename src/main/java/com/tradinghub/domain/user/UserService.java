@@ -15,10 +15,8 @@ import lombok.RequiredArgsConstructor;
 
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
-import com.tradinghub.domain.user.dto.LoginRequest;
-import com.tradinghub.domain.user.dto.LoginResponse;
-import com.tradinghub.domain.user.dto.SignupRequest;
-import com.tradinghub.domain.user.dto.SignupResponse;
+import com.tradinghub.domain.user.dto.AuthRequest;
+import com.tradinghub.domain.user.dto.AuthResponse;
 import com.tradinghub.infrastructure.security.JwtService;
 
 @Service
@@ -43,7 +41,7 @@ public class UserService {
     }
 
     @Transactional
-    public SignupResponse signup(SignupRequest request) {
+    public AuthResponse signup(AuthRequest request) {
         logger.info("Starting signup process for username: {}", request.getUsername());
         
         try {
@@ -63,8 +61,8 @@ public class UserService {
             logger.info("User saved with ID: {}", user.getId());
             
             try {
-                // 포트폴리오 생성
-                Portfolio portfolio = portfolioService.createPortfolio(user, "BTC", request.getInitialBalance());
+                // 포트폴리오 생성 (초기 자산: 100만 달러)
+                Portfolio portfolio = portfolioService.createPortfolio(user, "BTC", new java.math.BigDecimal("1000000"));
                 user.setPortfolio(portfolio);
                 
                 // 사용자 업데이트
@@ -81,11 +79,10 @@ public class UserService {
             logger.info("JWT token generated for user: {}", user.getUsername());
             
             // 응답 생성
-            return SignupResponse.builder()
-                .token(token)
+            return AuthResponse.builder()
+                .userId(user.getId())
                 .username(user.getUsername())
-                .initialBalance(request.getInitialBalance())
-                .message("회원가입이 완료되었습니다. 초기 자산 1백만 달러가 지급되었습니다.")
+                .token(token)
                 .build();
                 
         } catch (Exception e) {
@@ -95,9 +92,8 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest request) {
+    public AuthResponse login(AuthRequest request) {
         try {
-
             // 사용자 조회
             logger.info("Attempting to find user by username: {}", request.getUsername());
             User user = userRepository.findByUsername(request.getUsername())
@@ -119,10 +115,10 @@ public class UserService {
             String token = jwtService.generateToken(userDetails);
 
             // 응답 생성 및 반환
-            return LoginResponse.builder()
-                .token(token)
+            return AuthResponse.builder()
+                .userId(user.getId())
                 .username(user.getUsername())
-                .message("로그인이 완료되었습니다.")
+                .token(token)
                 .build();
         } catch (Exception e) {
             logger.error("Error during login process for username: {}", request.getUsername(), e);

@@ -1,6 +1,6 @@
 package com.tradinghub.domain.trading;
 
-//import java.util.List;
+import java.math.BigDecimal;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.tradinghub.common.response.ApiResponse;
 import com.tradinghub.domain.trading.dto.OrderRequest;
 import com.tradinghub.domain.trading.dto.OrderResponse;
 import com.tradinghub.domain.trading.dto.TradeResponse;
@@ -16,20 +17,19 @@ import com.tradinghub.infrastructure.security.CurrentUser;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/trading/order")
+@RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
     private final OrderService orderService;
-
+    
     @PostMapping
-    public ResponseEntity<?> createOrder(@CurrentUser User user, @RequestBody OrderRequest request) {
-        log.info("Order request received - User: {}, Symbol: {}, Type: {}, Side: {}, Amount: {}, Price: {}",
-            user.getId(), request.getSymbol(), request.getType(), request.getSide(), request.getAmount(), request.getPrice());
+    public ResponseEntity<ApiResponse<?>> createOrder(@CurrentUser User user, @RequestBody OrderRequest request) {
+        log.info("Creating {} order - User: {}, Symbol: {}", 
+            request.getType(), user.getId(), request.getSymbol());
         
         validateOrderRequest(request);
 
         if (request.getType() == Order.OrderType.MARKET) {
-            log.info("Processing market order for user: {}", user.getId());
             Trade trade = orderService.createMarketOrder(
                 user.getId(),
                 request.getSymbol(),
@@ -37,10 +37,9 @@ public class OrderController {
                 request.getPrice(),
                 request.getAmount()
             );
-            log.info("Market order processed successfully - Trade ID: {}", trade.getId());
-            return ResponseEntity.ok(TradeResponse.from(trade));
+            log.info("Market order executed - Trade ID: {}", trade.getId());
+            return ResponseEntity.ok(ApiResponse.success(TradeResponse.from(trade)));
         } else {
-            log.info("Processing limit order for user: {}", user.getId());
             Order order = orderService.createLimitOrder(
                 user.getId(),
                 request.getSymbol(),
@@ -48,34 +47,29 @@ public class OrderController {
                 request.getPrice(),
                 request.getAmount()
             );
-            log.info("Limit order processed successfully - Order ID: {}", order.getId());
-            return ResponseEntity.ok(new OrderResponse(order));
+            log.info("Limit order created - Order ID: {}", order.getId());
+            return ResponseEntity.ok(ApiResponse.success(new OrderResponse(order)));
         }
     }
-    // FE 미구현
-    /*
-    @GetMapping
-    public ResponseEntity<List<OrderResponse>> getUserOrders(@CurrentUser User user) {
-        List<Order> orders = orderService.getUserOrders(user.getId());
-        return ResponseEntity.ok(orders.stream()
-            .map(OrderResponse::new)
-            .toList());
-    }
 
-    @GetMapping("/book/{symbol}")
-    public ResponseEntity<List<OrderResponse>> getOrderBook(@PathVariable String symbol) {
-        List<Order> orders = orderService.getOrderBook(symbol);
-        return ResponseEntity.ok(orders.stream()
-            .map(OrderResponse::new)
-            .toList());
+    @PostMapping("/execute")
+    public ResponseEntity<ApiResponse<OrderResponse>> executeOrders(@RequestBody String symbol, BigDecimal price) {
+        log.info("Executing orders - Symbol: {}", symbol);
+        
+        try {
+            int executedCount = orderService.executeOrdersAtPrice(symbol, price);
+            String message = executedCount > 0 ? 
+                String.format("%d개 주문 체결 완료", executedCount) : 
+                "체결 가능한 주문 없음";
+                
+            log.info("Order execution completed - {}", message);
+            return ResponseEntity.ok(ApiResponse.success(new OrderResponse(message, executedCount)));
+        } catch (Exception e) {
+            log.error("Order execution failed - Symbol: {}", symbol, e);
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("ORDER_EXECUTION_FAILED", "주문 체결 중 오류가 발생했습니다"));
+        }
     }
-
-    @DeleteMapping("/{orderId}")
-    public ResponseEntity<Void> cancelOrder(@CurrentUser User user, @PathVariable Long orderId) {
-        orderService.cancelOrder(orderId, user.getId());
-        return ResponseEntity.ok().build();
-    }
-    */
 
     private void validateOrderRequest(OrderRequest request) {
         if (request.getSymbol() == null || request.getSymbol().isBlank()) {

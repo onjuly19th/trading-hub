@@ -1,12 +1,13 @@
 package com.tradinghub.domain.trading;
 
 import java.math.BigDecimal;
-//import java.util.List;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
@@ -14,6 +15,7 @@ import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.trading.dto.TradeRequest;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -79,6 +81,44 @@ public class OrderService {
             .build();
 
         return orderRepository.save(order);
+    }
+
+    @Transactional
+    public int executeOrdersAtPrice(String symbol, BigDecimal currentPrice) {
+        List<Order> executableOrders = orderRepository.findExecutableOrders(symbol, currentPrice);
+        
+        if (executableOrders.isEmpty()) {
+            return 0;
+        }
+
+        log.info("Found {} executable orders for symbol {} at price {}", 
+            executableOrders.size(), symbol, currentPrice);
+
+        for (Order order : executableOrders) {
+            try {
+                TradeRequest tradeRequest = new TradeRequest();
+                tradeRequest.setSymbol(symbol);
+                tradeRequest.setAmount(order.getAmount());
+                tradeRequest.setPrice(currentPrice);
+                tradeRequest.setType(order.getSide() == Order.OrderSide.BUY ? 
+                    Trade.TradeType.BUY : Trade.TradeType.SELL);
+
+                Trade trade = portfolioService.executeTrade(order.getUser().getId(), tradeRequest);
+                tradeRepository.save(trade);
+
+                order.setStatus(Order.OrderStatus.FILLED);
+                orderRepository.save(order);
+
+                log.info("Order executed: ID={}, Type={}, Amount={}, Price={}", 
+                    order.getId(), order.getType(), order.getAmount(), currentPrice);
+            } catch (Exception e) {
+                log.error("Failed to execute order {}: {}", order.getId(), e.getMessage());
+                order.setStatus(Order.OrderStatus.FAILED);
+                orderRepository.save(order);
+            }
+        }
+
+        return executableOrders.size();
     }
 
     private void validateOrder(User user, Order.OrderSide side, BigDecimal price, BigDecimal amount) {

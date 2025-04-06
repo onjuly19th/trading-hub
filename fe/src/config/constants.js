@@ -4,7 +4,7 @@ export const API_CONFIG = {
             // process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
   SOCKET_URL: 'ws://localhost:8080/ws',
             // process.env.NEXT_PUBLIC_SOCKET_URL || 'ws://localhost:8080/ws',
-  BINANCE_WS_URL: 'wss://stream.binance.com:9443/ws',
+  BINANCE_WS_URL: 'wss://stream.binance.com:9443',
   BINANCE_REST_URL: 'https://api.binance.com/api/v3/klines',  
   BINANCE_LOGO_URL: 'https://bin.bnbstatic.com/static/assets/logos'
 };
@@ -68,4 +68,10 @@ export const CHART_CONFIG = {
 export const COLORS = {
   BUY: CHART_CONFIG.COLORS.CANDLES.UP,  // 매수 - 초록색
   SELL: CHART_CONFIG.COLORS.CANDLES.DOWN, // 매도 - 빨간색
+};
+
+export const DEFAULT_COIN = {
+  symbol: 'BTCUSDT',
+  name: 'BTC/USDT',
+  logo: 'https://bin.bnbstatic.com/static/assets/logos/BTC.png'
 }; 

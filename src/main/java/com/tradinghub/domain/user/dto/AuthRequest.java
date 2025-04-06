@@ -3,9 +3,9 @@ package com.tradinghub.domain.user.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter 
+@Getter
 @Setter
-public class LoginRequest {
+public class AuthRequest {
     private String username;
     private String password;
 } 

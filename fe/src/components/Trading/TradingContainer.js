@@ -3,10 +3,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { usePriceWebSocket } from '@/hooks/usePriceWebSocket';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { authService } from '@/lib/authService';
 import { TRADING_CONFIG, API_CONFIG, COLORS, MAJOR_COINS } from '@/config/constants';
+import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
 import TradingViewChart from '@/components/Chart/TradingViewChart';
 import OrderForm from '@/components/Trading/OrderForm';
 import OrderBook from '@/components/Trading/OrderBook';
@@ -19,73 +19,43 @@ export default function TradingContainer() {
   const [currentSymbol, setCurrentSymbol] = useState('BTCUSDT');
   const [currentPrice, setCurrentPrice] = useState('0');
   const [priceChange, setPriceChange] = useState(0);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isReconnecting, setIsReconnecting] = useState(false);
   const [isAssetsExpanded, setIsAssetsExpanded] = useState(true);
   const [isOtherAssetsExpanded, setIsOtherAssetsExpanded] = useState(false);
-  const ws = useRef(null);
-  const prevSymbolRef = useRef('BTCUSDT');
   const prevPriceRef = useRef('0');
+  const tradeCallbackRef = useRef(null);
   const username = authService.getUsername();
-  const isTrader = true; // 거래 페이지에서는 항상 trader로 간주
+  const isTrader = true;
   const isAuthenticated = authService.isAuthenticated();
   
   const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading } = usePortfolio();
 
+  // WebSocket 데이터 구독
   useEffect(() => {
-    const connectWebSocket = () => {
-      setIsReconnecting(true);  // 연결 시작 전에 재연결 상태로 설정
-
-      if (ws.current) {
-        ws.current.close();
-      }
-
-      try {
-        ws.current = new WebSocket(`${API_CONFIG.BINANCE_WS_URL}/${currentSymbol.toLowerCase()}@trade`);
-
-        ws.current.onopen = () => {
-          console.log('WebSocket Connected');
-          setIsConnected(true);
-          setIsReconnecting(false);
-        };
-
-        ws.current.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.s === currentSymbol) {
-            const newPrice = data.p;
-            const oldPrice = prevPriceRef.current;
-            setPriceChange(parseFloat(newPrice) - parseFloat(oldPrice));
-            setCurrentPrice(newPrice);
-            prevPriceRef.current = newPrice;
-          }
-        };
-
-        ws.current.onclose = (event) => {
-          console.log('WebSocket Disconnected', event.code);
-          // 1000은 정상적인 종료 코드입니다
-          if (event.code !== 1000) {
-            setIsConnected(false);
-          }
-          setIsReconnecting(false);
-        };
-
-        ws.current.onerror = (error) => {
-          console.error('WebSocket Error:', error);
-          setIsConnected(false);
-          setIsReconnecting(false);
-        };
-      } catch (error) {
-        console.error('WebSocket Connection Error:', error);
-        setIsConnected(false);
-        setIsReconnecting(false);
-      }
+    const manager = WebSocketManager.getInstance();
+    
+    // 이전 구독 취소
+    if (tradeCallbackRef.current) {
+      manager.unsubscribe(currentSymbol, 'trade', tradeCallbackRef.current);
+    }
+    
+    // 콜백 함수 생성
+    tradeCallbackRef.current = (data) => {
+      if (!data || !data.price) return;
+      
+      const newPrice = data.price;
+      const oldPrice = prevPriceRef.current;
+      setPriceChange(parseFloat(newPrice) - parseFloat(oldPrice));
+      setCurrentPrice(newPrice);
+      prevPriceRef.current = newPrice;
     };
-
-    connectWebSocket();
-
+    
+    // 새 구독 설정
+    manager.subscribe(currentSymbol, 'trade', tradeCallbackRef.current);
+    
+    // 언마운트 시 구독 해제
     return () => {
-      if (ws.current) {
-        ws.current.close(1000);  // 정상적인 종료 코드 사용
+      if (tradeCallbackRef.current) {
+        manager.unsubscribe(currentSymbol, 'trade', tradeCallbackRef.current);
       }
     };
   }, [currentSymbol]);
@@ -115,7 +85,6 @@ export default function TradingContainer() {
   const totalPortfolioValue = availableBalance + totalAssetsValue;
 
   const handleCoinSelect = (coin) => {
-    prevSymbolRef.current = currentSymbol;
     setCurrentSymbol(coin.symbol);
     setCurrentPrice('0'); // 새로운 코인 선택시 가격 초기화
   };
@@ -259,30 +228,18 @@ export default function TradingContainer() {
         </div>
       </div>
 
-      {(!isConnected && !isReconnecting && ws.current?.readyState !== WebSocket.CONNECTING) && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-          WebSocket Connection Error
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
-          <div className="rounded-xl overflow-hidden mb-6">
-            <TradingViewChart symbol={currentSymbol} />
-          </div>
-          
-          <div className="flex gap-6">
-            <div className="flex-1">
-              <OrderBook symbol={currentSymbol} />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="lg:col-span-2">
+          <TradingViewChart 
+            key={currentSymbol} 
+            symbol={currentSymbol} 
+          />
         </div>
 
         <div className="lg:col-span-1 space-y-6 mt-[50px]">
           <OrderForm 
             symbol={currentSymbol}
             currentPrice={numericCurrentPrice}
-            isConnected={isConnected}
             userBalance={availableBalance}
             refreshBalance={refreshBalance}
           />

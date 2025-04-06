@@ -14,7 +14,7 @@ export default function TradeHistory() {
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(ENDPOINTS.PORTFOLIO.TRADES);
+      const response = await api.get(ENDPOINTS.ORDERS.LIST);
       console.log('Trade history response:', response);
       
       // 타임스탬프 형식 디버깅
@@ -27,7 +27,7 @@ export default function TradeHistory() {
       // 응답 데이터의 timestamp 처리
       const processedOrders = response.map(order => {
         console.log(`Processing order ${order.id} timestamp:`, order.timestamp);
-        const timestamp = order.createdAt || order.timestamp; // createdAt 필드 확인
+        const timestamp = order.createdAt || order.timestamp;
         
         // timestamp가 문자열이면 Date 객체로 파싱
         const date = new Date(timestamp);
@@ -53,7 +53,7 @@ export default function TradeHistory() {
   // 주문 취소
   const handleCancelOrder = async (orderId) => {
     try {
-      await api.delete(ENDPOINTS.TRADING.CANCEL_ORDER(orderId));
+      await api.delete(ENDPOINTS.ORDERS.CANCEL(orderId));
       // 주문 취소 후 목록 새로고침
       fetchOrders();
     } catch (err) {

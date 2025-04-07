@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.trading.dto.TradeRequest;
+import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
 
 @Slf4j
 @Service
@@ -18,6 +19,7 @@ public class TradeExecutionService {
     private final OrderRepository orderRepository;
     private final TradeRepository tradeRepository;
     private final PortfolioService portfolioService;
+    private final OrderWebSocketHandler webSocketHandler;
 
     /**
      * 현재가에 따라 체결 가능한 지정가 주문들을 확인하고 거래 체결
@@ -48,18 +50,26 @@ public class TradeExecutionService {
             // 주문 상태 업데이트
             order.fill();
             order.setExecutedPrice(order.getPrice());
-            orderRepository.save(order);
+            order = orderRepository.save(order);
             
             // 거래 기록 저장
             trade.setOrder(order);
-            tradeRepository.save(trade);
+            trade = tradeRepository.save(trade);
+            
+            // WebSocket 알림 전송
+            webSocketHandler.notifyOrderUpdate(order);
+            webSocketHandler.notifyNewTrade(trade);
             
             log.info("주문 체결 완료: 주문 ID={}, 심볼={}, 가격={}, 수량={}", 
                 order.getId(), order.getSymbol(), order.getPrice(), order.getAmount());
         } catch (Exception e) {
             // 체결 실패 시 주문 상태 원복
             order.setStatus(Order.OrderStatus.PENDING);
-            orderRepository.save(order);
+            order = orderRepository.save(order);
+            
+            // 실패 알림 전송
+            webSocketHandler.notifyOrderUpdate(order);
+            
             log.error("주문 체결 실패: 주문 ID={}", order.getId(), e);
         }
     }

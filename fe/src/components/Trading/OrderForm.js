@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api, ENDPOINTS } from '@/lib/api';
-import { useDraggable } from '@/hooks/useDraggable';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import { TRADING_CONFIG, COLORS } from '@/config/constants';
 
-export default function OrderForm({ symbol, currentPrice, isConnected, userBalance, refreshBalance }) {
+export default function OrderForm({ symbol, currentPrice, isConnected, userBalance, refreshBalance, coinBalance }) {
   const [orderType, setOrderType] = useState('limit'); // 'limit' or 'market'
   const [side, setSide] = useState('buy'); // 'buy' or 'sell'
   const [price, setPrice] = useState('');
@@ -15,12 +14,12 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
-  const initialPosition = {
-    x: Math.max((window.innerWidth * 0.66), window.innerWidth - 550),
-    y: 500
-  };
-
-  const { position, handleMouseDown } = useDraggable(initialPosition);
+  // 현재가가 변경될 때 지정가 필드를 현재가로 업데이트 (초기 로드 시)
+  useEffect(() => {
+    if (currentPrice && !price) {
+      setPrice(currentPrice.toString());
+    }
+  }, [currentPrice]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,7 +43,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
       
       // 주문 성공
       setOrderSuccess(true);
-      setPrice('');
+      setPrice(currentPrice?.toString() || '');
       setAmount('');
       
       // 3초 후 성공 메시지 제거 및 잔액 새로고침
@@ -75,18 +74,27 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
     }
   };
 
+  // 퀵 셀렉트 버튼 처리 (10%, 50%, 100%)
+  const handleQuickSelect = (percentage) => {
+    if (!userBalance && !coinBalance) return;
+    
+    const percent = percentage / 100;
+    
+    if (side === 'buy' && userBalance) {
+      // 매수: 보유 USD의 percentage%로 설정
+      const maxAmount = userBalance / (orderType === 'market' ? currentPrice : parseFloat(price) || currentPrice);
+      const calculatedAmount = maxAmount * percent;
+      // 소수점 4자리까지 표시
+      setAmount(calculatedAmount.toFixed(4));
+    } else if (side === 'sell' && coinBalance) {
+      // 매도: 보유 코인의 percentage%로 설정
+      const calculatedAmount = coinBalance * percent;
+      setAmount(calculatedAmount.toFixed(4));
+    }
+  };
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        cursor: 'move',
-        zIndex: 1000
-      }}
-      onMouseDown={handleMouseDown}
-      className="bg-white p-4 rounded-lg shadow-lg w-80"
-    >
+    <div className="bg-white p-4 rounded-lg shadow-lg w-full">
       <div className="flex justify-between mb-4">
         <div className="space-x-2">
           <button
@@ -139,9 +147,14 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
       </div>
 
       <div className="mb-4 p-2 bg-gray-50 rounded">
-        <div className="text-sm text-gray-600">보유 USD</div>
+        <div className="text-sm text-gray-600">
+          {side === 'buy' ? '보유 USD' : `보유 ${symbol.replace('USDT', '')}`}
+        </div>
         <div className="text-lg font-semibold">
-          ${userBalance?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+          {side === 'buy' 
+            ? `$${userBalance?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`
+            : `${coinBalance?.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 }) || '0.0000'} ${symbol.replace('USDT', '')}`
+          }
         </div>
       </div>
 
@@ -164,10 +177,17 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
         )}
 
         {orderType === 'market' && (
-          <div className="h-[70px]"></div>
+          <div className="h-[70px]">
+            <label className="block text-sm font-medium text-gray-700">
+              현재가 (USD)
+            </label>
+            <div className="mt-1 h-10 flex items-center px-3 border border-gray-300 rounded-md bg-gray-50">
+              ${currentPrice?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '로딩 중...'}
+            </div>
+          </div>
         )}
 
-        <div className="h-[70px]">
+        <div className="h-[100px]">
           <label className="block text-sm font-medium text-gray-700">
             수량
           </label>
@@ -180,6 +200,29 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10"
             required
           />
+          <div className="flex justify-between mt-2 space-x-2">
+            <button
+              type="button"
+              onClick={() => handleQuickSelect(10)}
+              className="flex-1 text-xs py-1 bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              10%
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickSelect(50)}
+              className="flex-1 text-xs py-1 bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              50%
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickSelect(100)}
+              className="flex-1 text-xs py-1 bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              100%
+            </button>
+          </div>
         </div>
 
         {error && (

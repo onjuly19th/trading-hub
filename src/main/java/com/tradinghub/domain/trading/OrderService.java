@@ -14,6 +14,7 @@ import com.tradinghub.domain.user.UserRepository;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.trading.dto.TradeRequest;
+import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
 
 @Slf4j
 @Service
@@ -24,6 +25,7 @@ public class OrderService {
     private final PortfolioService portfolioService;
     //private final CryptoMarketService cryptoMarketService;
     private final TradeRepository tradeRepository;
+    private final OrderWebSocketHandler webSocketHandler;
 
     /**
      * 시장가 주문 생성 후 즉시 체결
@@ -51,8 +53,12 @@ public class OrderService {
         tradeRequest.setType(side == Order.OrderSide.BUY ? Trade.TradeType.BUY : Trade.TradeType.SELL);
 
         Trade trade = portfolioService.executeTrade(userId, tradeRequest);
+        trade = tradeRepository.save(trade);
+        
+        // WebSocket을 통한 실시간 알림
+        webSocketHandler.notifyNewTrade(trade);
 
-        return tradeRepository.save(trade);
+        return trade;
     }
 
     /**
@@ -80,7 +86,12 @@ public class OrderService {
             .status(Order.OrderStatus.PENDING)
             .build();
 
-        return orderRepository.save(order);
+        order = orderRepository.save(order);
+        
+        // WebSocket을 통한 실시간 알림
+        webSocketHandler.notifyNewOrder(order);
+
+        return order;
     }
 
     @Transactional
@@ -94,6 +105,7 @@ public class OrderService {
         log.info("Found {} executable orders for symbol {} at price {}", 
             executableOrders.size(), symbol, currentPrice);
 
+        int executedCount = 0;
         for (Order order : executableOrders) {
             try {
                 TradeRequest tradeRequest = new TradeRequest();
@@ -104,21 +116,31 @@ public class OrderService {
                     Trade.TradeType.BUY : Trade.TradeType.SELL);
 
                 Trade trade = portfolioService.executeTrade(order.getUser().getId(), tradeRequest);
-                tradeRepository.save(trade);
+                trade.setOrder(order);
+                trade = tradeRepository.save(trade);
 
                 order.setStatus(Order.OrderStatus.FILLED);
                 orderRepository.save(order);
+                
+                // WebSocket을 통한 실시간 알림
+                webSocketHandler.notifyOrderUpdate(order);
+                webSocketHandler.notifyNewTrade(trade);
 
                 log.info("Order executed: ID={}, Type={}, Amount={}, Price={}", 
                     order.getId(), order.getType(), order.getAmount(), currentPrice);
+                
+                executedCount++;
             } catch (Exception e) {
                 log.error("Failed to execute order {}: {}", order.getId(), e.getMessage());
                 order.setStatus(Order.OrderStatus.FAILED);
-                orderRepository.save(order);
+                order = orderRepository.save(order);
+                
+                // 실패한 주문도 상태 업데이트 알림
+                webSocketHandler.notifyOrderUpdate(order);
             }
         }
 
-        return executableOrders.size();
+        return executedCount;
     }
 
     private void validateOrder(User user, Order.OrderSide side, BigDecimal price, BigDecimal amount) {
@@ -169,6 +191,9 @@ public class OrderService {
         }
 
         order.cancel();
-        orderRepository.save(order);
+        order = orderRepository.save(order);
+        
+        // 취소된 주문 알림
+        webSocketHandler.notifyOrderUpdate(order);
     }
 } 

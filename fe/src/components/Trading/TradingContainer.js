@@ -12,6 +12,7 @@ import OrderForm from '@/components/Trading/OrderForm';
 import OrderBook from '@/components/Trading/OrderBook';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import TradeHistory from '@/components/Trading/TradeHistory';
 
 export default function TradingContainer() {
   const router = useRouter();
@@ -332,7 +333,7 @@ export default function TradingContainer() {
         <OrderBook symbol={currentSymbol} maxAskEntries={10} maxBidEntries={10} />
       </div>
 
-      {/* 중앙 컨텐츠 - 차트 */}
+      {/* 중앙 컨텐츠 - 차트 및 주문 양식 */}
       <div className="flex-1 overflow-hidden flex flex-col h-full">
         {/* 헤더 정보 */}
         <div className="p-4 bg-white border-b border-gray-200 flex items-center">
@@ -356,36 +357,35 @@ export default function TradingContainer() {
           </div>
         </div>
         
-        {/* 차트 영역 - 차트와 호가창을 통합해서 표시 */}
+        {/* 차트 영역 */}
         <div className="flex-1 overflow-auto">
           <TradingViewChart 
             key={currentSymbol} 
             symbol={currentSymbol} 
           />
         </div>
-      </div>
 
-      {/* 우측 사이드바 - 주문 양식 및 주문 내역 */}
-      <div className="w-80 border-l border-gray-200 bg-white flex flex-col h-full overflow-hidden">
-        {/* 주문 양식 */}
-        <div className="flex-none">
+        {/* 주문 양식 - 차트 아래에 배치 */}
+        <div className="bg-white border-t border-gray-200 p-4">
           <OrderForm 
             symbol={currentSymbol}
             currentPrice={numericCurrentPrice}
+            isConnected={true}
             userBalance={availableBalance}
             refreshBalance={refreshBalance}
+            coinBalance={assets.find(asset => asset.symbol === currentSymbol)?.amount || 0}
           />
         </div>
-        
+      </div>
+
+      {/* 우측 사이드바 - 주문 내역 */}
+      <div className="w-80 border-l border-gray-200 bg-white flex flex-col h-full overflow-hidden">
         {/* 주문 내역 */}
-        <div className="flex-1 overflow-y-auto border-t border-gray-200">
+        <div className="flex-1 overflow-y-auto">
           <div className="p-3 bg-gray-50 border-b border-gray-200 font-medium">
             주문/체결 내역
           </div>
-          <div className="p-4">
-            <p className="text-gray-500 text-center text-sm">주문 내역이 없습니다</p>
-            {/* 주문 내역 컴포넌트 추가 예정 */}
-          </div>
+          <TradeHistory />
         </div>
       </div>
     </div>

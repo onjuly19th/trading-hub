@@ -51,8 +51,14 @@ const TradingViewChart = ({
       }
     };
     
-    // trade 스트림 구독
-    manager.subscribe(symbol, 'trade', callbackRef.current);
+    // 차트가 준비되면 WebSocket 구독
+    const setupWebsocket = async () => {
+      // trade 스트림 구독
+      manager.subscribe(symbol, 'trade', callbackRef.current);
+    };
+
+    // 컴포넌트 마운트 시 즉시 WebSocket 연결
+    setupWebsocket();
     
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
@@ -64,6 +70,7 @@ const TradingViewChart = ({
   useEffect(() => {
     let chart = null;
     let candlestickSeries = null;
+    let isChartInitialized = false;
 
     const initChart = async () => {
       if (!chartContainerRef.current) return;
@@ -108,9 +115,15 @@ const TradingViewChart = ({
         // 참조 저장
         chartRef.current = chart;
         candlestickSeriesRef.current = candlestickSeries;
+        isChartInitialized = true;
 
-        // 초기 데이터 로드
-        await loadHistoricalData(candlestickSeries);
+        // 빈 차트 먼저 표시 (UX 향상)
+        candlestickSeries.setData([]);
+
+        // 비동기로 데이터 로드하여 UI 차단 방지
+        setTimeout(() => {
+          loadHistoricalData(candlestickSeries);
+        }, 0);
 
         // 차트 크기 조정
         const handleResize = () => {
@@ -140,6 +153,7 @@ const TradingViewChart = ({
         chartRef.current.remove();
         chartRef.current = null;
         candlestickSeriesRef.current = null;
+        currentCandleRef.current = null;
       }
     };
   }, [symbol, isDarkMode]);
@@ -149,27 +163,30 @@ const TradingViewChart = ({
     if (!tradeData || !candlestickSeriesRef.current) return;
 
     const price = parseFloat(tradeData.price);
-    const currentTime = Math.floor(Date.now() / 1000);
-    const currentTenSeconds = Math.floor(currentTime / 10) * 10;  // 10초 단위로 반올림
+    const tradeTime = Math.floor(tradeData.time / 1000);
 
     try {
-      // 새로운 10초가 시작되었거나 아직 캔들이 없는 경우
-      if (!currentCandleRef.current || currentCandleRef.current.time !== currentTenSeconds) {
-        // 새로운 캔들 생성
-        currentCandleRef.current = {
-          time: currentTenSeconds,
+      // 새로운 초가 시작되었거나 첫 데이터인 경우
+      if (!currentCandleRef.current || tradeTime > currentCandleRef.current.time) {
+        const newCandle = {
+          time: tradeTime,
           open: price,
           high: price,
           low: price,
           close: price
         };
-        candlestickSeriesRef.current.update(currentCandleRef.current);
-      } else {
-        // 기존 캔들 업데이트
-        currentCandleRef.current.high = Math.max(currentCandleRef.current.high, price);
-        currentCandleRef.current.low = Math.min(currentCandleRef.current.low, price);
-        currentCandleRef.current.close = price;
-        candlestickSeriesRef.current.update(currentCandleRef.current);
+        currentCandleRef.current = newCandle;
+        candlestickSeriesRef.current.update(newCandle);
+      } else if (tradeTime === currentCandleRef.current.time) {
+        // 현재 캔들 업데이트 (같은 초 내에서)
+        const updatedCandle = {
+          ...currentCandleRef.current,
+          high: Math.max(currentCandleRef.current.high, price),
+          low: Math.min(currentCandleRef.current.low, price),
+          close: price
+        };
+        currentCandleRef.current = updatedCandle;
+        candlestickSeriesRef.current.update(updatedCandle);
       }
     } catch (err) {
       console.error('Chart update error:', err);
@@ -182,7 +199,7 @@ const TradingViewChart = ({
       setIsLoading(true);
       setError(null);
 
-      // 1분 캔들 데이터를 가져와서 10초 캔들로 변환
+      // 1분 캔들 데이터 로드
       const response = await fetch(
         `${API_CONFIG.BINANCE_REST_URL}?symbol=${symbol}&interval=1m&limit=100`
       );
@@ -197,35 +214,31 @@ const TradingViewChart = ({
         throw new Error('Invalid historical data format');
       }
       
-      // 1분 캔들을 10초 캔들로 변환 (각 1분 캔들을 6개의 10초 캔들로 분할)
-      const candlesticks = [];
-      data.forEach(d => {
-        const baseTime = d[0] / 1000;
-        const open = parseFloat(d[1]);
-        const close = parseFloat(d[4]);
-        const step = (close - open) / 6;  // 6개의 캔들로 나누기 위한 스텝
+      // 1분 캔들 데이터를 그대로 사용
+      const candlesticks = data.map(d => ({
+        time: Math.floor(d[0] / 1000),
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4])
+      }));
 
-        // 각 1분을 6개의 10초 캔들로 분할
-        for (let i = 0; i < 6; i++) {
-          const candleOpen = open + (step * i);
-          const candleClose = open + (step * (i + 1));
-          candlesticks.push({
-            time: baseTime + (i * 10),
-            open: candleOpen,
-            high: Math.max(candleOpen, candleClose),
-            low: Math.min(candleOpen, candleClose),
-            close: candleClose
-          });
-        }
-      });
+      // 시간순으로 정렬
+      candlesticks.sort((a, b) => a.time - b.time);
 
       if (candlestickSeries) {
         candlestickSeries.setData(candlesticks);
+        
+        // 마지막 캔들 정보 저장
+        if (candlesticks.length > 0) {
+          currentCandleRef.current = candlesticks[candlesticks.length - 1];
+        }
       }
+      
+      setIsLoading(false);
     } catch (err) {
       console.error('Historical data loading error:', err);
       setError('과거 데이터를 불러오는 중 오류가 발생했습니다.');
-    } finally {
       setIsLoading(false);
     }
   };

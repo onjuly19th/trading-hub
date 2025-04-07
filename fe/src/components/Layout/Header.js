@@ -9,8 +9,9 @@ const Header = ({ selectedCoin }) => {
           <Image 
             src="/trading-icon.svg" 
             alt="Trading Icon" 
-            width={32} 
-            height={32} 
+            width={30} 
+            height={30} 
+            priority
             className="mr-2 text-blue-600"
           />
           <h1 className="text-3xl font-bold text-gray-800">Trading Hub</h1>

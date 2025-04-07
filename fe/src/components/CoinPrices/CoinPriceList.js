@@ -5,13 +5,16 @@ import { COLORS, MAJOR_COINS, TRADING_CONFIG } from '@/config/constants';
 import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
 
 const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
-  const previousPriceRef = useRef(null);
+  const previousPriceRef = useRef(price);
   const [priceColor, setPriceColor] = useState('#000000');
 
   useEffect(() => {
-    if (previousPriceRef.current !== null && price !== null) {
+    // price가 정의되어 있고, 숫자로 변환 가능한 경우에만 처리
+    if (price !== null && price !== undefined && !isNaN(parseFloat(price))) {
       const currentPrice = parseFloat(price);
-      const prevPrice = parseFloat(previousPriceRef.current);
+      const prevPrice = previousPriceRef.current !== null && previousPriceRef.current !== undefined 
+        ? parseFloat(previousPriceRef.current) 
+        : currentPrice;
       
       if (currentPrice > prevPrice) {
         setPriceColor(COLORS.BUY);
@@ -19,15 +22,17 @@ const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
         setPriceColor(COLORS.SELL);
       }
 
-      // 3초 후 색상 리셋
+      // 저장 후 3초 후 색상 리셋
       const timer = setTimeout(() => {
         setPriceColor('#000000');
       }, 3000);
-
+      
+      // 이전 가격 업데이트 (다음 비교를 위해)
+      previousPriceRef.current = price;
+      
       return () => clearTimeout(timer);
     }
-    previousPriceRef.current = price;
-  }, [price, coin.symbol]);
+  }, [price]); // price의 값 변화에만 의존
 
   const formattedPrice = price ? parseFloat(price).toLocaleString(undefined, {
     minimumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS,

@@ -48,13 +48,19 @@ export default function SignupPage() {
       console.log('회원가입 요청 시작:', formData);
       const response = await authService.signup(formData);
       
-      if (response.token) {
-        setMessage('회원가입이 완료되었습니다. 잠시 후 거래 페이지로 이동합니다.');
+      // 자동 로그인 성공 여부 확인
+      if (response.autoLoginSuccess) {
+        setMessage('회원가입 및 자동 로그인이 완료되었습니다. 잠시 후 거래 페이지로 이동합니다.');
         setTimeout(() => {
           router.push('/trading');
         }, 1500);
       } else {
-        setError('회원가입은 완료되었으나 자동 로그인에 실패했습니다. 로그인을 다시 시도해주세요.');
+        // 회원가입은 성공했지만 자동 로그인 실패
+        setMessage('회원가입이 완료되었습니다.');
+        setError('자동 로그인에 실패했습니다. 로그인 페이지에서 다시 시도해주세요.');
+        setTimeout(() => {
+          router.push('/auth/login');
+        }, 2500);
       }
     } catch (err) {
       console.error('회원가입 에러:', err);

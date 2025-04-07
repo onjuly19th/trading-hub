@@ -7,13 +7,19 @@ import { api, ENDPOINTS } from '@/lib/api';
 import ErrorMessage from '@/components/Common/ErrorMessage';
 import TradeHistory from './TradeHistory';
 
-export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
+export default function OrderBook({ 
+  symbol = TRADING_CONFIG.DEFAULT_SYMBOL,
+  maxAskEntries = 6, // 최대 매도 항목 수
+  maxBidEntries = 6  // 최대 매수 항목 수
+}) {
   const [orderBook, setOrderBook] = useState({
     asks: [],
     bids: [],
     currentPrice: 0,
     priceChange: 0
   });
+  const [priceDirection, setPriceDirection] = useState(0); // 1: 상승, -1: 하락, 0: 변화없음
+  const prevPriceRef = useRef(0); // 이전 가격 저장
 
   // 가격에 따라 소수점 자릿수 동적 결정
   const getDecimalPlaces = (priceValue) => {
@@ -35,6 +41,11 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
   const isFirstMount = useRef(true);
   const depthCallbackRef = useRef(null);
   const tickerCallbackRef = useRef(null);
+
+  // 최대 거래량 계산 (시각화 용)
+  const maxBidVolume = Math.max(...orderBook.bids.map(b => b.amount), 0);
+  const maxAskVolume = Math.max(...orderBook.asks.map(a => a.amount), 0);
+  const maxVolume = Math.max(maxBidVolume, maxAskVolume, 0.00001); // 0으로 나누기 방지
 
   // 심볼이 변경될 때마다 orderBook 초기화 및 구독 관리
   useEffect(() => {
@@ -72,16 +83,22 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
       const asks = data.asks.map(ask => ({
         price: parseFloat(ask.price || ask[0]),
         amount: parseFloat(ask.quantity || ask[1])
-      })).filter(ask => ask.amount > 0);
+      }))
+      .filter(ask => ask.amount > 0)
+      .sort((a, b) => a.price - b.price) // 오름차순 정렬 (낮은 가격부터)
+      .slice(0, maxAskEntries); // 항목 수 제한
 
       const bids = data.bids.map(bid => ({
         price: parseFloat(bid.price || bid[0]),
         amount: parseFloat(bid.quantity || bid[1])
-      })).filter(bid => bid.amount > 0);
+      }))
+      .filter(bid => bid.amount > 0)
+      .sort((a, b) => b.price - a.price) // 내림차순 정렬 (높은 가격부터)
+      .slice(0, maxBidEntries); // 항목 수 제한
       
       setOrderBook(prev => ({
         ...prev,
-        asks,
+        asks: asks.reverse(), // 매도 호가 역순 정렬 (가장 낮은 가격이 맨 아래)
         bids
       }));
     };
@@ -90,9 +107,19 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
     tickerCallbackRef.current = (data) => {
       if (!data?.price) return;
       
+      const newPrice = parseFloat(data.price);
+      const prevPrice = prevPriceRef.current;
+      
+      // 실시간 가격 방향 설정 (상승/하락)
+      if (prevPrice > 0) {
+        setPriceDirection(newPrice > prevPrice ? 1 : (newPrice < prevPrice ? -1 : 0));
+      }
+      
+      prevPriceRef.current = newPrice;
+      
       setOrderBook(prev => ({
         ...prev,
-        currentPrice: parseFloat(data.price),
+        currentPrice: newPrice,
         priceChange: parseFloat(data.priceChangePercent || 0)
       }));
     };
@@ -106,88 +133,117 @@ export default function OrderBook({ symbol = TRADING_CONFIG.DEFAULT_SYMBOL }) {
       manager.unsubscribe(symbol, 'depth20', depthCallbackRef.current);
       manager.unsubscribe(symbol, 'ticker', tickerCallbackRef.current);
     };
-  }, [symbol]);
+  }, [symbol, maxAskEntries, maxBidEntries]);
 
-  // 호가창 렌더링
-  const renderOrderBook = () => {
-    // 현재 가격 기준으로 소수점 자릿수 결정
-    const priceDecimals = getDecimalPlaces(orderBook.currentPrice);
-    
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">호가 ({symbol.replace('USDT', '/USDT')})</h2>
-          
-          <ErrorMessage message={depthData?.error || tickerData?.error} />
-
-          {/* 매도 호가 */}
-          <div className="space-y-1 mb-4">
-            {orderBook.asks.map((ask, index) => (
-              <div key={index} className="flex justify-between" style={{ color: COLORS.SELL }}>
-                <span>{ask.price.toLocaleString(undefined, {
-                  minimumFractionDigits: priceDecimals,
-                  maximumFractionDigits: priceDecimals
-                })} USD</span>
-                <span>{ask.amount.toFixed(TRADING_CONFIG.AMOUNT_DECIMALS)}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* 현재가 */}
-          <div className="text-center py-2 border-y border-gray-200 mb-4">
-            <span className="text-lg font-bold" style={{ 
-              color: orderBook.priceChange >= 0 ? COLORS.BUY : COLORS.SELL 
-            }}>
-              {orderBook.currentPrice.toLocaleString(undefined, {
-                minimumFractionDigits: priceDecimals,
-                maximumFractionDigits: priceDecimals
-              })} USD
-            </span>
-          </div>
-
-          {/* 매수 호가 */}
-          <div className="space-y-1">
-            {orderBook.bids.map((bid, index) => (
-              <div key={index} className="flex justify-between" style={{ color: COLORS.BUY }}>
-                <span>{bid.price.toLocaleString(undefined, {
-                  minimumFractionDigits: priceDecimals,
-                  maximumFractionDigits: priceDecimals
-                })} USD</span>
-                <span>{bid.amount.toFixed(TRADING_CONFIG.AMOUNT_DECIMALS)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* 주문/거래 내역 */}
-        <TradeHistory />
-      </div>
-    );
-  };
-
-  // 헤더에 표시되는 가격의 소수점 자릿수도 동적으로 설정
-  const headerPriceDecimals = getDecimalPlaces(orderBook.currentPrice);
+  // 현재 가격 기준으로 소수점 자릿수 결정
+  const priceDecimals = getDecimalPlaces(orderBook.currentPrice);
 
   return (
-    <div className="bg-white p-3 rounded-lg shadow">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold">주문창</h3>
-        <div className="flex flex-col items-end">
-          <div className="text-xl font-bold">
-            ${orderBook.currentPrice.toLocaleString(undefined, { 
-              minimumFractionDigits: headerPriceDecimals, 
-              maximumFractionDigits: headerPriceDecimals 
-            })}
-          </div>
-          <div 
-            className={`text-sm font-medium ${orderBook.priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}
-          >
-            {orderBook.priceChange >= 0 ? '+' : ''}{orderBook.priceChange.toFixed(2)}%
-          </div>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3">
+      <div className="flex justify-between items-center mb-2">
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          호가창 ({symbol.replace('USDT', '')}/USDT)
+        </div>
+        <div className="text-sm font-semibold" style={{ 
+          color: priceDirection >= 0 ? COLORS.BUY : COLORS.SELL 
+        }}>
+          ${orderBook.currentPrice.toLocaleString(undefined, {
+            minimumFractionDigits: priceDecimals,
+            maximumFractionDigits: priceDecimals
+          })}
         </div>
       </div>
-      {renderOrderBook()}
-      <TradeHistory symbol={symbol} />
+      
+      {/* 가격 변동률 별도 표시 */}
+      <div className="flex justify-end mb-2">
+        <div className="text-sm font-semibold px-2 py-1 rounded" style={{ 
+          backgroundColor: orderBook.priceChange >= 0 ? `${COLORS.BUY}20` : `${COLORS.SELL}20`,
+          color: orderBook.priceChange >= 0 ? COLORS.BUY : COLORS.SELL 
+        }}>
+          {orderBook.priceChange >= 0 ? '+' : ''}{orderBook.priceChange.toFixed(2)}%
+        </div>
+      </div>
+      
+      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 border-b pb-1 mb-1">
+        <span>가격(USDT)</span>
+        <span>수량({symbol.replace('USDT', '')})</span>
+      </div>
+      
+      <div className="grid grid-cols-1 gap-1">
+        {/* 매도 호가 (위에서부터 낮은 가격 순으로) */}
+        <div className="space-y-1">
+          {orderBook.asks.map((ask, index) => {
+            const volumePercentage = maxVolume ? (ask.amount / maxVolume) * 100 : 0;
+            return (
+              <div key={`ask-${index}`} className="flex justify-between relative py-0.5">
+                {/* 배경 그래프 */}
+                <div 
+                  className="absolute inset-y-0 right-0 h-full" 
+                  style={{ 
+                    width: `${volumePercentage}%`,
+                    backgroundColor: `${COLORS.SELL}20` 
+                  }}
+                ></div>
+                
+                {/* 가격과 수량 */}
+                <div className="relative z-10 text-xs font-medium" style={{ color: COLORS.SELL }}>
+                  {ask.price.toLocaleString(undefined, {
+                    minimumFractionDigits: priceDecimals,
+                    maximumFractionDigits: priceDecimals
+                  })}
+                </div>
+                <div className="relative z-10 text-xs">
+                  {ask.amount.toFixed(TRADING_CONFIG.AMOUNT_DECIMALS)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* 현재가 */}
+        <div className="py-2 text-center border-y border-gray-200 dark:border-gray-700 my-1">
+          <span className="font-bold text-sm" style={{ 
+            color: priceDirection >= 0 ? COLORS.BUY : COLORS.SELL 
+          }}>
+            ${orderBook.currentPrice.toLocaleString(undefined, {
+              minimumFractionDigits: priceDecimals,
+              maximumFractionDigits: priceDecimals
+            })}
+          </span>
+        </div>
+        
+        {/* 매수 호가 */}
+        <div className="space-y-1">
+          {orderBook.bids.map((bid, index) => {
+            const volumePercentage = maxVolume ? (bid.amount / maxVolume) * 100 : 0;
+            return (
+              <div key={`bid-${index}`} className="flex justify-between relative py-0.5">
+                {/* 배경 그래프 */}
+                <div 
+                  className="absolute inset-y-0 right-0 h-full" 
+                  style={{ 
+                    width: `${volumePercentage}%`,
+                    backgroundColor: `${COLORS.BUY}20` 
+                  }}
+                ></div>
+                
+                {/* 가격과 수량 */}
+                <div className="relative z-10 text-xs font-medium" style={{ color: COLORS.BUY }}>
+                  {bid.price.toLocaleString(undefined, {
+                    minimumFractionDigits: priceDecimals,
+                    maximumFractionDigits: priceDecimals
+                  })}
+                </div>
+                <div className="relative z-10 text-xs">
+                  {bid.amount.toFixed(TRADING_CONFIG.AMOUNT_DECIMALS)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
+
+// 기존 HorizontalOrderBook 코드는 제거하거나 별도 파일로 분리할 수 있습니다.

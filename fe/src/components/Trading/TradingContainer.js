@@ -11,7 +11,6 @@ import TradingViewChart from '@/components/Chart/TradingViewChart';
 import OrderForm from '@/components/Trading/OrderForm';
 import OrderBook from '@/components/Trading/OrderBook';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
-import TopCoins from '@/components/Trading/TopCoins';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 export default function TradingContainer() {
@@ -21,10 +20,16 @@ export default function TradingContainer() {
   const [priceChange, setPriceChange] = useState(0);
   const [isAssetsExpanded, setIsAssetsExpanded] = useState(true);
   const [isOtherAssetsExpanded, setIsOtherAssetsExpanded] = useState(false);
+  const [coinData, setCoinData] = useState(MAJOR_COINS.map(coin => ({
+    ...coin,
+    currentPrice: 0,
+    priceChangePercent: 0
+  })));
+  
   const prevPriceRef = useRef('0');
   const tradeCallbackRef = useRef(null);
+  const tickerCallbackRefs = useRef({});
   const username = authService.getUsername();
-  const isTrader = true;
   const isAuthenticated = authService.isAuthenticated();
   
   const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading } = usePortfolio();
@@ -59,6 +64,63 @@ export default function TradingContainer() {
       }
     };
   }, [currentSymbol]);
+
+  // 모든 코인의 ticker 데이터 구독
+  useEffect(() => {
+    const manager = WebSocketManager.getInstance();
+    
+    // 각 코인에 대한 ticker 구독 설정
+    MAJOR_COINS.forEach(coin => {
+      const symbol = coin.symbol;
+      
+      // 기존 구독 해제
+      if (tickerCallbackRefs.current[symbol]) {
+        manager.unsubscribe(symbol, 'ticker', tickerCallbackRefs.current[symbol]);
+      }
+      
+      // 새 콜백 함수 설정
+      tickerCallbackRefs.current[symbol] = (data) => {
+        if (!data) return;
+        
+        setCoinData(prev => {
+          // 이전 코인 데이터 찾기
+          const prevCoin = prev.find(c => c.symbol === symbol);
+          const prevPrice = prevCoin?.currentPrice || 0;
+          const newPrice = parseFloat(data.price || 0);
+          
+          // 가격 방향 계산 (상승/하락/유지)
+          let priceDirection = 0;
+          if (prevPrice > 0) {
+            priceDirection = newPrice > prevPrice ? 1 : (newPrice < prevPrice ? -1 : 0);
+          }
+          
+          return prev.map(c => 
+            c.symbol === symbol 
+              ? { 
+                  ...c, 
+                  currentPrice: newPrice,
+                  priceChangePercent: parseFloat(data.priceChangePercent || 0),
+                  priceDirection: priceDirection  // 가격 방향 저장
+                }
+              : c
+          );
+        });
+      };
+      
+      // 구독
+      manager.subscribe(symbol, 'ticker', tickerCallbackRefs.current[symbol]);
+    });
+    
+    // 컴포넌트 언마운트 시 모든 구독 해제
+    return () => {
+      MAJOR_COINS.forEach(coin => {
+        const symbol = coin.symbol;
+        if (tickerCallbackRefs.current[symbol]) {
+          manager.unsubscribe(symbol, 'ticker', tickerCallbackRefs.current[symbol]);
+        }
+      });
+    };
+  }, []);
 
   const handleLogout = () => {
     authService.logout();
@@ -110,7 +172,7 @@ export default function TradingContainer() {
     const isProfitable = profitLoss >= 0;
 
     return (
-      <div key={asset.symbol} className="ml-4 mb-2">
+      <div key={asset.symbol} className="mb-2 px-2 py-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image
@@ -123,9 +185,10 @@ export default function TradingContainer() {
             <span className="font-medium">{symbol}:</span>
           </div>
           <div className="text-right">
-            <div>{asset.amount.toFixed(8)} (${formatUSD(value)})</div>
+            <div>{asset.amount.toFixed(8)}</div>
+            <div className="text-xs">${formatUSD(value)}</div>
             {asset.amount > 0 && (
-              <div className={`text-sm ${isProfitable ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="text-xs" style={{ color: isProfitable ? COLORS.BUY : COLORS.SELL }}>
                 {isProfitable ? '+' : ''}{formatUSD(profitLoss)} ({profitLossPercentage.toFixed(2)}%)
               </div>
             )}
@@ -135,108 +198,177 @@ export default function TradingContainer() {
     );
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <TopCoins onSelectCoin={handleCoinSelect} currentSymbol={currentSymbol} />
-      
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8">
-              <Image
-                src={MAJOR_COINS.find(coin => coin.symbol === currentSymbol)?.logo || `${API_CONFIG.BINANCE_LOGO_URL}/GENERIC.png`}
-                alt={currentSymbol}
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-800">{currentSymbol.replace('USDT', '')}/USDT</h1>
-          </div>
-          <p className="text-gray-600 mt-1">실시간 차트</p>
-          {numericCurrentPrice > 0 && (
-            <p className="text-xl font-semibold" style={{ 
-              color: priceChange >= 0 ? COLORS.BUY : COLORS.SELL,
-              transition: 'color 0.3s ease'
-            }}>
-              ${numericCurrentPrice.toLocaleString('en-US', { 
-                minimumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS,
-                maximumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS 
-              })}
-            </p>
-          )}
+  const renderCoinItem = (coin) => {
+    // coinData에서 현재 코인 정보 찾기
+    const coinInfo = coinData.find(c => c.symbol === coin.symbol) || coin;
+    
+    return (
+      <div 
+        key={coin.symbol}
+        className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 transition-colors ${
+          currentSymbol === coin.symbol ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+        }`}
+        onClick={() => handleCoinSelect(coin)}
+      >
+        <div className="mr-2">
+          <Image
+            src={coin.logo}
+            alt={coin.name}
+            width={24}
+            height={24}
+            className="rounded-full"
+          />
         </div>
-        <div className="flex flex-col items-end gap-2 bg-white p-4 rounded-lg shadow-sm">
-          <div className="flex items-center justify-between w-full">
-            <p className="text-sm text-gray-600">Welcome, {username}</p>
+        <div className="flex-1">
+          <div className="font-medium">{coin.name.replace('/USDT', '')}</div>
+          <div className="text-sm text-gray-500">USDT</div>
+        </div>
+        
+        {/* 가격 및 변동률 표시 추가 */}
+        <div className="text-right">
+          <div className="text-sm font-semibold" style={{ 
+            color: (coinInfo.priceDirection || 0) > 0 ? COLORS.BUY : 
+                  (coinInfo.priceDirection || 0) < 0 ? COLORS.SELL : 'inherit'
+          }}>
+            ${parseFloat(coinInfo.currentPrice || 0).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })}
+          </div>
+          <div className="text-xs" style={{ 
+            color: (coinInfo.priceChangePercent || 0) >= 0 ? COLORS.BUY : COLORS.SELL 
+          }}>
+            {(coinInfo.priceChangePercent || 0) >= 0 ? '+' : ''}
+            {(coinInfo.priceChangePercent || 0).toFixed(2)}%
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-gray-100">
+      {/* 좌측 사이드바 - 코인 리스트 */}
+      <div className="w-64 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden">
+        {/* 유저 정보 및 로그아웃 */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-medium text-sm">{username}</span>
             <button
               onClick={handleLogout}
-              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+              className="text-xs text-red-500 hover:text-red-700"
             >
               로그아웃
             </button>
           </div>
-          
-          <div className="text-right">
-            <p className="font-semibold text-gray-800">
-              USD Balance: ${formatUSD(availableBalance)}
-            </p>
-            <p className="font-bold text-gray-800">
-              Total Value: ${formatUSD(totalPortfolioValue)}
-            </p>
+          <div className="text-sm">
+            <div>잔액: ${formatUSD(availableBalance)}</div>
+            <div className="font-medium">총자산: ${formatUSD(totalPortfolioValue)}</div>
           </div>
+        </div>
 
-          <div className="w-full">
-            <button
-              onClick={() => setIsAssetsExpanded(!isAssetsExpanded)}
-              className="flex items-center justify-between w-full px-2 py-1 hover:bg-gray-50 rounded transition-colors"
-            >
-              <span className="font-medium">Major Assets</span>
-              {isAssetsExpanded ? (
-                <ChevronDownIcon className="w-4 h-4" />
-              ) : (
-                <ChevronRightIcon className="w-4 h-4" />
-              )}
-            </button>
-            {isAssetsExpanded && (
-              <div className="mt-2">
-                {majorAssets.map(renderAssetItem)}
-              </div>
+        {/* 코인 목록 */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-2 bg-gray-50 border-b border-gray-200 font-medium text-sm">
+            코인 목록
+          </div>
+          <div>
+            {MAJOR_COINS.map(renderCoinItem)}
+          </div>
+        </div>
+
+        {/* 자산 정보 */}
+        <div className="border-t border-gray-200">
+          <button
+            onClick={() => setIsAssetsExpanded(!isAssetsExpanded)}
+            className="flex items-center justify-between w-full p-3 hover:bg-gray-50"
+          >
+            <span className="font-medium text-sm">내 자산</span>
+            {isAssetsExpanded ? (
+              <ChevronDownIcon className="w-4 h-4" />
+            ) : (
+              <ChevronRightIcon className="w-4 h-4" />
             )}
-          </div>
-
-          {otherAssets.length > 0 && (
-            <div className="w-full">
-              <button
-                onClick={() => setIsOtherAssetsExpanded(!isOtherAssetsExpanded)}
-                className="flex items-center justify-between w-full px-2 py-1 hover:bg-gray-50 rounded transition-colors"
-              >
-                <span className="font-medium">Other Assets ({otherAssets.length})</span>
-                {isOtherAssetsExpanded ? (
-                  <ChevronDownIcon className="w-4 h-4" />
-                ) : (
-                  <ChevronRightIcon className="w-4 h-4" />
-                )}
-              </button>
-              {isOtherAssetsExpanded && (
-                <div className="mt-2">
-                  {otherAssets.map(renderAssetItem)}
+          </button>
+          
+          {isAssetsExpanded && (
+            <div className="border-t border-gray-100 max-h-40 overflow-y-auto">
+              {majorAssets.length > 0 ? (
+                majorAssets.map(renderAssetItem)
+              ) : (
+                <div className="p-3 text-sm text-gray-500 text-center">
+                  보유 중인 자산이 없습니다
                 </div>
+              )}
+              
+              {otherAssets.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setIsOtherAssetsExpanded(!isOtherAssetsExpanded)}
+                    className="flex items-center justify-between w-full p-2 bg-gray-50 text-sm"
+                  >
+                    <span>기타 자산 ({otherAssets.length})</span>
+                    {isOtherAssetsExpanded ? (
+                      <ChevronDownIcon className="w-3 h-3" />
+                    ) : (
+                      <ChevronRightIcon className="w-3 h-3" />
+                    )}
+                  </button>
+                  
+                  {isOtherAssetsExpanded && (
+                    <div className="max-h-40 overflow-y-auto">
+                      {otherAssets.map(renderAssetItem)}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-2">
+      {/* 세로형 호가창 */}
+      <div className="w-64 border-r border-gray-200 bg-white overflow-y-auto">
+        <OrderBook symbol={currentSymbol} maxAskEntries={10} maxBidEntries={10} />
+      </div>
+
+      {/* 중앙 컨텐츠 - 차트 */}
+      <div className="flex-1 overflow-hidden flex flex-col h-full">
+        {/* 헤더 정보 */}
+        <div className="p-4 bg-white border-b border-gray-200 flex items-center">
+          <div className="flex items-center">
+            <Image
+              src={MAJOR_COINS.find(coin => coin.symbol === currentSymbol)?.logo || `${API_CONFIG.BINANCE_LOGO_URL}/GENERIC.png`}
+              alt={currentSymbol}
+              width={32}
+              height={32}
+              className="rounded-full mr-3"
+            />
+            <div>
+              <h1 className="text-xl font-bold">{currentSymbol.replace('USDT', '')}/USDT</h1>
+              <p className="text-lg font-semibold" style={{ color: priceChange >= 0 ? COLORS.BUY : COLORS.SELL }}>
+                ${numericCurrentPrice.toLocaleString('en-US', { 
+                  minimumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS,
+                  maximumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS 
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {/* 차트 영역 - 차트와 호가창을 통합해서 표시 */}
+        <div className="flex-1 overflow-auto">
           <TradingViewChart 
             key={currentSymbol} 
             symbol={currentSymbol} 
           />
         </div>
+      </div>
 
-        <div className="lg:col-span-1 space-y-6 mt-[50px]">
+      {/* 우측 사이드바 - 주문 양식 및 주문 내역 */}
+      <div className="w-80 border-l border-gray-200 bg-white flex flex-col h-full overflow-hidden">
+        {/* 주문 양식 */}
+        <div className="flex-none">
           <OrderForm 
             symbol={currentSymbol}
             currentPrice={numericCurrentPrice}
@@ -244,7 +376,18 @@ export default function TradingContainer() {
             refreshBalance={refreshBalance}
           />
         </div>
+        
+        {/* 주문 내역 */}
+        <div className="flex-1 overflow-y-auto border-t border-gray-200">
+          <div className="p-3 bg-gray-50 border-b border-gray-200 font-medium">
+            주문/체결 내역
+          </div>
+          <div className="p-4">
+            <p className="text-gray-500 text-center text-sm">주문 내역이 없습니다</p>
+            {/* 주문 내역 컴포넌트 추가 예정 */}
+          </div>
+        </div>
       </div>
     </div>
   );
-} 
+}

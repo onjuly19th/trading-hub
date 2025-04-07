@@ -1,32 +1,29 @@
 import { API_CONFIG } from '@/config/constants';
 
+// 디버그 모드 설정 (development 환경에서만 작동)
+const API_DEBUG = true;
+
 // 로깅 유틸리티
 const logger = {
   log: (...args) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(...args);
+    if (process.env.NODE_ENV === 'development' && API_DEBUG) {
+      console.log('[API]', ...args);
     }
   },
   error: (...args) => {
     if (process.env.NODE_ENV === 'development') {
-      console.error(...args);
+      console.error('[API Error]', ...args);
     }
   },
   warn: (...args) => {
     if (process.env.NODE_ENV === 'development') {
-      console.warn(...args);
+      console.warn('[API Warning]', ...args);
     }
   }
 };
 
 // 공통 에러 처리
 const handleResponse = async (response, endpoint, options = {}) => {
-  logger.log(`API Response for ${endpoint}:`, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: Object.fromEntries([...response.headers]),
-  });
-  
   if (!response.ok) {
     // 인증 관련 오류에 대한 처리 (skipAuthError 옵션 확인)
     if ((response.status === 403 || response.status === 401) && 
@@ -34,53 +31,48 @@ const handleResponse = async (response, endpoint, options = {}) => {
       
       // skipAuthError 옵션이 설정된 경우 인증 오류를 무시
       if (options.skipAuthError) {
-        logger.warn(`Ignoring auth error for endpoint ${endpoint} due to skipAuthError option`);
         return { status: 'ignored_auth_error' };
       }
       
-      logger.error('Authentication error:', response.status);
       localStorage.removeItem('token');
       throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.');
     }
     
-    // 응답 본문을 텍스트로 로깅
+    // 응답 본문을 텍스트로 파싱
     const clonedResponse = response.clone();
     const text = await clonedResponse.text();
-    logger.error(`Error response raw text for ${endpoint}:`, text);
     
     let errorData;
     try {
       errorData = JSON.parse(text);
-      logger.error(`Error response for ${endpoint}:`, errorData);
+      logger.error(`${response.status} - ${endpoint}:`, 
+        errorData?.error?.message || 
+        errorData?.message || 
+        '알 수 없는 오류');
     } catch (e) {
-      logger.error('Failed to parse error response as JSON:', e);
       errorData = null;
     }
     
     const error = {
       status: response.status,
-      message: errorData?.message || '요청 처리 중 오류가 발생했습니다.',
+      message: errorData?.error?.message || 
+               errorData?.message || 
+               '요청 처리 중 오류가 발생했습니다.',
       data: errorData
     };
     
-    logger.error('Throwing API error:', error);
     throw error;
   }
   
   try {
     const text = await response.text();
-    logger.log(`Raw response text for ${endpoint}:`, text);
     
     if (!text) {
-      logger.warn(`Empty response body for ${endpoint}`);
       return null;
     }
     
-    const data = JSON.parse(text);
-    logger.log(`API Success data for ${endpoint}:`, data);
-    return data;
+    return JSON.parse(text);
   } catch (e) {
-    logger.error(`Error parsing JSON for ${endpoint}:`, e);
     throw new Error('응답 데이터 처리 중 오류가 발생했습니다.');
   }
 };
@@ -127,8 +119,7 @@ export const api = {
       ...options.headers,
     };
     
-    logger.log(`Making GET request to: ${url}`);
-    logger.log('Request headers:', headers);
+    logger.log(`GET ${endpoint}`);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -149,9 +140,7 @@ export const api = {
       ...options.headers,
     };
     
-    logger.log(`Making POST request to: ${url} (endpoint: ${endpoint})`);
-    logger.log('Request headers:', headers);
-    logger.log('Request data:', data);
+    logger.log(`POST ${endpoint}`);
     
     try {
       const response = await fetch(url, {
@@ -159,33 +148,9 @@ export const api = {
         headers,
         body: JSON.stringify(data)
       });
-
-      logger.log(`Raw response status: ${response.status} ${response.statusText}`);
-      logger.log(`Response headers:`, Object.fromEntries([...response.headers]));
-      
-      // Clone the response to log the raw text without consuming the original
-      const responseClone = response.clone();
-      const rawText = await responseClone.text();
-      logger.log(`Raw response text (${rawText.length} bytes):`, rawText);
-      
-      // Check if the response is empty or non-JSON
-      if (!rawText || rawText.trim() === '') {
-        logger.error('Empty response received from server');
-        return { status: 'error', message: '서버로부터 빈 응답이 수신되었습니다' };
-      }
-      
-      // Try to parse manually to check JSON validity before passing to handleResponse
-      try {
-        JSON.parse(rawText);
-        logger.log('Response is valid JSON');
-      } catch (jsonError) {
-        logger.error('Response is not valid JSON:', jsonError);
-        return { status: 'error', message: '서버 응답이 유효한 JSON 형식이 아닙니다' };
-      }
       
       return handleResponse(response, endpoint, options);
     } catch (networkError) {
-      logger.error(`Network error for ${endpoint}:`, networkError);
       throw new Error('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
     }
   },
@@ -201,8 +166,7 @@ export const api = {
       ...options.headers,
     };
     
-    logger.log(`Making PUT request to: ${url}`);
-    logger.log('Request headers:', headers);
+    logger.log(`PUT ${endpoint}`);
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -223,8 +187,7 @@ export const api = {
       ...options.headers,
     };
     
-    logger.log(`Making DELETE request to: ${url}`);
-    logger.log('Request headers:', headers);
+    logger.log(`DELETE ${endpoint}`);
     
     const response = await fetch(url, {
       method: 'DELETE',

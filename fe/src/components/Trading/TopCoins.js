@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { MAJOR_COINS, TRADING_CONFIG, COLORS } from '@/config/constants';
 import { useMarketData } from '@/hooks/useMarketData';
 
-export default function TopCoins() {
+// COLORS 확인용 콘솔 로그
+console.log('TopCoins COLORS:', COLORS);
+
+export default function TopCoins({ onSelectCoin, currentSymbol }) {
   const router = useRouter();
   const [coins, setCoins] = useState(MAJOR_COINS);
   
@@ -27,15 +30,21 @@ export default function TopCoins() {
 
         return {
           ...coin,
-          price: parseFloat(data.c),
-          priceChange: parseFloat(data.p)
+          price: parseFloat(data.price || data.c || 0),
+          priceChangePercent: parseFloat(data.priceChangePercent || data.P || 0)
         };
       })
     );
   }, [tickerData]);
 
-  const handleCoinClick = (symbol) => {
-    router.push(`/trading/${symbol}`);
+  const handleCoinClick = (coin) => {
+    if (onSelectCoin) {
+      // onSelectCoin prop이 있으면 부모 컴포넌트의 함수 호출
+      onSelectCoin(coin);
+    } else {
+      // 아니면 라우팅 사용
+      router.push(`/trading`);
+    }
   };
 
   return (
@@ -43,8 +52,10 @@ export default function TopCoins() {
       {coins.map((coin) => (
         <div
           key={coin.symbol}
-          className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => handleCoinClick(coin.symbol)}
+          className={`bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow ${
+            currentSymbol === coin.symbol ? 'ring-2 ring-blue-500' : ''
+          }`}
+          onClick={() => handleCoinClick(coin)}
         >
           <div className="flex items-center space-x-2 mb-2">
             <Image
@@ -66,10 +77,10 @@ export default function TopCoins() {
             <div
               className="text-sm"
               style={{
-                color: coin.priceChange >= 0 ? COLORS.BUY : COLORS.SELL
+                color: coin.priceChangePercent >= 0 ? '#26a69a' : '#ef5350'
               }}
             >
-              {coin.priceChange > 0 ? '+' : ''}{coin.priceChange?.toFixed(2)}%
+              {coin.priceChangePercent > 0 ? '+' : ''}{coin.priceChangePercent?.toFixed(2)}%
             </div>
           </div>
         </div>

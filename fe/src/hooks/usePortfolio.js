@@ -29,10 +29,11 @@ export function usePortfolio() {
         console.log('Portfolio summary response:', data);
         
         // 데이터 구조 검증 - 백엔드 응답 구조에 맞게 수정
-        if (data && typeof data.usdBalance !== 'undefined') {
+        if (data && data.status === 'SUCCESS' && data.data) {
+          const portfolioData = data.data;
           setUserBalance({
-            availableBalance: data.usdBalance || 0,
-            assets: data.assets || []
+            availableBalance: portfolioData.usdBalance || 0,
+            assets: portfolioData.assets || []
           });
           setError(null); // 성공 시 이전 오류 초기화
         } else {
@@ -59,8 +60,8 @@ export function usePortfolio() {
   useEffect(() => {
     fetchUserBalance();
     
-    // 1분마다 잔고 정보 갱신
-    const intervalId = setInterval(fetchUserBalance, 60000);
+    // 5분마다 잔고 정보 갱신
+    const intervalId = setInterval(fetchUserBalance, 300000);
     
     // 컴포넌트 언마운트 시 인터벌 정리
     return () => clearInterval(intervalId);
@@ -85,10 +86,11 @@ export function usePortfolio() {
     setIsLoading(true);
     try {
       const data = await api.get(ENDPOINTS.PORTFOLIO.SUMMARY);
-      if (data && typeof data.usdBalance !== 'undefined') {
+      if (data && data.status === 'SUCCESS' && data.data) {
+        const portfolioData = data.data;
         setUserBalance({
-          availableBalance: data.usdBalance || 0,
-          assets: data.assets || []
+          availableBalance: portfolioData.usdBalance || 0,
+          assets: portfolioData.assets || []
         });
         setError(null); // 성공 시 이전 오류 초기화
         return true; // 성공 시 true 반환

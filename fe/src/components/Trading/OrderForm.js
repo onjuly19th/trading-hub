@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api, ENDPOINTS } from '@/lib/api';
 import { useDraggable } from '@/hooks/useDraggable';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
+import { TRADING_CONFIG, COLORS } from '@/config/constants';
 
 export default function OrderForm({ symbol, currentPrice, isConnected, userBalance, refreshBalance }) {
   const [orderType, setOrderType] = useState('limit'); // 'limit' or 'market'
@@ -182,7 +183,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
         </div>
 
         {error && (
-          <div className="text-red-600 text-sm h-5">
+          <div className="text-sm h-5" style={{ color: COLORS.SELL }}>
             {error}
           </div>
         )}
@@ -190,7 +191,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
         {!error && (
           <div className="h-5">
             {orderSuccess && (
-              <div className="text-green-600 text-sm">
+              <div className="text-sm" style={{ color: COLORS.BUY }}>
                 주문이 성공적으로 처리되었습니다.
               </div>
             )}

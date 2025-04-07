@@ -1,27 +1,36 @@
 "use client";
-import { createChart } from 'lightweight-charts';
+import { createChart, CrosshairMode } from 'lightweight-charts';
 import { useEffect, useRef, useState } from 'react';
 import { MdLightMode, MdDarkMode } from 'react-icons/md';
 import PropTypes from 'prop-types';
-import { TRADING_CONFIG, API_CONFIG } from '@/config/constants';
+import { TRADING_CONFIG, API_CONFIG, COLORS, CHART_CONFIG } from '@/config/constants';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import ErrorMessage from '@/components/Common/ErrorMessage';
 import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
+import OrderBook from '@/components/Trading/OrderBook';
 
 const CHART_COLORS = {
   LIGHT: {
-    background: '#ffffff',
-    text: '#000000',
-    grid: '#f0f3fa',
-    buy: '#089981',
-    sell: '#f23645'
+    background: CHART_CONFIG.COLORS.LIGHT.BACKGROUND,
+    text: CHART_CONFIG.COLORS.LIGHT.TEXT,
+    grid: CHART_CONFIG.COLORS.LIGHT.GRID,
+    buy: COLORS.BUY,
+    sell: COLORS.SELL,
+    volume: {
+      up: `${COLORS.BUY}80`, // 50% 투명도
+      down: `${COLORS.SELL}80` // 50% 투명도
+    }
   },
   DARK: {
-    background: '#1e1e1e',
-    text: '#d1d4dc',
-    grid: '#2e2e2e',
-    buy: '#089981',
-    sell: '#f23645'
+    background: CHART_CONFIG.COLORS.DARK.BACKGROUND,
+    text: CHART_CONFIG.COLORS.DARK.TEXT,
+    grid: CHART_CONFIG.COLORS.DARK.GRID,
+    buy: COLORS.BUY,
+    sell: COLORS.SELL,
+    volume: {
+      up: `${COLORS.BUY}80`, // 50% 투명도
+      down: `${COLORS.SELL}80` // 50% 투명도
+    }
   }
 };
 
@@ -34,8 +43,11 @@ const TradingViewChart = ({
   const [error, setError] = useState(null);
   const [tradeData, setTradeData] = useState(null);
   const chartContainerRef = useRef();
-  const chartRef = useRef(null);
+  const volumeChartContainerRef = useRef();
+  const priceChartRef = useRef(null);
+  const volumeChartRef = useRef(null);
   const candlestickSeriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
   const lastPriceRef = useRef(null);
   const currentCandleRef = useRef(null);
   const callbackRef = useRef(null);
@@ -68,20 +80,23 @@ const TradingViewChart = ({
 
   // 차트 초기화
   useEffect(() => {
-    let chart = null;
+    let priceChart = null;
+    let volumeChart = null;
     let candlestickSeries = null;
+    let volumeSeries = null;
     let isDisposed = false;
+    let syncEnabled = false;
 
     const initChart = async () => {
-      if (!chartContainerRef.current) return;
+      if (!chartContainerRef.current || !volumeChartContainerRef.current) return;
 
       try {
         const colors = isDarkMode ? CHART_COLORS.DARK : CHART_COLORS.LIGHT;
 
-        // 새 차트 생성
-        chart = createChart(chartContainerRef.current, {
+        // 메인 차트 (가격) 생성
+        priceChart = createChart(chartContainerRef.current, {
           width: chartContainerRef.current.clientWidth,
-          height: 600,
+          height: 450,
           layout: {
             background: { type: 'solid', color: colors.background },
             textColor: colors.text,
@@ -99,12 +114,38 @@ const TradingViewChart = ({
             borderColor: colors.grid,
           },
           crosshair: {
-            mode: 1,
+            mode: CrosshairMode.Normal,
+          },
+          handleScroll: {
+            vertTouchDrag: false,
           },
         });
 
+        // 거래량 차트 생성
+        volumeChart = createChart(volumeChartContainerRef.current, {
+          width: volumeChartContainerRef.current.clientWidth,
+          height: 200,
+          layout: {
+            background: { type: 'solid', color: colors.background },
+            textColor: colors.text,
+          },
+          grid: {
+            vertLines: { color: colors.grid },
+            horzLines: { color: colors.grid },
+          },
+          timeScale: {
+            visible: false, // 하단 타임스케일 숨김
+            borderColor: colors.grid,
+          },
+          rightPriceScale: {
+            borderColor: colors.grid,
+          },
+          handleScroll: false,
+          handleScale: false,
+        });
+
         // 캔들스틱 시리즈 생성
-        candlestickSeries = chart.addCandlestickSeries({
+        candlestickSeries = priceChart.addCandlestickSeries({
           upColor: colors.buy,
           downColor: colors.sell,
           borderVisible: false,
@@ -112,21 +153,60 @@ const TradingViewChart = ({
           wickDownColor: colors.sell,
         });
 
+        // 거래량 시리즈 생성
+        volumeSeries = volumeChart.addHistogramSeries({
+          color: colors.volume.up,
+          priceFormat: {
+            type: 'volume',
+          },
+        });
+
         // 참조 저장
-        chartRef.current = chart;
+        priceChartRef.current = priceChart;
+        volumeChartRef.current = volumeChart;
         candlestickSeriesRef.current = candlestickSeries;
+        volumeSeriesRef.current = volumeSeries;
 
         // 초기 데이터 로드
-        await loadHistoricalData(candlestickSeries);
+        await loadHistoricalData(candlestickSeries, volumeSeries);
+        
+        // 데이터가 로드된 후에만 동기화 설정
+        if (!isDisposed) {
+          syncEnabled = true;
+          
+          // 두 차트의 타임스케일 동기화
+          const handleVisibleTimeRangeChange = (timeRange) => {
+            try {
+              if (syncEnabled && volumeChart && timeRange) {
+                volumeChart.timeScale().setVisibleRange(timeRange);
+              }
+            } catch (err) {
+              console.error('Chart sync error:', err);
+            }
+          };
+
+          const handleVisibleLogicalRangeChange = (range) => {
+            try {
+              if (syncEnabled && volumeChart && range) {
+                volumeChart.timeScale().setVisibleLogicalRange(range);
+              }
+            } catch (err) {
+              console.error('Chart sync error:', err);
+            }
+          };
+
+          priceChart.timeScale().subscribeVisibleTimeRangeChange(handleVisibleTimeRangeChange);
+          priceChart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
+        }
 
         // 차트 크기 조정
         const handleResize = () => {
-          if (isDisposed || !chartContainerRef.current || !chart) return;
+          if (isDisposed || !chartContainerRef.current || !volumeChartContainerRef.current) return;
           
           try {
-            chart.applyOptions({
-              width: chartContainerRef.current.clientWidth,
-            });
+            const width = chartContainerRef.current.clientWidth;
+            priceChart.applyOptions({ width: width });
+            volumeChart.applyOptions({ width: width });
           } catch (err) {
             console.error('Chart resize error:', err);
           }
@@ -148,31 +228,41 @@ const TradingViewChart = ({
 
     return () => {
       isDisposed = true;
+      syncEnabled = false;
       
-      // 첫 번째: WebSocket 구독 해제 (다른 useEffect에서 처리)
-      
-      // 두 번째: 참조 제거 (업데이트 방지)
+      // 참조 제거 (업데이트 방지)
       currentCandleRef.current = null;
       candlestickSeriesRef.current = null;
+      volumeSeriesRef.current = null;
       
-      // 세 번째: 차트 제거 (마지막에 수행)
-      if (chartRef.current) {
+      // 차트 제거
+      if (priceChartRef.current) {
         try {
-          chartRef.current.remove();
+          priceChartRef.current.remove();
+          priceChartRef.current = null;
         } catch (err) {
-          console.error('Chart removal error:', err);
+          console.error('Price chart removal error:', err);
         }
-        chartRef.current = null;
+      }
+
+      if (volumeChartRef.current) {
+        try {
+          volumeChartRef.current.remove();
+          volumeChartRef.current = null;
+        } catch (err) {
+          console.error('Volume chart removal error:', err);
+        }
       }
     };
   }, [symbol, isDarkMode]);
 
   // 실시간 가격 업데이트
   useEffect(() => {
-    if (!tradeData || !candlestickSeriesRef.current || !chartRef.current) return;
+    if (!tradeData || !candlestickSeriesRef.current || !volumeSeriesRef.current) return;
 
     const price = parseFloat(tradeData.price);
     const tradeTime = Math.floor(tradeData.time / 1000);
+    const volume = parseFloat(tradeData.amount || 0);
 
     try {
       // 새로운 초가 시작되었거나 첫 데이터인 경우
@@ -184,8 +274,17 @@ const TradingViewChart = ({
           low: price,
           close: price
         };
-        currentCandleRef.current = newCandle;
+        currentCandleRef.current = { ...newCandle, volume };
         candlestickSeriesRef.current.update(newCandle);
+        
+        // 새 거래량 데이터 추가
+        volumeSeriesRef.current.update({
+          time: tradeTime,
+          value: volume,
+          color: price >= newCandle.open ? 
+            CHART_COLORS[isDarkMode ? 'DARK' : 'LIGHT'].volume.up : 
+            CHART_COLORS[isDarkMode ? 'DARK' : 'LIGHT'].volume.down
+        });
       } else if (tradeTime === currentCandleRef.current.time) {
         // 현재 캔들 업데이트 (같은 초 내에서)
         const updatedCandle = {
@@ -194,16 +293,29 @@ const TradingViewChart = ({
           low: Math.min(currentCandleRef.current.low, price),
           close: price
         };
-        currentCandleRef.current = updatedCandle;
+        
+        // 거래량 업데이트
+        const updatedVolume = (currentCandleRef.current.volume || 0) + volume;
+        currentCandleRef.current = { ...updatedCandle, volume: updatedVolume };
+        
         candlestickSeriesRef.current.update(updatedCandle);
+        
+        // 거래량 차트 업데이트
+        volumeSeriesRef.current.update({
+          time: tradeTime,
+          value: updatedVolume,
+          color: updatedCandle.close >= updatedCandle.open ? 
+            CHART_COLORS[isDarkMode ? 'DARK' : 'LIGHT'].volume.up : 
+            CHART_COLORS[isDarkMode ? 'DARK' : 'LIGHT'].volume.down
+        });
       }
     } catch (err) {
       console.error('Chart update error:', err);
     }
-  }, [tradeData]);
+  }, [tradeData, isDarkMode]);
 
   // 히스토리컬 데이터 로드
-  const loadHistoricalData = async (candlestickSeries) => {
+  const loadHistoricalData = async (candlestickSeries, volumeSeries) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -232,15 +344,39 @@ const TradingViewChart = ({
         close: parseFloat(d[4])
       }));
 
+      // 거래량 데이터 준비
+      const volumeData = data.map(d => {
+        const time = Math.floor(d[0] / 1000);
+        const open = parseFloat(d[1]);
+        const close = parseFloat(d[4]);
+        const volume = parseFloat(d[5]);
+        
+        return {
+          time,
+          value: volume,
+          color: close >= open ? 
+            CHART_COLORS[isDarkMode ? 'DARK' : 'LIGHT'].volume.up : 
+            CHART_COLORS[isDarkMode ? 'DARK' : 'LIGHT'].volume.down
+        };
+      });
+
       // 시간순으로 정렬
       candlesticks.sort((a, b) => a.time - b.time);
+      volumeData.sort((a, b) => a.time - b.time);
 
-      if (candlestickSeries) {
+      // 중요: 두 차트 모두에 데이터를 모두 설정한 후 동기화 구성
+      if (candlestickSeries && volumeSeries) {
+        // 캔들스틱 데이터 설정
         candlestickSeries.setData(candlesticks);
+        
+        // 거래량 데이터 설정
+        volumeSeries.setData(volumeData);
         
         // 마지막 캔들 정보 저장
         if (candlesticks.length > 0) {
-          currentCandleRef.current = candlesticks[candlesticks.length - 1];
+          const lastCandle = candlesticks[candlesticks.length - 1];
+          const lastVolume = volumeData[volumeData.length - 1]?.value || 0;
+          currentCandleRef.current = { ...lastCandle, volume: lastVolume };
         }
       }
       
@@ -248,7 +384,6 @@ const TradingViewChart = ({
     } catch (err) {
       console.error('Historical data loading error:', err);
       setError('과거 데이터를 불러오는 중 오류가 발생했습니다.');
-      setIsLoading(false);
     }
   };
 
@@ -279,7 +414,10 @@ const TradingViewChart = ({
           )}
         </button>
       </div>
-      <div ref={chartContainerRef} className="w-full h-[600px]" />
+      <div className="flex flex-col">
+        <div ref={chartContainerRef} className="w-full h-[450px]" />
+        <div ref={volumeChartContainerRef} className="w-full h-[150px] mt-5" />
+      </div>
     </div>
   );
 };

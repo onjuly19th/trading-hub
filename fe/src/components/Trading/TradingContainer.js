@@ -33,7 +33,39 @@ export default function TradingContainer() {
   const username = authService.getUsername();
   const isAuthenticated = authService.isAuthenticated();
   
-  const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading } = usePortfolio();
+  const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading, setUserBalance } = usePortfolio();
+
+  // coinData가 업데이트될 때마다 자산 가격 정보 업데이트
+  useEffect(() => {
+    if (userBalance?.assets?.length > 0 && coinData.length > 0) {
+      const updatedAssets = userBalance.assets.map(asset => {
+        // 해당 코인의 현재 가격 정보 찾기
+        const coinInfo = coinData.find(c => c.symbol === asset.symbol);
+        
+        // 코인 정보가 있으면 currentPrice 업데이트
+        if (coinInfo && coinInfo.currentPrice) {
+          return {
+            ...asset,
+            currentPrice: coinInfo.currentPrice
+          };
+        }
+        
+        return asset;
+      });
+      
+      // 자산 데이터 비교 후 변경된 경우에만 업데이트
+      const hasChanged = updatedAssets.some((asset, idx) => 
+        asset.currentPrice !== userBalance.assets[idx]?.currentPrice
+      );
+      
+      if (hasChanged) {
+        setUserBalance(prev => ({
+          ...prev,
+          assets: updatedAssets
+        }));
+      }
+    }
+  }, [coinData, setUserBalance]); // userBalance.assets 의존성 제거
 
   // WebSocket 데이터 구독
   useEffect(() => {
@@ -328,13 +360,8 @@ export default function TradingContainer() {
         </div>
       </div>
 
-      {/* 세로형 호가창 */}
-      <div className="w-64 border-r border-gray-200 bg-white overflow-y-auto">
-        <OrderBook symbol={currentSymbol} maxAskEntries={10} maxBidEntries={10} />
-      </div>
-
-      {/* 중앙 컨텐츠 - 차트 및 주문 양식 */}
-      <div className="flex-1 overflow-hidden flex flex-col h-full">
+      {/* 메인 트레이딩 영역 */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* 헤더 정보 */}
         <div className="p-4 bg-white border-b border-gray-200 flex items-center">
           <div className="flex items-center">
@@ -357,35 +384,43 @@ export default function TradingContainer() {
           </div>
         </div>
         
-        {/* 차트 영역 */}
-        <div className="flex-1 overflow-auto">
-          <TradingViewChart 
-            key={currentSymbol} 
-            symbol={currentSymbol} 
-          />
-        </div>
-
-        {/* 주문 양식 - 차트 아래에 배치 */}
-        <div className="bg-white border-t border-gray-200 p-4">
-          <OrderForm 
-            symbol={currentSymbol}
-            currentPrice={numericCurrentPrice}
-            isConnected={true}
-            userBalance={availableBalance}
-            refreshBalance={refreshBalance}
-            coinBalance={assets.find(asset => asset.symbol === currentSymbol)?.amount || 0}
-          />
-        </div>
-      </div>
-
-      {/* 우측 사이드바 - 주문 내역 */}
-      <div className="w-80 border-l border-gray-200 bg-white flex flex-col h-full overflow-hidden">
-        {/* 주문 내역 */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-3 bg-gray-50 border-b border-gray-200 font-medium">
-            주문/체결 내역
+        {/* 트레이딩 메인 영역 (차트/호가창/주문창) */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* 좌측 영역 - 호가창 */}
+          <div className="w-72 bg-white border-r border-gray-200 overflow-y-auto">
+            <OrderBook symbol={currentSymbol} maxAskEntries={15} maxBidEntries={15} />
           </div>
-          <TradeHistory />
+          
+          {/* 중앙 영역 - 차트 */}
+          <div className="flex-1 overflow-hidden">
+            <TradingViewChart 
+              key={currentSymbol} 
+              symbol={currentSymbol} 
+            />
+          </div>
+          
+          {/* 우측 영역 - 주문창 & 주문내역 */}
+          <div className="w-80 border-l border-gray-200 bg-white flex flex-col">
+            {/* 주문 양식 */}
+            <div className="border-b border-gray-200">
+              <OrderForm 
+                symbol={currentSymbol}
+                currentPrice={numericCurrentPrice}
+                isConnected={true}
+                userBalance={availableBalance}
+                refreshBalance={refreshBalance}
+                coinBalance={assets.find(asset => asset.symbol === currentSymbol)?.amount || 0}
+              />
+            </div>
+            
+            {/* 주문 내역 */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-3 bg-gray-50 border-b border-gray-200 font-medium">
+                주문/거래 내역
+              </div>
+              <TradeHistory />
+            </div>
+          </div>
         </div>
       </div>
     </div>

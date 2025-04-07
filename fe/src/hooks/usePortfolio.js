@@ -110,6 +110,7 @@ export function usePortfolio() {
     error,
     isLoading,
     formatUSD,
-    refreshBalance
+    refreshBalance,
+    setUserBalance
   };
 } 

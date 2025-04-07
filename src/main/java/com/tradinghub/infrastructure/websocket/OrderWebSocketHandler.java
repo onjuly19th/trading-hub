@@ -24,14 +24,18 @@ public class OrderWebSocketHandler {
     public void notifyNewOrder(Order order) {
         try {
             OrderResponse orderResponse = new OrderResponse(order);
+            log.info("WebSocket 메시지 준비 - 새 주문: {}", orderResponse);
             
             // 전체 주문 내역 업데이트
             messagingTemplate.convertAndSend("/topic/orders", orderResponse);
+            log.info("WebSocket 전체 주문 메시지 전송 완료: /topic/orders");
             
-            // 사용자별 주문 내역 업데이트
-            messagingTemplate.convertAndSend("/queue/user/" + order.getUser().getId() + "/orders", orderResponse);
+            // 사용자별 주문 내역 업데이트 (username 사용)
+            String destination = "/queue/user/" + order.getUser().getUsername() + "/orders";
+            messagingTemplate.convertAndSend(destination, orderResponse);
             
-            log.info("WebSocket: 새 주문 알림 전송 완료 - 주문ID: {}, 사용자ID: {}", order.getId(), order.getUser().getId());
+            log.info("WebSocket: 새 주문 알림 전송 완료 - 주문ID: {}, 사용자: {}, 경로: {}", 
+                order.getId(), order.getUser().getUsername(), destination);
         } catch (Exception e) {
             log.error("WebSocket: 주문 알림 전송 실패", e);
         }
@@ -43,14 +47,18 @@ public class OrderWebSocketHandler {
     public void notifyOrderUpdate(Order order) {
         try {
             OrderResponse orderResponse = new OrderResponse(order);
+            log.info("WebSocket 메시지 준비 - 주문 업데이트: {}", orderResponse);
             
             // 전체 주문 내역 업데이트
             messagingTemplate.convertAndSend("/topic/orders", orderResponse);
+            log.info("WebSocket 전체 주문 메시지 전송 완료: /topic/orders");
             
-            // 사용자별 주문 내역 업데이트
-            messagingTemplate.convertAndSend("/queue/user/" + order.getUser().getId() + "/orders", orderResponse);
+            // 사용자별 주문 내역 업데이트 (username 사용)
+            String destination = "/queue/user/" + order.getUser().getUsername() + "/orders";
+            messagingTemplate.convertAndSend(destination, orderResponse);
             
-            log.info("WebSocket: 주문 업데이트 알림 전송 완료 - 주문ID: {}, 사용자ID: {}", order.getId(), order.getUser().getId());
+            log.info("WebSocket: 주문 업데이트 알림 전송 완료 - 주문ID: {}, 사용자: {}, 경로: {}", 
+                order.getId(), order.getUser().getUsername(), destination);
         } catch (Exception e) {
             log.error("WebSocket: 주문 업데이트 알림 전송 실패", e);
         }
@@ -62,18 +70,26 @@ public class OrderWebSocketHandler {
     public void notifyNewTrade(Trade trade) {
         try {
             TradeResponse tradeResponse = TradeResponse.from(trade);
+            log.info("WebSocket 메시지 준비 - 새 거래: {}", tradeResponse);
             
             // 전체 거래 내역 업데이트
             messagingTemplate.convertAndSend("/topic/trades", tradeResponse);
+            log.info("WebSocket 전체 거래 메시지 전송 완료: /topic/trades");
             
-            // 사용자별 거래 내역 업데이트 (Order가 있는 경우)
+            // 사용자별 거래 내역 업데이트 (Order가 있는 경우) (username 사용)
             if (trade.getOrder() != null && trade.getOrder().getUser() != null) {
-                messagingTemplate.convertAndSend("/queue/user/" + trade.getOrder().getUser().getId() + "/trades", tradeResponse);
+                String destination = "/queue/user/" + trade.getOrder().getUser().getUsername() + "/trades";
+                messagingTemplate.convertAndSend(destination, tradeResponse);
+                log.info("WebSocket: 사용자별 거래 알림 전송 완료 - 거래ID: {}, 사용자: {}, 경로: {}", 
+                    trade.getId(), trade.getOrder().getUser().getUsername(), destination);
             }
             
-            // 포트폴리오 소유자에게도 알림
+            // 포트폴리오 소유자에게도 알림 (username 사용)
             if (trade.getPortfolio() != null) {
-                messagingTemplate.convertAndSend("/queue/user/" + trade.getPortfolio().getUser().getId() + "/trades", tradeResponse);
+                String destination = "/queue/user/" + trade.getPortfolio().getUser().getUsername() + "/trades";
+                messagingTemplate.convertAndSend(destination, tradeResponse);
+                log.info("WebSocket: 포트폴리오 소유자 거래 알림 전송 완료 - 거래ID: {}, 사용자: {}, 경로: {}", 
+                    trade.getId(), trade.getPortfolio().getUser().getUsername(), destination);
             }
             
             log.info("WebSocket: 새 거래 알림 전송 완료 - 거래ID: {}", trade.getId());

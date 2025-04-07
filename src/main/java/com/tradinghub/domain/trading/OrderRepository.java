@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
     //List<Order> findByUserIdAndStatus(Long userId, Order.OrderStatus status);
-    //List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
+    List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
     //List<Order> findByStatus(Order.OrderStatus status);
     //List<Order> findByUserIdAndSymbol(Long userId, String symbol);
     

@@ -2,7 +2,7 @@
 export const API_CONFIG = {
   BASE_URL: 'http://localhost:8080/api',
             // process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
-  SOCKET_URL: 'ws://localhost:8080/ws',
+  SOCKET_URL: 'http://localhost:8080/ws',
             // process.env.NEXT_PUBLIC_SOCKET_URL || 'ws://localhost:8080/ws',
   BINANCE_WS_URL: 'wss://stream.binance.com:9443',
   BINANCE_REST_URL: 'https://api.binance.com/api/v3/klines',  

@@ -1,6 +1,8 @@
 package com.tradinghub.domain.trading;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,29 @@ import com.tradinghub.infrastructure.security.CurrentUser;
 @RequiredArgsConstructor
 public class OrderController {
     private final OrderService orderService;
+    private final OrderRepository orderRepository;
+    
+    /**
+     * 로그인한 사용자의 주문 목록 조회
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getUserOrders(@CurrentUser User user) {
+        log.info("Fetching orders for user: {}", user.getUsername());
+        
+        try {
+            List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+            List<OrderResponse> orderResponses = orders.stream()
+                .map(OrderResponse::new)
+                .collect(Collectors.toList());
+            
+            log.info("Found {} orders for user: {}", orderResponses.size(), user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success(orderResponses));
+        } catch (Exception e) {
+            log.error("Error fetching orders for user: {}", user.getUsername(), e);
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("ORDER_FETCH_ERROR", "주문 목록을 불러오는데 실패했습니다."));
+        }
+    }
     
     @PostMapping
     public ResponseEntity<ApiResponse<?>> createOrder(@CurrentUser User user, @RequestBody OrderRequest request) {
@@ -51,7 +76,24 @@ public class OrderController {
             return ResponseEntity.ok(ApiResponse.success(new OrderResponse(order)));
         }
     }
-
+    
+    /**
+     * 주문 취소
+     */
+    @DeleteMapping("/{orderId}")
+    public ResponseEntity<ApiResponse<Void>> cancelOrder(@CurrentUser User user, @PathVariable Long orderId) {
+        log.info("Cancelling order - User: {}, Order ID: {}", user.getId(), orderId);
+        
+        try {
+            orderService.cancelOrder(orderId, user.getId());
+            log.info("Order cancelled successfully - Order ID: {}", orderId);
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (Exception e) {
+            log.error("Error cancelling order: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("ORDER_CANCEL_ERROR", e.getMessage()));
+        }
+    }
+    
     @PostMapping("/execute")
     public ResponseEntity<ApiResponse<OrderResponse>> executeOrders(@RequestBody String symbol, BigDecimal price) {
         log.info("Executing orders - Symbol: {}", symbol);
@@ -72,21 +114,16 @@ public class OrderController {
     }
 
     private void validateOrderRequest(OrderRequest request) {
-        if (request.getSymbol() == null || request.getSymbol().isBlank()) {
-            throw new IllegalArgumentException("Symbol is required");
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than 0");
         }
-        if (request.getType() == null) {
-            throw new IllegalArgumentException("Order type is required");
+        
+        if (request.getPrice() != null && request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Price must be greater than 0");
         }
-        if (request.getSide() == null) {
-            throw new IllegalArgumentException("Order side is required");
-        }
-        if (request.getAmount() == null || request.getAmount().signum() <= 0) {
-            throw new IllegalArgumentException("Valid amount is required");
-        }
-        if (request.getType() == Order.OrderType.LIMIT && 
-            (request.getPrice() == null || request.getPrice().signum() <= 0)) {
-            throw new IllegalArgumentException("Valid price is required for limit orders");
+        
+        if (request.getType() == Order.OrderType.LIMIT && request.getPrice() == null) {
+            throw new IllegalArgumentException("Price is required for limit orders");
         }
     }
 } 

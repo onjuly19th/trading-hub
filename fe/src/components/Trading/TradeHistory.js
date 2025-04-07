@@ -19,21 +19,22 @@ export default function TradeHistory() {
       setIsLoading(true);
       console.log('[TradeHistory] REST API로 데이터 조회 시작');
       
-      // 주문 내역 조회
-      const ordersResponse = await api.get(ENDPOINTS.ORDERS.LIST);
-      console.log('[TradeHistory] 주문 내역 응답:', ordersResponse);
+      let apiEndpoint;
+      if (activeTab === 'open') {
+        // 미체결 주문 조회
+        apiEndpoint = ENDPOINTS.ORDERS.LIST;
+      } else {
+        // 체결된 주문 및 취소된 주문 조회 (거래 내역)
+        apiEndpoint = ENDPOINTS.ORDERS.HISTORY;
+      }
       
-      // 거래 내역 조회
-      const tradesResponse = await api.get(ENDPOINTS.TRADES.LIST);
-      console.log('[TradeHistory] 거래 내역 응답:', tradesResponse);
+      // 주문 내역 조회
+      const ordersResponse = await api.get(apiEndpoint);
+      console.log('[TradeHistory] 주문 내역 응답:', ordersResponse);
       
       // 주문 데이터 처리
       const ordersList = Array.isArray(ordersResponse) ? ordersResponse : 
                         (ordersResponse && ordersResponse.data && Array.isArray(ordersResponse.data)) ? ordersResponse.data : [];
-      
-      // 거래 데이터 처리
-      const tradesList = Array.isArray(tradesResponse) ? tradesResponse : 
-                        (tradesResponse && tradesResponse.data && Array.isArray(tradesResponse.data)) ? tradesResponse.data : [];
       
       // 주문 데이터 가공
       const processedOrders = ordersList.map(order => {
@@ -42,32 +43,16 @@ export default function TradeHistory() {
           ...order,
           // side와 type 속성 모두 처리
           type: order.type || (order.side === 'BUY' ? 'BUY' : 'SELL'),
-          timestamp: new Date(timestamp).getTime()
+          timestamp: new Date(timestamp).getTime(),
+          isTrade: false // 명시적으로 주문임을 표시
         };
       });
-      
-      // 거래 데이터를 주문 형식으로 변환
-      const processedTrades = tradesList.map(trade => {
-        return {
-          id: trade.id,
-          symbol: trade.symbol,
-          type: trade.type, // BUY 또는 SELL
-          price: trade.price,
-          amount: trade.amount,
-          status: 'FILLED',
-          timestamp: new Date(trade.executedAt || trade.timestamp || Date.now()).getTime(),
-          isTrade: true // 거래임을 표시
-        };
-      });
-      
-      // 주문과 거래 데이터 합치기
-      const allData = [...processedOrders, ...processedTrades];
       
       // 시간순으로 정렬 (최신 순)
-      allData.sort((a, b) => b.timestamp - a.timestamp);
+      processedOrders.sort((a, b) => b.timestamp - a.timestamp);
       
-      setOrders(allData);
-      console.log('[TradeHistory] 초기 데이터 로드 완료 - 주문:', processedOrders.length, '거래:', processedTrades.length);
+      setOrders(processedOrders);
+      console.log(`[TradeHistory] 초기 데이터 로드 완료 - 주문: ${processedOrders.length}`);
       setError(null);
     } catch (err) {
       console.error('[TradeHistory] 데이터 조회 실패:', err);
@@ -75,7 +60,7 @@ export default function TradeHistory() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [activeTab]);
 
   // 실시간 주문 업데이트 처리 함수
   const handleOrderUpdate = useCallback((orderData) => {
@@ -110,40 +95,6 @@ export default function TradeHistory() {
     });
   }, []);
 
-  // 실시간 거래 업데이트 처리 함수
-  const handleTradeUpdate = useCallback((tradeData) => {
-    console.log('실시간 거래 업데이트 수신:', tradeData);
-    setLastReceivedData({ type: 'trade', data: tradeData, time: new Date().toISOString() });
-    
-    // 거래 데이터를 주문 형식으로 변환하여 표시
-    // 시장가 주문은 바로 체결되므로 FILLED 상태로 간주
-    const orderData = {
-      id: tradeData.id, // 거래 ID를 주문 ID로 사용
-      symbol: tradeData.symbol,
-      type: tradeData.type, // BUY 또는 SELL
-      price: tradeData.price,
-      amount: tradeData.amount,
-      status: 'FILLED',
-      timestamp: new Date(tradeData.executedAt || tradeData.timestamp || Date.now()).getTime(),
-      // 거래 데이터임을 표시
-      isTrade: true
-    };
-    
-    setOrders(prevOrders => {
-      // 이미 추가된 거래인지 확인
-      const existingIndex = prevOrders.findIndex(order => 
-        order.isTrade && order.id === tradeData.id
-      );
-      
-      if (existingIndex >= 0) {
-        return prevOrders; // 이미 있으면 변경 없음
-      } else {
-        // 새 거래 추가
-        return [orderData, ...prevOrders];
-      }
-    });
-  }, []);
-
   // 주문 취소
   const handleCancelOrder = async (orderId) => {
     try {
@@ -164,18 +115,16 @@ export default function TradeHistory() {
     console.log('[TradeHistory] 웹소켓 구독 시작');
     const socketManager = BackendSocketManager.getInstance();
     
-    // 주문과 거래 모두 구독
+    // 주문만 구독
     const unsubscribeOrders = socketManager.subscribeToOrders(handleOrderUpdate);
-    const unsubscribeTrades = socketManager.subscribeToTrades(handleTradeUpdate);
     
     console.log('[TradeHistory] 웹소켓 구독 활성화됨');
     
     return () => {
       console.log('[TradeHistory] 웹소켓 구독 해제');
       unsubscribeOrders();
-      unsubscribeTrades();
     };
-  }, [fetchData, handleOrderUpdate, handleTradeUpdate]);
+  }, [fetchData, handleOrderUpdate]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -220,15 +169,9 @@ export default function TradeHistory() {
       return acc;
     }, []);
     
-    // 탭에 따라 필터링
-    if (activeTab === 'open') {
-      return uniqueOrders.filter(order => order.status === 'PENDING');
-    } else {
-      return uniqueOrders.filter(order => 
-        order.status === 'FILLED' || order.status === 'CANCELLED' || order.isTrade
-      );
-    }
-  }, [orders, activeTab]);
+    // 탭에 따라 필터링 - activeTab 상태에 따라 자동으로 변경됨
+    return uniqueOrders;
+  }, [orders]);
 
   if (isLoading && orders.length === 0) {
     return (
@@ -241,6 +184,7 @@ export default function TradeHistory() {
   return (
     <div className="h-full flex flex-col">
       {/* 디버깅: 마지막 수신된 데이터 표시 */}
+      {/* 
       {lastReceivedData && (
         <div className="bg-blue-50 text-xs p-2 mb-2 border border-blue-200 rounded">
           <div><strong>마지막 수신 데이터:</strong> {lastReceivedData.time}</div>
@@ -248,6 +192,7 @@ export default function TradeHistory() {
           <div><strong>내용:</strong> {JSON.stringify(lastReceivedData.data)}</div>
         </div>
       )}
+      */}
     
       {/* 탭 헤더 */}
       <div className="flex border-b border-gray-200">

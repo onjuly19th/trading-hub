@@ -92,11 +92,12 @@ export const ENDPOINTS = {
     CREATE: '/orders',
     CANCEL: (orderId) => `/orders/${orderId}`,
     LIST: '/orders',
+    HISTORY: '/orders/history',
+    SYMBOL: (symbol) => `/orders/symbol/${symbol}`,
     BOOK: '/orders/book'
   },
-  TRADES: {
-    LIST: '/trades',
-    PRICE: '/trades/price'
+  MARKET: {
+    PRICE: '/market/price'
   }
 };
 

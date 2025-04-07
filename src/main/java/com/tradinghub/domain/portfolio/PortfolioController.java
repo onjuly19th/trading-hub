@@ -1,13 +1,10 @@
 package com.tradinghub.domain.portfolio;
 
-import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.tradinghub.common.response.ApiResponse;
 import com.tradinghub.domain.portfolio.dto.PortfolioResponse;
-import com.tradinghub.domain.trading.Trade;
 import com.tradinghub.domain.user.User;
 import com.tradinghub.infrastructure.security.CurrentUser;
 
@@ -26,13 +23,5 @@ public class PortfolioController {
         log.info("Fetching portfolio - User: {}", user.getId());
         Portfolio portfolio = portfolioService.getPortfolio(user.getId());
         return ResponseEntity.ok(ApiResponse.success(PortfolioResponse.from(portfolio)));
-    }
-
-    @GetMapping("/history")
-    public ResponseEntity<ApiResponse<List<Trade>>> getTradeHistory(
-            @CurrentUser User user,
-            @RequestParam(required = false) String symbol) {
-        log.info("Fetching trade history - User: {}, Symbol: {}", user.getId(), symbol);
-        return ResponseEntity.ok(ApiResponse.success(portfolioService.getTradeHistory(user.getId())));
     }
 } 

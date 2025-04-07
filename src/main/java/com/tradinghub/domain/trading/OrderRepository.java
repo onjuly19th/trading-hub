@@ -16,6 +16,21 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     //List<Order> findBySymbolAndStatusOrderByPriceAsc(String symbol, Order.OrderStatus status);
     List<Order> findBySymbolAndStatusOrderByPriceDesc(String symbol, Order.OrderStatus status);
     
+    /**
+     * 사용자별 특정 상태의 주문 목록 조회
+     */
+    List<Order> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, Order.OrderStatus status);
+    
+    /**
+     * 사용자별 여러 상태의 주문 목록 조회 (거래 내역용)
+     */
+    List<Order> findByUserIdAndStatusInOrderByCreatedAtDesc(Long userId, List<Order.OrderStatus> statuses);
+    
+    /**
+     * 사용자별, 심볼별 주문 목록 조회
+     */
+    List<Order> findByUserIdAndSymbolOrderByCreatedAtDesc(Long userId, String symbol);
+    
     @Query("SELECT o FROM Order o WHERE o.symbol = :symbol AND o.status = :status " +
            "AND o.side = :side AND o.type = 'LIMIT' " +
            "ORDER BY CASE WHEN :side = 'BUY' THEN o.price END DESC, " +
@@ -26,7 +41,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("side") Order.OrderSide side
     );
     
-    /*
+    /**
      * 현재 가격에 따라 체결 가능한 주문 조회
      * 매수(BUY): 현재 가격 <= 주문 가격 (현재 가격이 주문 가격보다 싸거나 같을 때 체결)
      * 매도(SELL): 현재 가격 >= 주문 가격 (현재 가격이 주문 가격보다 비싸거나 같을 때 체결)
@@ -43,19 +58,4 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("symbol") String symbol, 
             @Param("currentPrice") BigDecimal currentPrice
     );
-    
-    // FE 미구현
-    /*
-    @Query("SELECT o FROM Order o WHERE o.symbol = :symbol AND o.side = 'BUY' AND o.status = :status ORDER BY o.price DESC, o.createdAt ASC")
-    List<Order> findBuyOrders(
-            @Param("symbol") String symbol, 
-            @Param("status") Order.OrderStatus status
-    );
-    
-    @Query("SELECT o FROM Order o WHERE o.symbol = :symbol AND o.side = 'SELL' AND o.status = :status ORDER BY o.price ASC, o.createdAt ASC")
-    List<Order> findSellOrders(
-            @Param("symbol") String symbol, 
-            @Param("status") Order.OrderStatus status
-    );
-    */
 } 

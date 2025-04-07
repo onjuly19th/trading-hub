@@ -2,7 +2,6 @@ package com.tradinghub.domain.portfolio;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -12,9 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import com.tradinghub.domain.user.User;
-import com.tradinghub.domain.trading.Trade;
-import com.tradinghub.domain.trading.TradeRepository;
-import com.tradinghub.domain.trading.dto.TradeRequest;
+import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
 import com.tradinghub.common.exception.InsufficientAssetException;
 import com.tradinghub.common.exception.InsufficientBalanceException;
 import com.tradinghub.common.exception.PortfolioNotFoundException;
@@ -25,7 +22,6 @@ import com.tradinghub.common.exception.PortfolioNotFoundException;
 public class PortfolioService {
     private final PortfolioRepository portfolioRepository;
     private final PortfolioAssetRepository assetRepository;
-    private final TradeRepository tradeRepository;
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Portfolio createPortfolio(User user, String symbol, BigDecimal initialBalance) {
@@ -48,45 +44,6 @@ public class PortfolioService {
     public Portfolio getPortfolio(Long userId) {
         return portfolioRepository.findByUserId(userId)
             .orElseThrow(() -> new PortfolioNotFoundException("Portfolio not found for user: " + userId));
-    }
-
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public Trade executeTrade(Long userId, TradeRequest request) {
-        log.info("Executing {} trade for user: {}, symbol: {}, amount: {}, price: {}", 
-                 request.getType(), userId, request.getSymbol(), request.getAmount(), request.getPrice());
-
-        Portfolio portfolio = portfolioRepository.findByUserIdForUpdate(userId)
-            .orElseThrow(() -> new PortfolioNotFoundException("Portfolio not found for user: " + userId));
-
-        BigDecimal tradeAmount = request.getAmount().multiply(request.getPrice());
-
-        // 주문 생성
-        Trade trade = createTrade(portfolio, request);
-        
-        if (request.isBuy()) {
-            validateBuyTrade(portfolio, tradeAmount);
-            // 매수 처리
-            portfolio.processBuyTrade(trade);
-            // 자산 업데이트
-            updateAssetOnBuyTrade(portfolio, request.getSymbol(), request.getAmount(), request.getPrice());
-        } else {
-            PortfolioAsset asset = validateSellTrade(portfolio, request.getSymbol(), request.getAmount());
-            // 매도 처리
-            portfolio.processSellTrade(trade);
-            // 자산 업데이트
-            updateAssetOnSellTrade(portfolio, asset, request.getAmount(), request.getPrice());
-        }
-
-        // 포트폴리오 저장
-        portfolioRepository.save(portfolio);
-        
-        log.info("Trade executed successfully with id: {}", trade.getId());
-        return trade;
-    }
-
-    @Transactional(readOnly = true)
-    public List<Trade> getTradeHistory(Long userId) {
-        return tradeRepository.findByPortfolioUserIdOrderByExecutedAtDesc(userId);
     }
 
     private void validateBuyTrade(Portfolio portfolio, BigDecimal tradeAmount) {
@@ -129,22 +86,8 @@ public class PortfolioService {
         if (asset.getAmount().compareTo(BigDecimal.ZERO) == 0) {
             assetRepository.delete(asset);
         } else {
-            //TODO: 웹소켓 비활성화로 인해 주석 처리
-            //asset.setCurrentPrice(price);
-            //asset.updateProfitLoss();
             assetRepository.save(asset);
         }
-    }
-
-    private Trade createTrade(Portfolio portfolio, TradeRequest request) {
-        Trade trade = new Trade();
-        trade.setPortfolio(portfolio);
-        trade.setSymbol(request.getSymbol());
-        trade.setType(request.getType());
-        trade.setAmount(request.getAmount());
-        trade.setPrice(request.getPrice());
-        trade.calculateTotal();
-        return tradeRepository.save(trade);
     }
 
     private void updateAssetOnBuy(PortfolioAsset asset, BigDecimal amount, BigDecimal price) {
@@ -158,8 +101,42 @@ public class PortfolioService {
         
         asset.setAmount(newAmount);
         asset.setAveragePrice(newAveragePrice);
-        //TODO: 웹소켓 비활성화로 인해 주석 처리
-        //asset.setCurrentPrice(price);
-        //asset.updateProfitLoss();
+    }
+
+    /**
+     * 주문 정보로 포트폴리오 업데이트
+     * 주문 체결 시 포트폴리오 잔액과 자산을 업데이트함
+     * 
+     * @param userId 사용자 ID
+     * @param request 주문 실행 요청 정보
+     */
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    public void updatePortfolioForOrder(Long userId, OrderExecutionRequest request) {
+        log.info("Updating portfolio for user: {}, symbol: {}, amount: {}, price: {}, side: {}", 
+                 userId, request.getSymbol(), request.getAmount(), request.getPrice(), request.getSide());
+
+        Portfolio portfolio = portfolioRepository.findByUserIdForUpdate(userId)
+            .orElseThrow(() -> new PortfolioNotFoundException("Portfolio not found for user: " + userId));
+
+        BigDecimal tradeAmount = request.getAmount().multiply(request.getPrice());
+        
+        if (request.isBuy()) {
+            validateBuyTrade(portfolio, tradeAmount);
+            // processBuyTrade는 내부적으로 usdBalance를 업데이트함
+            portfolio.processBuyTrade(request.getSymbol(), request.getAmount(), request.getPrice(), tradeAmount);
+            // 자산 업데이트
+            updateAssetOnBuyTrade(portfolio, request.getSymbol(), request.getAmount(), request.getPrice());
+        } else {
+            PortfolioAsset asset = validateSellTrade(portfolio, request.getSymbol(), request.getAmount());
+            // processSellTrade는 내부적으로 usdBalance를 업데이트함
+            portfolio.processSellTrade(request.getSymbol(), request.getAmount(), request.getPrice(), tradeAmount);
+            // 자산 업데이트
+            updateAssetOnSellTrade(portfolio, asset, request.getAmount(), request.getPrice());
+        }
+
+        // 포트폴리오 저장
+        portfolioRepository.save(portfolio);
+        
+        log.info("Portfolio updated successfully for user: {}", userId);
     }
 } 

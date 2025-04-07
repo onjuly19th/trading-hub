@@ -8,7 +8,7 @@ export class BackendSocketManager {
   client = null;
   subscribers = {
     orders: new Set(),
-    trades: new Set(),
+    portfolio: new Set(),
   };
   isConnected = false;
   isConnecting = false;
@@ -43,9 +43,11 @@ export class BackendSocketManager {
         connectHeaders: {
           Authorization: `Bearer ${authService.getToken()}`
         },
-        debug: process.env.NODE_ENV === 'development' ? 
-          (str) => console.log('[STOMP] ' + str) : 
-          () => {},
+        // STOMP 디버그 로그 비활성화
+        // debug: process.env.NODE_ENV === 'development' ? 
+        //   (str) => console.log('[STOMP] ' + str) : 
+        //   () => {},
+        debug: () => {},
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
@@ -57,7 +59,7 @@ export class BackendSocketManager {
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         
-        // 전체 주문/거래 구독
+        // 전체 주문 구독
         this.client.subscribe('/topic/orders', (message) => {
           try {
             console.log('[BackendSocketManager] 전체 주문 메시지 수신:', message.body);
@@ -68,17 +70,7 @@ export class BackendSocketManager {
           }
         });
 
-        this.client.subscribe('/topic/trades', (message) => {
-          try {
-            console.log('[BackendSocketManager] 전체 거래 메시지 수신:', message.body);
-            const data = JSON.parse(message.body);
-            this.notifyTradeSubscribers(data);
-          } catch (e) {
-            console.error('[BackendSocketManager] Error parsing trade message:', e);
-          }
-        });
-
-        // 사용자별 주문/거래 구독 (username을 사용)
+        // 사용자별 주문 구독 (username을 사용)
         this.client.subscribe(`/queue/user/${userId}/orders`, (message) => {
           try {
             console.log(`[BackendSocketManager] 사용자(${userId}) 주문 메시지 수신:`, message.body);
@@ -89,13 +81,14 @@ export class BackendSocketManager {
           }
         });
 
-        this.client.subscribe(`/queue/user/${userId}/trades`, (message) => {
+        // 포트폴리오 업데이트 구독 추가
+        this.client.subscribe(`/queue/user/${userId}/portfolio`, (message) => {
           try {
-            console.log(`[BackendSocketManager] 사용자(${userId}) 거래 메시지 수신:`, message.body);
+            console.log(`[BackendSocketManager] 사용자(${userId}) 포트폴리오 업데이트 수신:`, message.body);
             const data = JSON.parse(message.body);
-            this.notifyTradeSubscribers(data);
+            this.notifyPortfolioSubscribers(data);
           } catch (e) {
-            console.error('[BackendSocketManager] Error parsing user trade message:', e);
+            console.error('[BackendSocketManager] Error parsing portfolio update message:', e);
           }
         });
       };
@@ -147,19 +140,18 @@ export class BackendSocketManager {
     };
   }
 
-  subscribeToTrades(callback) {
-    this.subscribers.trades.add(callback);
+  subscribeToPortfolio(callback) {
+    this.subscribers.portfolio.add(callback);
     if (!this.isConnected && !this.isConnecting) this.connect();
     
     // 구독 해제 함수 반환
     return () => {
-      this.subscribers.trades.delete(callback);
+      this.subscribers.portfolio.delete(callback);
       this.checkAndDisconnectIfEmpty();
     };
   }
 
   notifyOrderSubscribers(data) {
-    console.log('[BackendSocketManager] 주문 구독자에게 알림 전송:', data);
     this.subscribers.orders.forEach(callback => {
       try {
         callback(data);
@@ -169,21 +161,55 @@ export class BackendSocketManager {
     });
   }
 
-  notifyTradeSubscribers(data) {
-    console.log('[BackendSocketManager] 거래 구독자에게 알림 전송:', data);
-    this.subscribers.trades.forEach(callback => {
+  notifyPortfolioSubscribers(data) {
+    this.subscribers.portfolio.forEach(callback => {
       try {
         callback(data);
       } catch (e) {
-        console.error('[BackendSocketManager] Error in trade subscriber callback:', e);
+        console.error('[BackendSocketManager] Error in portfolio subscriber callback:', e);
       }
     });
   }
 
   checkAndDisconnectIfEmpty() {
-    const hasSubscribers = this.subscribers.orders.size > 0 || this.subscribers.trades.size > 0;
+    const hasSubscribers = 
+      this.subscribers.orders.size > 0 || 
+      this.subscribers.portfolio.size > 0;
+    
     if (!hasSubscribers && this.isConnected) {
       this.disconnect();
+    }
+  }
+
+  /**
+   * 실시간 가격 데이터를 백엔드로 전송
+   * WebSocketManager에서 받은 바이낸스 가격 데이터를 백엔드로 전달하여 지정가 주문 처리에 사용
+   * 
+   * @param {string} symbol - 코인 심볼 (예: BTCUSDT)
+   * @param {number|string} price - 현재 가격
+   * @return {boolean} - 전송 성공 여부
+   */
+  sendPriceUpdate(symbol, price) {
+    if (!this.isConnected || !this.client) {
+      console.warn('[BackendSocketManager] Cannot send price update: Not connected');
+      return false;
+    }
+
+    try {
+      const message = {
+        symbol: symbol,
+        price: typeof price === 'number' ? price.toString() : price
+      };
+
+      this.client.publish({
+        destination: '/app/price-updates',
+        body: JSON.stringify(message)
+      });
+
+      return true;
+    } catch (error) {
+      console.error('[BackendSocketManager] Error sending price update:', error);
+      return false;
     }
   }
 } 

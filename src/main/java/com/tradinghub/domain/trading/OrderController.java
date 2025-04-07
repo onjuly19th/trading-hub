@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import com.tradinghub.common.response.ApiResponse;
 import com.tradinghub.domain.trading.dto.OrderRequest;
 import com.tradinghub.domain.trading.dto.OrderResponse;
-import com.tradinghub.domain.trading.dto.TradeResponse;
 import com.tradinghub.domain.user.User;
 import com.tradinghub.infrastructure.security.CurrentUser;
 
@@ -55,15 +54,15 @@ public class OrderController {
         validateOrderRequest(request);
 
         if (request.getType() == Order.OrderType.MARKET) {
-            Trade trade = orderService.createMarketOrder(
+            Order order = orderService.createMarketOrder(
                 user.getId(),
                 request.getSymbol(),
                 request.getSide(),
                 request.getPrice(),
                 request.getAmount()
             );
-            log.info("Market order executed - Trade ID: {}", trade.getId());
-            return ResponseEntity.ok(ApiResponse.success(TradeResponse.from(trade)));
+            log.info("Market order executed - Order ID: {}", order.getId());
+            return ResponseEntity.ok(ApiResponse.success(new OrderResponse(order)));
         } else {
             Order order = orderService.createLimitOrder(
                 user.getId(),
@@ -110,6 +109,58 @@ public class OrderController {
             log.error("Order execution failed - Symbol: {}", symbol, e);
             return ResponseEntity.internalServerError()
                 .body(ApiResponse.error("ORDER_EXECUTION_FAILED", "주문 체결 중 오류가 발생했습니다"));
+        }
+    }
+
+    /**
+     * 로그인한 사용자의 거래 내역 조회 (완료된 주문)
+     */
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrderHistory(@CurrentUser User user) {
+        log.info("Fetching order history for user: {}", user.getUsername());
+        
+        try {
+            List<Order> completedOrders = orderRepository.findByUserIdAndStatusInOrderByCreatedAtDesc(
+                user.getId(), 
+                List.of(Order.OrderStatus.FILLED, Order.OrderStatus.CANCELLED)
+            );
+            
+            List<OrderResponse> orderResponses = completedOrders.stream()
+                .map(OrderResponse::from)
+                .collect(Collectors.toList());
+            
+            log.info("Found {} completed orders for user: {}", orderResponses.size(), user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success(orderResponses));
+        } catch (Exception e) {
+            log.error("Error fetching order history for user: {}", user.getUsername(), e);
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("ORDER_HISTORY_FETCH_ERROR", "거래 내역을 불러오는데 실패했습니다."));
+        }
+    }
+    
+    /**
+     * 특정 심볼의 거래 내역 조회
+     */
+    @GetMapping("/symbol/{symbol}")
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrdersBySymbol(
+            @CurrentUser User user, 
+            @PathVariable String symbol) {
+        log.info("Fetching orders for user: {} and symbol: {}", user.getUsername(), symbol);
+        
+        try {
+            List<Order> orders = orderRepository.findByUserIdAndSymbolOrderByCreatedAtDesc(user.getId(), symbol);
+            List<OrderResponse> orderResponses = orders.stream()
+                .map(OrderResponse::from)
+                .collect(Collectors.toList());
+            
+            log.info("Found {} orders for user: {} and symbol: {}", 
+                    orderResponses.size(), user.getUsername(), symbol);
+            return ResponseEntity.ok(ApiResponse.success(orderResponses));
+        } catch (Exception e) {
+            log.error("Error fetching orders for user: {} and symbol: {}", 
+                    user.getUsername(), symbol, e);
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("ORDER_FETCH_ERROR", "주문 내역을 불러오는데 실패했습니다."));
         }
     }
 

@@ -1,18 +1,38 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { authService } from '@/lib/authService';
 import { TRADING_CONFIG, API_CONFIG, COLORS, MAJOR_COINS } from '@/config/constants';
 import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
+import { BackendSocketManager } from '@/lib/websocket/BackendSocketManager';
 import TradingViewChart from '@/components/Chart/TradingViewChart';
 import OrderForm from '@/components/Trading/OrderForm';
 import OrderBook from '@/components/Trading/OrderBook';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import TradeHistory from '@/components/Trading/TradeHistory';
+
+// throttle 함수 정의
+function throttle(func, limit) {
+  let inThrottle = false;
+  let lastResult = null;
+  
+  return function(...args) {
+    if (!inThrottle) {
+      inThrottle = true;
+      lastResult = func.apply(this, args);
+      
+      setTimeout(() => {
+        inThrottle = false;
+      }, limit);
+    }
+    
+    return lastResult;
+  };
+}
 
 export default function TradingContainer() {
   const router = useRouter();
@@ -34,6 +54,36 @@ export default function TradingContainer() {
   const isAuthenticated = authService.isAuthenticated();
   
   const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading, setUserBalance } = usePortfolio();
+
+  // 메모이제이션된 트레이드 콜백 함수
+  const tradeCallback = useCallback((data) => {
+    if (!data || !data.price) return;
+    
+    const newPrice = data.price;
+    const oldPrice = prevPriceRef.current;
+    
+    // 가격이 변경되지 않았다면 업데이트하지 않음
+    if (newPrice === oldPrice) return;
+    
+    setPriceChange((prev) => {
+      const newChange = parseFloat(newPrice) - parseFloat(oldPrice);
+      if (prev === newChange) return prev;
+      return newChange;
+    });
+    
+    setCurrentPrice((prev) => {
+      if (prev === newPrice) return prev;
+      return newPrice;
+    });
+    
+    prevPriceRef.current = newPrice;
+    
+    // 백엔드로 가격 데이터 전송 (지정가 주문 체결용)
+    const backendManager = BackendSocketManager.getInstance();
+    if (backendManager.isConnected) {
+      backendManager.sendPriceUpdate(currentSymbol, newPrice);
+    }
+  }, [currentSymbol]);
 
   // coinData가 업데이트될 때마다 자산 가격 정보 업데이트
   useEffect(() => {
@@ -65,7 +115,43 @@ export default function TradingContainer() {
         }));
       }
     }
-  }, [coinData, setUserBalance]); // userBalance.assets 의존성 제거
+  }, [coinData]); // userBalance 의존성 제거하고 setUserBalance도 제거
+
+  // 백엔드 웹소켓을 통한 포트폴리오 업데이트 구독
+  useEffect(() => {
+    if (!authService.isAuthenticated()) return;
+    
+    const socketManager = BackendSocketManager.getInstance();
+    
+    // 포트폴리오 업데이트 콜백 함수
+    const portfolioUpdateCallback = (data) => {
+      if (data && data.status === 'SUCCESS' && data.data) {
+        // coinData의 현재가 정보를 활용하여 자산 정보 업데이트
+        const portfolioData = data.data;
+        const assets = portfolioData.assets || [];
+        
+        // 현재 coinData의 가격 정보로 자산 업데이트
+        const updatedAssets = assets.map(asset => {
+          const coinInfo = coinData.find(c => c.symbol === asset.symbol);
+          return {
+            ...asset,
+            currentPrice: coinInfo?.currentPrice || asset.currentPrice || 0
+          };
+        });
+        
+        setUserBalance({
+          availableBalance: portfolioData.usdBalance || 0,
+          assets: updatedAssets
+        });
+      }
+    };
+    
+    // 포트폴리오 업데이트 구독
+    const unsubscribe = socketManager.subscribeToPortfolio(portfolioUpdateCallback);
+    
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => unsubscribe();
+  }, [coinData]); // setUserBalance 의존성 제거
 
   // WebSocket 데이터 구독
   useEffect(() => {
@@ -76,16 +162,8 @@ export default function TradingContainer() {
       manager.unsubscribe(currentSymbol, 'trade', tradeCallbackRef.current);
     }
     
-    // 콜백 함수 생성
-    tradeCallbackRef.current = (data) => {
-      if (!data || !data.price) return;
-      
-      const newPrice = data.price;
-      const oldPrice = prevPriceRef.current;
-      setPriceChange(parseFloat(newPrice) - parseFloat(oldPrice));
-      setCurrentPrice(newPrice);
-      prevPriceRef.current = newPrice;
-    };
+    // 저장된 콜백 함수 설정
+    tradeCallbackRef.current = tradeCallback;
     
     // 새 구독 설정
     manager.subscribe(currentSymbol, 'trade', tradeCallbackRef.current);
@@ -96,11 +174,12 @@ export default function TradingContainer() {
         manager.unsubscribe(currentSymbol, 'trade', tradeCallbackRef.current);
       }
     };
-  }, [currentSymbol]);
+  }, [currentSymbol, tradeCallback]);
 
   // 모든 코인의 ticker 데이터 구독
   useEffect(() => {
     const manager = WebSocketManager.getInstance();
+    const backendManager = BackendSocketManager.getInstance();
     
     // 각 코인에 대한 ticker 구독 설정
     MAJOR_COINS.forEach(coin => {
@@ -112,14 +191,21 @@ export default function TradingContainer() {
       }
       
       // 새 콜백 함수 설정
-      tickerCallbackRefs.current[symbol] = (data) => {
+      tickerCallbackRefs.current[symbol] = throttle((data) => {
         if (!data) return;
         
-        setCoinData(prev => {
+        const newPrice = parseFloat(data.price || 0);
+        
+        // 백엔드로 가격 데이터 전송 (지정가 주문 체결용)
+        // 매 틱마다 전송하면 트래픽이 많아지므로 분당 1회 정도로 제한할 수도 있음
+        if (backendManager.isConnected) {
+          backendManager.sendPriceUpdate(symbol, newPrice);
+        }
+        
+        setCoinData(prevCoinData => {
           // 이전 코인 데이터 찾기
-          const prevCoin = prev.find(c => c.symbol === symbol);
+          const prevCoin = prevCoinData.find(c => c.symbol === symbol);
           const prevPrice = prevCoin?.currentPrice || 0;
-          const newPrice = parseFloat(data.price || 0);
           
           // 가격 방향 계산 (상승/하락/유지)
           let priceDirection = 0;
@@ -127,7 +213,15 @@ export default function TradingContainer() {
             priceDirection = newPrice > prevPrice ? 1 : (newPrice < prevPrice ? -1 : 0);
           }
           
-          return prev.map(c => 
+          // 새 배열 생성하기 전에 데이터 변경 여부 확인
+          const coinToUpdate = prevCoinData.find(c => c.symbol === symbol);
+          if (coinToUpdate && 
+              coinToUpdate.currentPrice === newPrice && 
+              coinToUpdate.priceChangePercent === parseFloat(data.priceChangePercent || 0)) {
+            return prevCoinData; // 변경 사항 없으면 이전 상태 반환
+          }
+          
+          return prevCoinData.map(c => 
             c.symbol === symbol 
               ? { 
                   ...c, 
@@ -138,7 +232,7 @@ export default function TradingContainer() {
               : c
           );
         });
-      };
+      }, 300); // 300ms 스로틀링
       
       // 구독
       manager.subscribe(symbol, 'ticker', tickerCallbackRefs.current[symbol]);

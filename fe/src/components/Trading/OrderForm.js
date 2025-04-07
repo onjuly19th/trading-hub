@@ -57,16 +57,11 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
       setPrice(currentPrice?.toString() || '');
       setAmount('');
       
-      // 3초 후 성공 메시지 제거 및 잔액 새로고침
+      // 3초 후 성공 메시지 제거
       setTimeout(() => {
         setOrderSuccess(false);
         
-        // 잔액 새로고침
-        if (refreshBalance) {
-          refreshBalance().catch(err => {
-            console.error('Error refreshing balance:', err);
-          });
-        }
+        // 웹소켓을 통한 실시간 업데이트로 대체됨 - refreshBalance 호출 제거
       }, 3000);
 
     } catch (err) {

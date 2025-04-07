@@ -13,7 +13,7 @@ import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
-import com.tradinghub.domain.trading.dto.TradeRequest;
+import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
 import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
 
 @Slf4j
@@ -23,42 +23,59 @@ public class OrderService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final PortfolioService portfolioService;
-    //private final CryptoMarketService cryptoMarketService;
-    private final TradeRepository tradeRepository;
     private final OrderWebSocketHandler webSocketHandler;
 
-    /**
+    /*
      * 시장가 주문 생성 후 즉시 체결
-     * Order 테이블에 저장 X -> 바로 Trade로 생성
      */
     @Transactional
-    public Trade createMarketOrder(Long userId, String symbol, Order.OrderSide side,
+    public Order createMarketOrder(Long userId, String symbol, Order.OrderSide side,
                                    BigDecimal price, BigDecimal amount) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
-        //BigDecimal currentPrice = cryptoMarketService.getCurrentPrice(symbol);
-        // TODO: 시장가 주문 시 현재 시장 가격 조회 (웹소켓)
-        // 예시 가격 = $85000
         BigDecimal currentPrice = price;
         
         // 주문 가능 여부 확인
         validateOrder(user, side, currentPrice, amount);
 
-        // 포트폴리오 업데이트 및 거래 생성
-        TradeRequest tradeRequest = new TradeRequest();
-        tradeRequest.setSymbol(symbol);
-        tradeRequest.setAmount(amount);
-        tradeRequest.setPrice(currentPrice);
-        tradeRequest.setType(side == Order.OrderSide.BUY ? Trade.TradeType.BUY : Trade.TradeType.SELL);
-
-        Trade trade = portfolioService.executeTrade(userId, tradeRequest);
-        trade = tradeRepository.save(trade);
+        // 시장가 주문 생성
+        Order order = Order.builder()
+            .user(user)
+            .symbol(symbol)
+            .side(side)
+            .type(Order.OrderType.MARKET) // 시장가 주문 타입
+            .amount(amount)
+            .price(currentPrice)
+            .status(Order.OrderStatus.FILLED) // 바로 체결 상태로 설정
+            .build();
+        
+        // 체결 가격 설정
+        order.setExecutedPrice(currentPrice);
+        
+        // 주문 저장
+        order = orderRepository.save(order);
+        
+        // 포트폴리오 업데이트
+        updatePortfolioForOrder(user.getId(), order);
         
         // WebSocket을 통한 실시간 알림
-        webSocketHandler.notifyNewTrade(trade);
+        webSocketHandler.notifyNewOrder(order);
+        
+        // 포트폴리오 업데이트 알림 추가
+        Portfolio portfolio = portfolioService.getPortfolio(userId);
+        webSocketHandler.notifyPortfolioUpdate(portfolio);
 
-        return trade;
+        return order;
+    }
+    
+    /**
+     * 주문 정보를 기반으로 포트폴리오 업데이트
+     */
+    private void updatePortfolioForOrder(Long userId, Order order) {
+        // OrderExecutionRequest를 사용하여 포트폴리오 업데이트
+        OrderExecutionRequest executionRequest = OrderExecutionRequest.from(order);
+        portfolioService.updatePortfolioForOrder(userId, executionRequest);
     }
 
     /**
@@ -81,8 +98,6 @@ public class OrderService {
             .side(side)
             .price(price)
             .amount(amount)
-            // TODO: 부분 체결 구현
-            // .filledAmount(BigDecimal.ZERO)
             .status(Order.OrderStatus.PENDING)
             .build();
 
@@ -108,23 +123,20 @@ public class OrderService {
         int executedCount = 0;
         for (Order order : executableOrders) {
             try {
-                TradeRequest tradeRequest = new TradeRequest();
-                tradeRequest.setSymbol(symbol);
-                tradeRequest.setAmount(order.getAmount());
-                tradeRequest.setPrice(currentPrice);
-                tradeRequest.setType(order.getSide() == Order.OrderSide.BUY ? 
-                    Trade.TradeType.BUY : Trade.TradeType.SELL);
-
-                Trade trade = portfolioService.executeTrade(order.getUser().getId(), tradeRequest);
-                trade.setOrder(order);
-                trade = tradeRepository.save(trade);
-
-                order.setStatus(Order.OrderStatus.FILLED);
+                // 주문 상태 업데이트
+                order.fill();
+                order.setExecutedPrice(currentPrice);
                 orderRepository.save(order);
+                
+                // 포트폴리오 업데이트
+                updatePortfolioForOrder(order.getUser().getId(), order);
                 
                 // WebSocket을 통한 실시간 알림
                 webSocketHandler.notifyOrderUpdate(order);
-                webSocketHandler.notifyNewTrade(trade);
+                
+                // 포트폴리오 업데이트 알림 추가
+                Portfolio portfolio = portfolioService.getPortfolio(order.getUser().getId());
+                webSocketHandler.notifyPortfolioUpdate(portfolio);
 
                 log.info("Order executed: ID={}, Type={}, Amount={}, Price={}", 
                     order.getId(), order.getType(), order.getAmount(), currentPrice);

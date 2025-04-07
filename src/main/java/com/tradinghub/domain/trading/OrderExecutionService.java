@@ -8,16 +8,16 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
-import com.tradinghub.domain.trading.dto.TradeRequest;
+import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
 import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TradeExecutionService {
+public class OrderExecutionService {
     private final OrderRepository orderRepository;
-    private final TradeRepository tradeRepository;
     private final PortfolioService portfolioService;
     private final OrderWebSocketHandler webSocketHandler;
 
@@ -37,28 +37,21 @@ public class TradeExecutionService {
 
     private void executeTrade(Order order) {
         try {
-            // TradeRequest 생성
-            TradeRequest tradeRequest = new TradeRequest();
-            tradeRequest.setSymbol(order.getSymbol());
-            tradeRequest.setAmount(order.getAmount());
-            tradeRequest.setPrice(order.getPrice());
-            tradeRequest.setType(order.getSide() == Order.OrderSide.BUY ? Trade.TradeType.BUY : Trade.TradeType.SELL);
-
-            // 포트폴리오 업데이트 및 거래 생성
-            Trade trade = portfolioService.executeTrade(order.getUser().getId(), tradeRequest);
+            // OrderExecutionRequest를 생성하여 포트폴리오 업데이트
+            OrderExecutionRequest executionRequest = OrderExecutionRequest.from(order);
+            portfolioService.updatePortfolioForOrder(order.getUser().getId(), executionRequest);
 
             // 주문 상태 업데이트
             order.fill();
             order.setExecutedPrice(order.getPrice());
             order = orderRepository.save(order);
             
-            // 거래 기록 저장
-            trade.setOrder(order);
-            trade = tradeRepository.save(trade);
-            
             // WebSocket 알림 전송
             webSocketHandler.notifyOrderUpdate(order);
-            webSocketHandler.notifyNewTrade(trade);
+            
+            // 포트폴리오 업데이트 알림 추가
+            Portfolio portfolio = portfolioService.getPortfolio(order.getUser().getId());
+            webSocketHandler.notifyPortfolioUpdate(portfolio);
             
             log.info("주문 체결 완료: 주문 ID={}, 심볼={}, 가격={}, 수량={}", 
                 order.getId(), order.getSymbol(), order.getPrice(), order.getAmount());

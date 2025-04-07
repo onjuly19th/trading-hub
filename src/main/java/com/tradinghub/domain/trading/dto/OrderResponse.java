@@ -17,13 +17,12 @@ public class OrderResponse {
     private String side;
     private BigDecimal price;
     private BigDecimal amount;
-    // TODO: 부분 체결 구현
-    // private final BigDecimal filledAmount;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String message;
     private int executedCount;
+    private BigDecimal executedPrice; // 체결 가격 추가
 
     public OrderResponse(Order order) {
         this.id = order.getId();
@@ -32,15 +31,21 @@ public class OrderResponse {
         this.side = order.getSide().toString();
         this.price = order.getPrice();
         this.amount = order.getAmount();
-        // TODO: 부분 체결 구현
-        // this.filledAmount = order.getFilledAmount();
         this.status = order.getStatus().toString();
         this.createdAt = order.getCreatedAt();
         this.updatedAt = order.getUpdatedAt();
+        this.executedPrice = order.getExecutedPrice();
     }
 
     public OrderResponse(String message, int executedCount) {
         this.message = message;
         this.executedCount = executedCount;
+    }
+    
+    /**
+     * Order 객체로부터 OrderResponse 객체 생성
+     */
+    public static OrderResponse from(Order order) {
+        return new OrderResponse(order);
     }
 } 

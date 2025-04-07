@@ -70,7 +70,7 @@ const TradingViewChart = ({
   useEffect(() => {
     let chart = null;
     let candlestickSeries = null;
-    let isChartInitialized = false;
+    let isDisposed = false;
 
     const initChart = async () => {
       if (!chartContainerRef.current) return;
@@ -115,22 +115,20 @@ const TradingViewChart = ({
         // 참조 저장
         chartRef.current = chart;
         candlestickSeriesRef.current = candlestickSeries;
-        isChartInitialized = true;
 
-        // 빈 차트 먼저 표시 (UX 향상)
-        candlestickSeries.setData([]);
-
-        // 비동기로 데이터 로드하여 UI 차단 방지
-        setTimeout(() => {
-          loadHistoricalData(candlestickSeries);
-        }, 0);
+        // 초기 데이터 로드
+        await loadHistoricalData(candlestickSeries);
 
         // 차트 크기 조정
         const handleResize = () => {
-          if (chartContainerRef.current && chart) {
+          if (isDisposed || !chartContainerRef.current || !chart) return;
+          
+          try {
             chart.applyOptions({
               width: chartContainerRef.current.clientWidth,
             });
+          } catch (err) {
+            console.error('Chart resize error:', err);
           }
         };
 
@@ -149,18 +147,29 @@ const TradingViewChart = ({
     initChart();
 
     return () => {
+      isDisposed = true;
+      
+      // 첫 번째: WebSocket 구독 해제 (다른 useEffect에서 처리)
+      
+      // 두 번째: 참조 제거 (업데이트 방지)
+      currentCandleRef.current = null;
+      candlestickSeriesRef.current = null;
+      
+      // 세 번째: 차트 제거 (마지막에 수행)
       if (chartRef.current) {
-        chartRef.current.remove();
+        try {
+          chartRef.current.remove();
+        } catch (err) {
+          console.error('Chart removal error:', err);
+        }
         chartRef.current = null;
-        candlestickSeriesRef.current = null;
-        currentCandleRef.current = null;
       }
     };
   }, [symbol, isDarkMode]);
 
   // 실시간 가격 업데이트
   useEffect(() => {
-    if (!tradeData || !candlestickSeriesRef.current) return;
+    if (!tradeData || !candlestickSeriesRef.current || !chartRef.current) return;
 
     const price = parseFloat(tradeData.price);
     const tradeTime = Math.floor(tradeData.time / 1000);

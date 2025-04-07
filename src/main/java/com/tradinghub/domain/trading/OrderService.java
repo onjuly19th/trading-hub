@@ -3,18 +3,19 @@ package com.tradinghub.domain.trading;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-import com.tradinghub.domain.user.User;
-import com.tradinghub.domain.user.UserRepository;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
-import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
+import com.tradinghub.domain.trading.event.OrderExecutedEvent;
+import com.tradinghub.domain.user.User;
+import com.tradinghub.domain.user.UserRepository;
 import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -22,8 +23,9 @@ import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
 public class OrderService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
-    private final PortfolioService portfolioService;
+    private final PortfolioService portfolioService; // 주문 검증 및 포트폴리오 조회용으로만 사용
     private final OrderWebSocketHandler webSocketHandler;
+    private final ApplicationEventPublisher eventPublisher;
 
     /*
      * 시장가 주문 생성 후 즉시 체결
@@ -56,26 +58,24 @@ public class OrderService {
         // 주문 저장
         order = orderRepository.save(order);
         
-        // 포트폴리오 업데이트
-        updatePortfolioForOrder(user.getId(), order);
+        // 포트폴리오 업데이트를 위한 이벤트 발행
+        updatePortfolioForOrder(userId, order);
         
         // WebSocket을 통한 실시간 알림
         webSocketHandler.notifyNewOrder(order);
         
-        // 포트폴리오 업데이트 알림 추가
-        Portfolio portfolio = portfolioService.getPortfolio(userId);
-        webSocketHandler.notifyPortfolioUpdate(portfolio);
-
+        // 포트폴리오 업데이트 알림은 이벤트 리스너에서 처리됨
+        
         return order;
     }
     
     /**
-     * 주문 정보를 기반으로 포트폴리오 업데이트
+     * 주문 정보를 기반으로 이벤트 발행
+     * 직접적인 포트폴리오 업데이트 대신 이벤트를 통해 느슨하게 결합
      */
     private void updatePortfolioForOrder(Long userId, Order order) {
-        // OrderExecutionRequest를 사용하여 포트폴리오 업데이트
-        OrderExecutionRequest executionRequest = OrderExecutionRequest.from(order);
-        portfolioService.updatePortfolioForOrder(userId, executionRequest);
+        // 이벤트 발행 - 포트폴리오 업데이트는 리스너에서 처리
+        eventPublisher.publishEvent(new OrderExecutedEvent(order));
     }
 
     /**
@@ -134,10 +134,6 @@ public class OrderService {
                 // WebSocket을 통한 실시간 알림
                 webSocketHandler.notifyOrderUpdate(order);
                 
-                // 포트폴리오 업데이트 알림 추가
-                Portfolio portfolio = portfolioService.getPortfolio(order.getUser().getId());
-                webSocketHandler.notifyPortfolioUpdate(portfolio);
-
                 log.info("Order executed: ID={}, Type={}, Amount={}, Price={}", 
                     order.getId(), order.getType(), order.getAmount(), currentPrice);
                 
@@ -175,19 +171,6 @@ public class OrderService {
             }
         }
     }
-
-    // FE 미구현
-    /*
-    @Transactional(readOnly = true)
-    public List<Order> getUserOrders(Long userId) {
-        return orderRepository.findByUserIdAndStatus(userId, Order.OrderStatus.PENDING);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Order> getOrderBook(String symbol) {
-        return orderRepository.findBySymbolAndStatusOrderByPriceDesc(symbol, Order.OrderStatus.PENDING);
-    }
-    */
 
     @Transactional
     public void cancelOrder(Long orderId, Long userId) {

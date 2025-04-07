@@ -10,7 +10,7 @@ export const API_CONFIG = {
 };
 
 // 기본 코인 티커
-export const MAJOR_TICKERS = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'DOGE', 'SOL', 'DOT', 'LTC', 'TRX'];
+export const MAJOR_TICKERS = ['BTC', 'ETH', 'XRP', 'BNB', 'SOL', 'TRX', 'DOGE', 'ADA', 'XLM', 'LINK'];
 
 // 코인 객체 생성 팩토리 함수
 const createCoinObject = (ticker) => ({

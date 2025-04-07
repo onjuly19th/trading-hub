@@ -34,10 +34,27 @@ const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
     }
   }, [price]); // price의 값 변화에만 의존
 
+  // 가격에 따라 소수점 자릿수 동적 결정
+  const getDecimalPlaces = (priceValue) => {
+    if (!priceValue) return 4; // 기본값: 소수점 4자리
+    
+    const numPrice = parseFloat(priceValue);
+    if (numPrice >= 10000) return 2; // $10,000 이상: 소수점 2자리
+    if (numPrice >= 1000) return 2;  // $1,000 이상: 소수점 2자리
+    if (numPrice >= 100) return 3;   // $100 이상: 소수점 3자리
+    if (numPrice >= 10) return 4;    // $10 이상: 소수점 4자리
+    if (numPrice >= 1) return 4;     // $1 이상: 소수점 4자리
+    if (numPrice >= 0.1) return 5;   // $0.1 이상: 소수점 5자리
+    if (numPrice >= 0.01) return 6;  // $0.01 이상: 소수점 6자리
+    return 8;                       // 매우 작은 값: 소수점 8자리
+  };
+
+  const decimalPlaces = getDecimalPlaces(price);
+  
   const formattedPrice = price ? parseFloat(price).toLocaleString(undefined, {
-    minimumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS,
-    maximumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS
-  }) : '0.00';
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces
+  }) : '0.0000';
 
   const changeValue = parseFloat(priceChange || 0);
   const changeColor = changeValue >= 0 ? COLORS.BUY : COLORS.SELL;

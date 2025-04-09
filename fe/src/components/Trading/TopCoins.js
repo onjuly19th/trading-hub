@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { MAJOR_COINS, TRADING_CONFIG, COLORS } from '@/config/constants';
 import { useMarketData } from '@/hooks/useMarketData';
+import { formatNumber } from '@/utils/formatNumber';
 
 // COLORS 확인용 콘솔 로그
 console.log('TopCoins COLORS:', COLORS);
@@ -69,10 +70,7 @@ export default function TopCoins({ onSelectCoin, currentSymbol }) {
           
           <div className="text-right">
             <div className="text-lg font-bold">
-              {coin.price?.toLocaleString(undefined, {
-                minimumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS,
-                maximumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS
-              })} USD
+              {formatNumber(coin.price)} USD
             </div>
             <div
               className="text-sm"

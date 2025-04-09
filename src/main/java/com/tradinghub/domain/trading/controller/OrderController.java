@@ -37,8 +37,6 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getUserOrders(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        log.info("Fetching user orders: userId={}, username={}", user.getId(), user.getUsername());
-        
         List<Order> orders = orderService.getOrdersByUserId(user.getId());
         List<OrderResponse> orderResponses = OrderResponse.fromList(orders);
         
@@ -49,9 +47,6 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
             @Valid @RequestBody OrderRequest request, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        log.info("Creating order: userId={}, username={}, orderType={}, symbol={}, side={}, price={}, amount={}", 
-                user.getId(), user.getUsername(), request.getType(), request.getSymbol(), 
-                request.getSide(), request.getPrice(), request.getAmount());
         
         validateOrderRequest(request);
         
@@ -60,13 +55,15 @@ public class OrderController {
             order = orderService.createMarketOrder(
                     user.getId(), request.getSymbol(), request.getSide(), 
                     request.getPrice(), request.getAmount());
-            log.info("Market order created: orderId={}, userId={}", order.getId(), user.getId());
         } else {
             order = orderService.createLimitOrder(
                     user.getId(), request.getSymbol(), request.getSide(), 
                     request.getPrice(), request.getAmount());
-            log.info("Limit order created: orderId={}, userId={}", order.getId(), user.getId());
         }
+        
+        log.info("Order created: orderId={}, type={}, userId={}, symbol={}, side={}, amount={}", 
+                order.getId(), request.getType(), user.getId(), request.getSymbol(), 
+                request.getSide(), request.getAmount());
         
         return ResponseEntity.ok(ApiResponse.success(OrderResponse.from(order)));
     }
@@ -78,10 +75,9 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Void>> cancelOrder(
             @PathVariable Long orderId, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        log.info("Cancelling order: orderId={}, userId={}", orderId, user.getId());
-        
         orderService.cancelOrder(orderId, user.getId());
-        log.info("Order cancelled successfully: orderId={}, userId={}", orderId, user.getId());
+        
+        log.info("Order cancelled: orderId={}, userId={}", orderId, user.getId());
         
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -90,12 +86,11 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderResponse>> executeOrders(
             @RequestParam @NotBlank(message = "Symbol is required") String symbol, 
             @RequestParam @DecimalMin(value = "0.00000001", message = "Price must be greater than 0") BigDecimal price) {
-        log.info("Executing batch orders: symbol={}, price={}", symbol, price);
-        
         int executedCount = orderService.executeOrdersAtPrice(symbol, price);
         String message = String.format("Executed %d orders", executedCount);
         
-        log.info("Batch execution completed: symbol={}, price={}, executedCount={}", symbol, price, executedCount);
+        log.info("Batch execution completed: symbol={}, price={}, executedCount={}", 
+                symbol, price, executedCount);
         
         return ResponseEntity.ok(ApiResponse.success(OrderResponse.withMessage(message, executedCount)));
     }
@@ -106,8 +101,6 @@ public class OrderController {
     @GetMapping("/history")
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrderHistory(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        log.info("Fetching order history: userId={}, username={}", user.getId(), user.getUsername());
-        
         List<Order> completedOrders = orderService.getCompletedOrdersByUserId(user.getId());
         
         return ResponseEntity.ok(ApiResponse.success(OrderResponse.fromList(completedOrders)));
@@ -120,13 +113,10 @@ public class OrderController {
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrdersBySymbol(
             @PathVariable String symbol, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        log.info("Fetching orders by symbol: userId={}, username={}, symbol={}", 
-                user.getId(), user.getUsername(), symbol);
-        
         List<Order> orders = orderService.getOrdersByUserIdAndSymbol(user.getId(), symbol);
         
-        log.info("Found orders by symbol: userId={}, symbol={}, count={}", 
-                user.getId(), symbol, orders.size());
+        log.info("Orders found for symbol: symbol={}, userId={}, count={}", 
+                symbol, user.getId(), orders.size());
                 
         return ResponseEntity.ok(ApiResponse.success(OrderResponse.fromList(orders)));
     }

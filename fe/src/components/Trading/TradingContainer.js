@@ -14,6 +14,7 @@ import OrderBook from '@/components/Trading/OrderBook';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import TradeHistory from '@/components/Trading/TradeHistory';
+import { formatNumber } from '@/utils/formatNumber';
 
 // throttle 함수 정의
 function throttle(func, limit) {
@@ -312,11 +313,11 @@ export default function TradingContainer() {
             <span className="font-medium">{symbol}:</span>
           </div>
           <div className="text-right">
-            <div>{asset.amount.toFixed(8)}</div>
-            <div className="text-xs">${formatUSD(value)}</div>
+            <div>{formatNumber(asset.amount)}</div>
+            <div className="text-xs">${formatNumber(value)}</div>
             {asset.amount > 0 && (
               <div className="text-xs" style={{ color: isProfitable ? COLORS.BUY : COLORS.SELL }}>
-                {isProfitable ? '+' : ''}{formatUSD(profitLoss)} ({profitLossPercentage.toFixed(2)}%)
+                {isProfitable ? '+' : ''}{formatNumber(profitLoss)} ({profitLossPercentage.toFixed(2)}%)
               </div>
             )}
           </div>
@@ -357,10 +358,7 @@ export default function TradingContainer() {
             color: (coinInfo.priceDirection || 0) > 0 ? COLORS.BUY : 
                   (coinInfo.priceDirection || 0) < 0 ? COLORS.SELL : 'inherit'
           }}>
-            ${parseFloat(coinInfo.currentPrice || 0).toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            })}
+            ${formatNumber(parseFloat(coinInfo.currentPrice || 0))}
           </div>
           <div className="text-xs" style={{ 
             color: (coinInfo.priceChangePercent || 0) >= 0 ? COLORS.BUY : COLORS.SELL 
@@ -389,8 +387,8 @@ export default function TradingContainer() {
             </button>
           </div>
           <div className="text-sm">
-            <div>잔액: ${formatUSD(availableBalance)}</div>
-            <div className="font-medium">총자산: ${formatUSD(totalPortfolioValue)}</div>
+            <div>잔액: ${formatNumber(availableBalance)}</div>
+            <div className="font-medium">총자산: ${formatNumber(totalPortfolioValue)}</div>
           </div>
         </div>
 
@@ -469,10 +467,7 @@ export default function TradingContainer() {
             <div>
               <h1 className="text-xl font-bold">{currentSymbol.replace('USDT', '')}/USDT</h1>
               <p className="text-lg font-semibold" style={{ color: priceChange >= 0 ? COLORS.BUY : COLORS.SELL }}>
-                ${numericCurrentPrice.toLocaleString('en-US', { 
-                  minimumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS,
-                  maximumFractionDigits: TRADING_CONFIG.PRICE_DECIMALS 
-                })}
+                ${formatNumber(numericCurrentPrice)}
               </p>
             </div>
           </div>

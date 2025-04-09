@@ -6,6 +6,7 @@ import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
 import { api, ENDPOINTS } from '@/lib/api';
 import ErrorMessage from '@/components/Common/ErrorMessage';
 import TradeHistory from './TradeHistory';
+import { formatNumber } from '@/utils/formatNumber';
 
 export default function OrderBook({ 
   symbol = TRADING_CONFIG.DEFAULT_SYMBOL,
@@ -327,13 +328,10 @@ export default function OrderBook({
                     
                     {/* 가격과 수량 */}
                     <div className="relative z-10 text-xs font-medium" style={{ color: COLORS.SELL }}>
-                      {ask.price.toLocaleString(undefined, {
-                        minimumFractionDigits: priceDecimals,
-                        maximumFractionDigits: priceDecimals
-                      })}
+                      {formatNumber(ask.price)}
                     </div>
                     <div className="relative z-10 text-xs text-gray-700">
-                      {ask.amount.toFixed(TRADING_CONFIG.AMOUNT_DECIMALS)}
+                      {formatNumber(ask.amount)}
                     </div>
                   </div>
                 );
@@ -345,10 +343,7 @@ export default function OrderBook({
               <span className="font-bold text-sm" style={{ 
                 color: priceDirection >= 0 ? COLORS.BUY : COLORS.SELL 
               }}>
-                {orderBook.currentPrice.toLocaleString(undefined, {
-                  minimumFractionDigits: priceDecimals,
-                  maximumFractionDigits: priceDecimals
-                })}
+                {formatNumber(orderBook.currentPrice)}
               </span>
               <span className="text-xs ml-2" style={{ 
             color: orderBook.priceChange >= 0 ? COLORS.BUY : COLORS.SELL 
@@ -374,13 +369,10 @@ export default function OrderBook({
                     
                     {/* 가격과 수량 */}
                     <div className="relative z-10 text-xs font-medium" style={{ color: COLORS.BUY }}>
-                      {bid.price.toLocaleString(undefined, {
-                        minimumFractionDigits: priceDecimals,
-                        maximumFractionDigits: priceDecimals
-                      })}
+                      {formatNumber(bid.price)}
                     </div>
                     <div className="relative z-10 text-xs text-gray-700">
-                      {bid.amount.toFixed(TRADING_CONFIG.AMOUNT_DECIMALS)}
+                      {formatNumber(bid.amount)}
                     </div>
                   </div>
                 );
@@ -392,5 +384,3 @@ export default function OrderBook({
     </div>
   );
 }
-
-// 기존 HorizontalOrderBook 코드는 제거하거나 별도 파일로 분리할 수 있습니다.

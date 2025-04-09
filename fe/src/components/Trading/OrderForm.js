@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { api, ENDPOINTS } from '@/lib/api';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import { TRADING_CONFIG, COLORS } from '@/config/constants';
+import { formatNumber } from '@/utils/formatNumber';
 
 export default function OrderForm({ symbol, currentPrice, isConnected, userBalance, refreshBalance, coinBalance }) {
   const [orderType, setOrderType] = useState('limit'); // 'limit' or 'market'
@@ -202,7 +203,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
               </div>
               <div className="h-10 flex items-center px-3 border border-gray-300 rounded-md bg-gray-50">
                 <span className="flex-1">
-                  ${currentPrice?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '로딩 중...'}
+                  ${formatNumber(currentPrice)}
                 </span>
                 <span className="text-gray-500">USDT</span>
               </div>
@@ -280,7 +281,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
             </div>
             <div className="h-10 flex items-center px-3 border border-gray-300 rounded-md bg-gray-50">
               <span className="flex-1">
-                ${parseFloat(total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${formatNumber(parseFloat(total))}
               </span>
               <span className="text-gray-500">USDT</span>
             </div>

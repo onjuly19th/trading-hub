@@ -38,7 +38,7 @@ public class PriceUpdateController {
             log.debug("Processing price update: symbol={}, price={}", symbol, price);
             
             // 지정가 주문 체결 처리
-            orderExecutionService.checkAndExecuteTrades(symbol, price);
+            orderExecutionService.checkAndExecuteOrders(symbol, price);
             
             log.info("Price update processed: symbol={}, price={}", symbol, price);
         } catch (Exception e) {

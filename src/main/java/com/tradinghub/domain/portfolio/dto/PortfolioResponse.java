@@ -15,7 +15,6 @@ import com.tradinghub.domain.portfolio.PortfolioAsset;
 public class PortfolioResponse {
     private BigDecimal usdBalance;
     private List<AssetResponse> assets;
-    // private BigDecimal totalBalance;
 
     public static PortfolioResponse from(Portfolio portfolio) {
         return PortfolioResponse.builder()
@@ -23,7 +22,6 @@ public class PortfolioResponse {
                 .assets(portfolio.getAssets().stream()
                         .map(AssetResponse::from)
                         .collect(Collectors.toList()))
-                // .totalBalance(portfolio.getTotalBalance())
                 .build();
     }
 
@@ -33,18 +31,12 @@ public class PortfolioResponse {
         private String symbol;
         private BigDecimal amount;
         private BigDecimal averagePrice;
-        // private BigDecimal currentPrice;
-        // private BigDecimal profitLoss;
-        // private BigDecimal profitLossPercentage;
 
         public static AssetResponse from(PortfolioAsset asset) {
             return AssetResponse.builder()
                     .symbol(asset.getSymbol())
                     .amount(asset.getAmount())
                     .averagePrice(asset.getAveragePrice())
-                    // .currentPrice(asset.getCurrentPrice())
-                    // .profitLoss(asset.getProfitLoss())
-                    // .profitLossPercentage(asset.getProfitLossPercentage())
                     .build();
         }
     }

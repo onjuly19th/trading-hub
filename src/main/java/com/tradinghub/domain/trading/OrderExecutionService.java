@@ -28,11 +28,11 @@ public class OrderExecutionService {
      * @param currentPrice 현재 시장 가격
      */
     @Transactional
-    public void checkAndExecuteTrades(String symbol, BigDecimal currentPrice) {
+    public void checkAndExecuteOrders(String symbol, BigDecimal currentPrice) {
         var executableOrders = orderRepository.findExecutableOrders(symbol, currentPrice);
         log.info("현재가 {}에서 체결 가능한 {}개의 주문 확인됨", currentPrice, executableOrders.size());
         
-        // OrderService의 executeTrade 메소드를 활용하여 주문 체결
-        executableOrders.forEach(orderService::executeTrade);
+        // OrderService의 executeOrder 메소드를 활용하여 주문 체결
+        executableOrders.forEach(orderService::executeOrder);
     }
 } 

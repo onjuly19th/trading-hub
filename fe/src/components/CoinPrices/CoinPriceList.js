@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { COLORS, MAJOR_COINS, TRADING_CONFIG } from '@/config/constants';
 import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
+import { formatNumber } from '@/utils/formatNumber';
 
 const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
   const previousPriceRef = useRef(price);
@@ -83,7 +84,7 @@ const CoinPriceCard = ({ coin, price, priceChange, onSelect }) => {
         <div className="font-bold text-base">{coin.name}</div>
       </div>
       <div className="text-lg mt-1" style={{ color: priceColor, transition: 'color 0.3s ease' }}>
-        ${formattedPrice}
+        ${formatNumber(price)}
       </div>
       <div style={{ color: changeColor }} className="text-xs mt-0.5 font-medium">
         {changeValue >= 0 ? '+' : ''}{changeValue.toFixed(2)}%

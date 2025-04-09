@@ -67,10 +67,10 @@ public class Portfolio {
     }
 
     /**
-     * 매수 거래 처리
+     * 매수 주문 처리
      */
-    public void processBuyTrade(String symbol, BigDecimal amount, BigDecimal price, BigDecimal total) {
-        validateTradeExecution(total, true);
+    public void processBuyOrder(String symbol, BigDecimal amount, BigDecimal price, BigDecimal total) {
+        validateOrderExecution(total, true);
         
         this.usdBalance = this.usdBalance.subtract(total);
         this.coinBalance = this.coinBalance.add(amount);
@@ -79,10 +79,10 @@ public class Portfolio {
     }
 
     /**
-     * 매도 거래 처리
+     * 매도 주문 처리
      */
-    public void processSellTrade(String symbol, BigDecimal amount, BigDecimal price, BigDecimal total) {
-        validateTradeExecution(amount, false);
+    public void processSellOrder(String symbol, BigDecimal amount, BigDecimal price, BigDecimal total) {
+        validateOrderExecution(amount, false);
         
         this.coinBalance = this.coinBalance.subtract(amount);
         this.usdBalance = this.usdBalance.add(total);
@@ -99,7 +99,7 @@ public class Portfolio {
         this.updatedAt = LocalDateTime.now();
     }
 
-    private void validateTradeExecution(BigDecimal amount, boolean isBuy) {
+    private void validateOrderExecution(BigDecimal amount, boolean isBuy) {
         if (isBuy) {
             if (usdBalance.compareTo(amount) < 0) {
                 throw new IllegalStateException("Insufficient USD balance");

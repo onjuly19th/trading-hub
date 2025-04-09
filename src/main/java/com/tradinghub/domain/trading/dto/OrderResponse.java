@@ -2,6 +2,8 @@ package com.tradinghub.domain.trading.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,7 +11,7 @@ import lombok.NoArgsConstructor;
 import com.tradinghub.domain.trading.Order;
 
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor // JSON 직렬화를 위해 필요
 public class OrderResponse {
     private Long id;
     private String symbol;
@@ -22,9 +24,12 @@ public class OrderResponse {
     private LocalDateTime updatedAt;
     private String message;
     private int executedCount;
-    private BigDecimal executedPrice; // 체결 가격 추가
+    private BigDecimal executedPrice;
 
-    public OrderResponse(Order order) {
+    /**
+     * Order 엔티티로부터 DTO 인스턴스 생성 (내부용)
+     */
+    private OrderResponse(Order order) {
         this.id = order.getId();
         this.symbol = order.getSymbol();
         this.type = order.getType().toString();
@@ -37,7 +42,10 @@ public class OrderResponse {
         this.executedPrice = order.getExecutedPrice();
     }
 
-    public OrderResponse(String message, int executedCount) {
+    /**
+     * 메시지와 실행 카운트로 인스턴스 생성 (내부용)
+     */
+    private OrderResponse(String message, int executedCount) {
         this.message = message;
         this.executedCount = executedCount;
     }
@@ -47,5 +55,21 @@ public class OrderResponse {
      */
     public static OrderResponse from(Order order) {
         return new OrderResponse(order);
+    }
+    
+    /**
+     * 메시지와 실행 카운트로부터 OrderResponse 객체 생성
+     */
+    public static OrderResponse withMessage(String message, int executedCount) {
+        return new OrderResponse(message, executedCount);
+    }
+    
+    /**
+     * 주문 목록을 DTO 목록으로 변환
+     */
+    public static List<OrderResponse> fromList(List<Order> orders) {
+        return orders.stream()
+            .map(OrderResponse::from)
+            .collect(Collectors.toList());
     }
 } 

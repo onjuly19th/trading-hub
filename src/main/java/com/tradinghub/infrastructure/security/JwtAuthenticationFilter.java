@@ -7,8 +7,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,10 +17,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -30,7 +30,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Override
     protected void doFilterInternal(
@@ -65,7 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .orElse(null);
                 
                 if (user == null) {
-                    logger.error("User entity not found for authenticated user: {}", username);
+                    log.error("User entity not found for authenticated user: username={}", username);
                 }
                 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(

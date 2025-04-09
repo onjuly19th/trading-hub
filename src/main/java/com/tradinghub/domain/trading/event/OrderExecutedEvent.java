@@ -3,6 +3,7 @@ package com.tradinghub.domain.trading.event;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.tradinghub.common.event.DomainEvent;
 import com.tradinghub.domain.trading.Order;
 import com.tradinghub.domain.trading.Order.OrderSide;
 

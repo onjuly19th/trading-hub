@@ -1,4 +1,4 @@
-package com.tradinghub.domain.notification;
+package com.tradinghub.domain.notification.event;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;

@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
+import com.tradinghub.common.exception.AssetNotFoundException;
 import com.tradinghub.common.exception.InsufficientAssetException;
 import com.tradinghub.common.exception.InsufficientBalanceException;
 import com.tradinghub.common.exception.PortfolioNotFoundException;
@@ -25,29 +26,36 @@ public class PortfolioService {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Portfolio createPortfolio(User user, String symbol, BigDecimal initialBalance) {
-        log.info("Creating portfolio for user: {}, symbol: {}, initialBalance: {}", 
-                 user.getUsername(), symbol, initialBalance);
+        log.info("Creating portfolio: userId={}, username={}, symbol={}, initialBalance={}", 
+                 user.getId(), user.getUsername(), symbol, initialBalance);
 
         try {
             Portfolio portfolio = Portfolio.createWithBalance(user, symbol, initialBalance);
             Portfolio savedPortfolio = portfolioRepository.save(portfolio);
-            log.info("Portfolio saved successfully with id: {}", savedPortfolio.getId());
-            user.setPortfolio(savedPortfolio);
+            log.info("Portfolio created: userId={}, portfolioId={}, initialBalance={}", 
+                    user.getId(), savedPortfolio.getId(), initialBalance);
             return savedPortfolio;
         } catch (Exception e) {
-            log.error("Error creating portfolio", e);
+            log.error("Failed to create portfolio: userId={}, username={}, error={}", 
+                    user.getId(), user.getUsername(), e.getMessage(), e);
             throw e;
         }
     }
 
     @Transactional(readOnly = true)
     public Portfolio getPortfolio(Long userId) {
+        log.debug("Fetching portfolio: userId={}", userId);
         return portfolioRepository.findByUserId(userId)
-            .orElseThrow(() -> new PortfolioNotFoundException("Portfolio not found for user: " + userId));
+            .orElseThrow(() -> {
+                log.warn("Portfolio not found: userId={}", userId);
+                return new PortfolioNotFoundException("Portfolio not found for user: " + userId);
+            });
     }
 
     private void validateBuyTrade(Portfolio portfolio, BigDecimal tradeAmount) {
         if (portfolio.getAvailableBalance().compareTo(tradeAmount) < 0) {
+            log.warn("Insufficient balance for buy trade: portfolioId={}, required={}, available={}", 
+                    portfolio.getId(), tradeAmount, portfolio.getAvailableBalance());
             throw new InsufficientBalanceException(
                 String.format("Insufficient balance. Required: %s, Available: %s",
                     tradeAmount, portfolio.getAvailableBalance())
@@ -57,9 +65,14 @@ public class PortfolioService {
 
     private PortfolioAsset validateSellTrade(Portfolio portfolio, String symbol, BigDecimal amount) {
         PortfolioAsset asset = assetRepository.findByPortfolioIdAndSymbol(portfolio.getId(), symbol)
-            .orElseThrow(() -> new RuntimeException("Asset not found: " + symbol));
+            .orElseThrow(() -> {
+                log.warn("Asset not found for sell trade: portfolioId={}, symbol={}", portfolio.getId(), symbol);
+                return new AssetNotFoundException("Asset not found: " + symbol);
+            });
             
         if (asset.getAmount().compareTo(amount) < 0) {
+            log.warn("Insufficient asset amount for sell trade: portfolioId={}, symbol={}, required={}, available={}", 
+                    portfolio.getId(), symbol, amount, asset.getAmount());
             throw new InsufficientAssetException(
                 String.format("Insufficient asset amount. Required: %s, Available: %s",
                     amount, asset.getAmount())
@@ -112,31 +125,45 @@ public class PortfolioService {
      */
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void updatePortfolioForOrder(Long userId, OrderExecutionRequest request) {
-        log.info("Updating portfolio for user: {}, symbol: {}, amount: {}, price: {}, side: {}", 
-                 userId, request.getSymbol(), request.getAmount(), request.getPrice(), request.getSide());
+        log.info("Updating portfolio for order: userId={}, symbol={}, side={}, amount={}, price={}", 
+                 userId, request.getSymbol(), request.getSide(), request.getAmount(), request.getPrice());
 
         Portfolio portfolio = portfolioRepository.findByUserIdForUpdate(userId)
-            .orElseThrow(() -> new PortfolioNotFoundException("Portfolio not found for user: " + userId));
+            .orElseThrow(() -> {
+                log.warn("Portfolio not found for update: userId={}", userId);
+                return new PortfolioNotFoundException("Portfolio not found for user: " + userId);
+            });
 
         BigDecimal tradeAmount = request.getAmount().multiply(request.getPrice());
         
-        if (request.isBuy()) {
-            validateBuyTrade(portfolio, tradeAmount);
-            // processBuyTrade는 내부적으로 usdBalance를 업데이트함
-            portfolio.processBuyTrade(request.getSymbol(), request.getAmount(), request.getPrice(), tradeAmount);
-            // 자산 업데이트
-            updateAssetOnBuyTrade(portfolio, request.getSymbol(), request.getAmount(), request.getPrice());
-        } else {
-            PortfolioAsset asset = validateSellTrade(portfolio, request.getSymbol(), request.getAmount());
-            // processSellTrade는 내부적으로 usdBalance를 업데이트함
-            portfolio.processSellTrade(request.getSymbol(), request.getAmount(), request.getPrice(), tradeAmount);
-            // 자산 업데이트
-            updateAssetOnSellTrade(portfolio, asset, request.getAmount(), request.getPrice());
-        }
+        try {
+            if (request.isBuy()) {
+                log.debug("Processing buy trade: userId={}, symbol={}, amount={}, price={}", 
+                        userId, request.getSymbol(), request.getAmount(), request.getPrice());
+                validateBuyTrade(portfolio, tradeAmount);
+                // processBuyTrade는 내부적으로 usdBalance를 업데이트함
+                portfolio.processBuyTrade(request.getSymbol(), request.getAmount(), request.getPrice(), tradeAmount);
+                // 자산 업데이트
+                updateAssetOnBuyTrade(portfolio, request.getSymbol(), request.getAmount(), request.getPrice());
+            } else {
+                log.debug("Processing sell trade: userId={}, symbol={}, amount={}, price={}", 
+                        userId, request.getSymbol(), request.getAmount(), request.getPrice());
+                PortfolioAsset asset = validateSellTrade(portfolio, request.getSymbol(), request.getAmount());
+                // processSellTrade는 내부적으로 usdBalance를 업데이트함
+                portfolio.processSellTrade(request.getSymbol(), request.getAmount(), request.getPrice(), tradeAmount);
+                // 자산 업데이트
+                updateAssetOnSellTrade(portfolio, asset, request.getAmount(), request.getPrice());
+            }
 
-        // 포트폴리오 저장
-        portfolioRepository.save(portfolio);
-        
-        log.info("Portfolio updated successfully for user: {}", userId);
+            // 포트폴리오 저장
+            portfolioRepository.save(portfolio);
+            
+            log.info("Portfolio updated successfully: userId={}, symbol={}, side={}", 
+                    userId, request.getSymbol(), request.getSide());
+        } catch (Exception e) {
+            log.error("Failed to update portfolio: userId={}, symbol={}, error={}", 
+                    userId, request.getSymbol(), e.getMessage(), e);
+            throw e;
+        }
     }
 } 

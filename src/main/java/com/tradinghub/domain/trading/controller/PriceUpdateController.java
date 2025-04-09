@@ -1,12 +1,15 @@
-package com.tradinghub.infrastructure.websocket;
+package com.tradinghub.domain.trading.controller;
 
 import java.math.BigDecimal;
 
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 
 import com.tradinghub.domain.trading.OrderExecutionService;
+import com.tradinghub.domain.trading.dto.PriceUpdate;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Controller
 @RequiredArgsConstructor
+@Validated
 public class PriceUpdateController {
     
     private final OrderExecutionService orderExecutionService;
@@ -26,51 +30,19 @@ public class PriceUpdateController {
      * @param priceUpdate 가격 업데이트 데이터 (심볼, 가격)
      */
     @MessageMapping("/price-updates")
-    public void processPriceUpdate(PriceUpdate priceUpdate) {
-        if (priceUpdate == null || priceUpdate.getSymbol() == null || priceUpdate.getPrice() == null) {
-            log.warn("Invalid price update received: {}", priceUpdate);
-            return;
-        }
-        
+    public void processPriceUpdate(@Valid PriceUpdate priceUpdate) {
         try {
             String symbol = priceUpdate.getSymbol();
             BigDecimal price = new BigDecimal(priceUpdate.getPrice());
             
-            log.debug("Processing price update: {} = {}", symbol, price);
+            log.debug("Processing price update: symbol={}, price={}", symbol, price);
             
             // 지정가 주문 체결 처리
             orderExecutionService.checkAndExecuteTrades(symbol, price);
+            
+            log.info("Price update processed: symbol={}, price={}", symbol, price);
         } catch (Exception e) {
-            log.error("Error processing price update: {}", e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * 가격 업데이트 DTO
-     */
-    public static class PriceUpdate {
-        private String symbol;
-        private String price;
-        
-        public String getSymbol() {
-            return symbol;
-        }
-        
-        public void setSymbol(String symbol) {
-            this.symbol = symbol;
-        }
-        
-        public String getPrice() {
-            return price;
-        }
-        
-        public void setPrice(String price) {
-            this.price = price;
-        }
-        
-        @Override
-        public String toString() {
-            return "PriceUpdate{symbol='" + symbol + "', price='" + price + "'}";
+            log.error("Error processing price update: error={}", e.getMessage(), e);
         }
     }
 } 

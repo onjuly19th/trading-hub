@@ -1,4 +1,4 @@
-package com.tradinghub.domain.trading.event;
+package com.tradinghub.common.event;
 
 /**
  * 도메인 이벤트 인터페이스

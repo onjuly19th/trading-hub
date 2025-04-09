@@ -24,45 +24,38 @@ public class OrderWebSocketHandler {
      * 새로운 주문이 생성되었을 때 호출
      */
     public void notifyNewOrder(Order order) {
-        try {
-            OrderResponse orderResponse = new OrderResponse(order);
-            log.info("WebSocket Message Ready - New Order: {}", orderResponse);
-            
-            // 전체 주문 내역 업데이트
-            messagingTemplate.convertAndSend("/topic/orders", orderResponse);
-            log.info("WebSocket Entire Order Message Sent: /topic/orders");
-            
-            // 사용자별 주문 내역 업데이트 (username 사용)
-            String destination = "/queue/user/" + order.getUser().getUsername() + "/orders";
-            messagingTemplate.convertAndSend(destination, orderResponse);
-            
-            log.info("WebSocket New Order Message Sent: {}, {}, {}", 
-                order.getId(), order.getUser().getUsername(), destination);
-        } catch (Exception e) {
-            log.error("WebSocket: Order Notification Failed", e);
-        }
+        sendOrderNotification(order, "created");
     }
     
     /**
      * 주문 상태가 변경되었을 때 호출
      */
     public void notifyOrderUpdate(Order order) {
+        sendOrderNotification(order, "updated");
+    }
+    
+    /**
+     * 주문 알림 전송 공통 로직
+     */
+    private void sendOrderNotification(Order order, String eventType) {
         try {
-            OrderResponse orderResponse = new OrderResponse(order);
-            log.info("WebSocket Message Ready - Order Update: {}", orderResponse);
+            OrderResponse orderResponse = OrderResponse.from(order);
+            log.debug("Preparing WebSocket message - Order {}: orderId={}, userId={}, symbol={}, status={}", 
+                    eventType, order.getId(), order.getUser().getId(), order.getSymbol(), order.getStatus());
             
             // 전체 주문 내역 업데이트
             messagingTemplate.convertAndSend("/topic/orders", orderResponse);
-            log.info("WebSocket Entire Order Message Sent: /topic/orders");
+            log.debug("WebSocket entire order message sent: /topic/orders");
             
             // 사용자별 주문 내역 업데이트 (username 사용)
             String destination = "/queue/user/" + order.getUser().getUsername() + "/orders";
             messagingTemplate.convertAndSend(destination, orderResponse);
             
-            log.info("WebSocket: Order Update Message Sent: {}, {}, {}", 
-                order.getId(), order.getUser().getUsername(), destination);
+            log.info("Order {} notification sent: orderId={}, userId={}, destination={}", 
+                eventType, order.getId(), order.getUser().getId(), destination);
         } catch (Exception e) {
-            log.error("WebSocket: Order Update Notification Failed", e);
+            log.error("Failed to send order {} notification: orderId={}, userId={}, error={}", 
+                    eventType, order.getId(), order.getUser().getId(), e.getMessage(), e);
         }
     }
     
@@ -71,37 +64,34 @@ public class OrderWebSocketHandler {
      * 주문 처리, 거래 체결 등으로 인해 포트폴리오가 변경되었을 때 사용
      */
     public void notifyPortfolioUpdate(Portfolio portfolio) {
-        try {
-            PortfolioResponse portfolioResponse = PortfolioResponse.from(portfolio);
-            log.info("WebSocket Message Ready - Portfolio Update: {}", portfolio.getUser().getUsername());
-            
-            // 사용자의 포트폴리오 정보 업데이트 (username 사용)
-            String destination = "/queue/user/" + portfolio.getUser().getUsername() + "/portfolio";
-            messagingTemplate.convertAndSend(destination, ApiResponse.success(portfolioResponse));
-            
-            log.info("WebSocket: Portfolio Update Notification Sent: {}, {}", 
-                portfolio.getUser().getUsername(), destination);
-        } catch (Exception e) {
-            log.error("WebSocket: Portfolio Update Notification Failed", e);
-        }
+        sendPortfolioNotification(portfolio.getUser(), portfolio);
     }
     
     /**
      * 사용자 정보를 통해 포트폴리오 업데이트 알림
      */
     public void notifyPortfolioUpdateByUser(User user, Portfolio portfolio) {
+        sendPortfolioNotification(user, portfolio);
+    }
+    
+    /**
+     * 포트폴리오 알림 전송 공통 로직
+     */
+    private void sendPortfolioNotification(User user, Portfolio portfolio) {
         try {
             PortfolioResponse portfolioResponse = PortfolioResponse.from(portfolio);
-            log.info("WebSocket Message Ready - Portfolio Update: {}", user.getUsername());
+            log.debug("Preparing WebSocket message - Portfolio update: userId={}, username={}", 
+                    user.getId(), user.getUsername());
             
             // 사용자의 포트폴리오 정보 업데이트 (username 사용)
             String destination = "/queue/user/" + user.getUsername() + "/portfolio";
             messagingTemplate.convertAndSend(destination, ApiResponse.success(portfolioResponse));
             
-            log.info("WebSocket: Portfolio Update Notification Sent: {}, {}", 
-                user.getUsername(), destination);
+            log.info("Portfolio update notification sent: userId={}, username={}, destination={}", 
+                user.getId(), user.getUsername(), destination);
         } catch (Exception e) {
-            log.error("WebSocket: Portfolio Update Notification Failed", e);
+            log.error("Failed to send portfolio update notification: userId={}, username={}, error={}", 
+                    user.getId(), user.getUsername(), e.getMessage(), e);
         }
     }
 } 

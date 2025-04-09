@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import com.tradinghub.domain.portfolio.Portfolio;
+// import com.tradinghub.domain.portfolio.Portfolio; // 제거: 불필요한 임포트
 
 @Entity
 @Table(name = "users")
@@ -24,8 +24,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private Portfolio portfolio;
+    // 제거: Portfolio에 대한 양방향 참조
+    // @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    // private Portfolio portfolio;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

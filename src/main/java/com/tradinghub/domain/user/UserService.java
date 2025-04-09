@@ -2,8 +2,6 @@ package com.tradinghub.domain.user;
 
 import java.util.Collections;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
@@ -19,10 +18,10 @@ import com.tradinghub.domain.user.dto.AuthRequest;
 import com.tradinghub.domain.user.dto.AuthResponse;
 import com.tradinghub.infrastructure.security.JwtService;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PortfolioService portfolioService;
@@ -42,12 +41,12 @@ public class UserService {
 
     @Transactional
     public AuthResponse signup(AuthRequest request) {
-        logger.info("Starting signup process for username: {}", request.getUsername());
+        log.info("User signup initiated: username={}", request.getUsername());
         
         try {
             // 중복 검사
             if (userRepository.existsByUsername(request.getUsername())) {
-                logger.error("Username already exists: {}", request.getUsername());
+                log.warn("Signup failed: Username already exists: {}", request.getUsername());
                 throw new RuntimeException("Username already exists");
             }
 
@@ -58,27 +57,24 @@ public class UserService {
             
             // 사용자 저장
             user = userRepository.save(user);
-            logger.info("User saved with ID: {}", user.getId());
+            log.info("User saved successfully: userId={}, username={}", user.getId(), user.getUsername());
             
             try {
                 // 포트폴리오 생성 (초기 자산: 100만 달러)
                 Portfolio portfolio = portfolioService.createPortfolio(user, "BTC", new java.math.BigDecimal("1000000"));
-                user.setPortfolio(portfolio);
-                
-                // 사용자 업데이트
-                user = userRepository.save(user);
-                logger.info("Portfolio created and user updated successfully");
+                log.info("Portfolio created successfully: userId={}, portfolioId={}", user.getId(), portfolio.getId());
             } catch (Exception e) {
-                logger.error("Error creating portfolio for user: {}", user.getUsername(), e);
+                log.error("Failed to create portfolio: userId={}, username={}, error={}", user.getId(), user.getUsername(), e.getMessage(), e);
                 throw new RuntimeException("Failed to create portfolio: " + e.getMessage());
             }
             
             // JWT 토큰 생성
             UserDetails userDetails = convertToUserDetails(user);
             String token = jwtService.generateToken(userDetails);
-            logger.info("JWT token generated for user: {}", user.getUsername());
+            log.debug("JWT token generated: userId={}", user.getId());
             
             // 응답 생성
+            log.info("Signup completed successfully: userId={}, username={}", user.getId(), user.getUsername());
             return AuthResponse.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
@@ -86,43 +82,47 @@ public class UserService {
                 .build();
                 
         } catch (Exception e) {
-            logger.error("Error during signup process", e);
-            throw new RuntimeException("회원가입 처리 중 오류가 발생했습니다: " + e.getMessage());
+            log.error("Exception during signup process: username={}, error={}", request.getUsername(), e.getMessage(), e);
+            throw new RuntimeException("Error occurred during user registration: " + e.getMessage());
         }
     }
 
     @Transactional(readOnly = true)
     public AuthResponse login(AuthRequest request) {
+        log.info("User login attempt: username={}", request.getUsername());
+        
         try {
             // 사용자 조회
-            logger.info("Attempting to find user by username: {}", request.getUsername());
             User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> {
-                    logger.error("User not found: {}", request.getUsername());
+                    log.warn("Login failed: User not found: username={}", request.getUsername());
                     return new BadCredentialsException("Invalid username or password");
                 });
 
             // 비밀번호 검증
-            logger.info("Checking password for user: {}", request.getUsername());
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                logger.error("Invalid password for user: {}", request.getUsername());
+                log.warn("Login failed: Invalid password: userId={}, username={}", user.getId(), user.getUsername());
                 throw new BadCredentialsException("Invalid username or password");
             }
 
             // JWT 토큰 생성
-            logger.info("Generating JWT token for user: {} (ID: {})", request.getUsername(), user.getId());
             UserDetails userDetails = convertToUserDetails(user);
             String token = jwtService.generateToken(userDetails);
+            log.debug("JWT token generated: userId={}", user.getId());
 
             // 응답 생성 및 반환
+            log.info("Login successful: userId={}, username={}", user.getId(), user.getUsername());
             return AuthResponse.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
                 .token(token)
                 .build();
         } catch (Exception e) {
-            logger.error("Error during login process for username: {}", request.getUsername(), e);
-            throw e;
+            if (e instanceof BadCredentialsException) {
+                throw e; // 인증 실패는 그대로 전파
+            }
+            log.error("Exception during login process: username={}, error={}", request.getUsername(), e.getMessage(), e);
+            throw new RuntimeException("Error occurred during login process.");
         }
     }
 } 

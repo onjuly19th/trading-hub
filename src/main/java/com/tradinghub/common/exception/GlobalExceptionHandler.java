@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.validation.BindException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.validation.FieldError;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -21,6 +23,22 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(e.getErrorCode(), e.getMessage()));
     }
 
+    // Validation 예외 처리 (@Valid)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException e) {
+        log.error("Validation error: {}", e.getMessage());
+        
+        FieldError fieldError = e.getBindingResult().getFieldError();
+        String errorMessage = fieldError != null 
+            ? fieldError.getDefaultMessage() 
+            : "Invalid request parameter";
+            
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("INVALID_INPUT", errorMessage));
+    }
+
     // Validation 예외 처리
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ApiResponse<Void>> handleBindException(BindException e) {
@@ -34,6 +52,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("INVALID_INPUT", errorMessage));
     }
 
+    // IllegalArgumentException 예외 처리
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.error("Invalid argument: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("INVALID_ARGUMENT", e.getMessage()));
+    }
+
     // 기타 예외 처리
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
@@ -42,7 +69,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(
                     "INTERNAL_SERVER_ERROR",
-                    "서버 내부 오류가 발생했습니다."
+                    "An internal server error occurred"
                 ));
     }
 }

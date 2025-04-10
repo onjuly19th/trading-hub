@@ -68,34 +68,61 @@ public class Portfolio {
 
     /**
      * 매수 주문 처리
+     * 
+     * @param symbol 암호화폐 심볼
+     * @param amount 매수 수량
+     * @param price 매수 가격
+     * @param total 매수 총액
      */
     public void processBuyOrder(String symbol, BigDecimal amount, BigDecimal price, BigDecimal total) {
         validateOrderExecution(total, true);
         
         this.usdBalance = this.usdBalance.subtract(total);
         this.coinBalance = this.coinBalance.add(amount);
-        this.availableBalance = this.usdBalance;
-        this.updatedAt = LocalDateTime.now();
+        updateAvailableBalance();
+        updateTimestamp();
     }
 
     /**
      * 매도 주문 처리
+     * 
+     * @param symbol 암호화폐 심볼
+     * @param amount 매도 수량
+     * @param price 매도 가격
+     * @param total 매도 총액
      */
     public void processSellOrder(String symbol, BigDecimal amount, BigDecimal price, BigDecimal total) {
         validateOrderExecution(amount, false);
         
         this.coinBalance = this.coinBalance.subtract(amount);
         this.usdBalance = this.usdBalance.add(total);
-        this.availableBalance = this.usdBalance;
-        this.updatedAt = LocalDateTime.now();
+        updateAvailableBalance();
+        updateTimestamp();
     }
 
     /**
      * USD 잔액 업데이트
+     * 
+     * @param newBalance 새로운 USD 잔액
      */
     public void updateUsdBalance(BigDecimal newBalance) {
         this.usdBalance = newBalance;
-        this.availableBalance = newBalance;
+        updateAvailableBalance();
+        updateTimestamp();
+    }
+
+    /**
+     * 사용 가능한 잔액 업데이트
+     * 현재는 USD 잔액과 동일하게 설정
+     */
+    private void updateAvailableBalance() {
+        this.availableBalance = this.usdBalance;
+    }
+
+    /**
+     * 타임스탬프 업데이트
+     */
+    private void updateTimestamp() {
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -117,5 +144,31 @@ public class Portfolio {
             .symbol(symbol)
             .initialBalance(initialBalance)
             .build();
+    }
+
+    /**
+     * 포트폴리오에 자산을 추가합니다.
+     * 자산이 새로 생성된 경우 호출됩니다.
+     * 
+     * @param asset 추가할 자산
+     */
+    public void addAsset(PortfolioAsset asset) {
+        if (this.assets != null && !this.assets.contains(asset)) {
+            this.assets.add(asset);
+        }
+        updateTimestamp();
+    }
+
+    /**
+     * 포트폴리오에서 자산을 제거합니다.
+     * 자산의 수량이 0이 된 경우 호출됩니다.
+     * 
+     * @param asset 제거할 자산
+     */
+    public void removeAsset(PortfolioAsset asset) {
+        if (this.assets != null) {
+            this.assets.remove(asset);
+        }
+        updateTimestamp();
     }
 }

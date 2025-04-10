@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 알림 관련 이벤트 리스너
  * 주문 체결 등의 이벤트를 수신하여 사용자 알림을 생성
- * (개념 증명 목적이므로 실제 알림 전송은 구현하지 않음)
  */
 @Slf4j
 @Component
@@ -27,7 +26,7 @@ public class NotificationEventListener {
         log.info("알림 서비스: 주문 체결 이벤트 수신 - 사용자 ID={}, 주문 ID={}", 
             event.getUserId(), event.getOrderId());
         
-        // 실제 구현에서는 이메일, 푸시 알림 등의 로직이 들어갈 수 있음
+        // 미구현
         String notificationMessage = String.format(
             "%s %s %.8f개가 %.2f 가격에 체결되었습니다.",
             event.getSymbol(),

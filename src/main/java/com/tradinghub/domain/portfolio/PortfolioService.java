@@ -28,12 +28,8 @@ public class PortfolioService {
     @LogExecutionTime
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Portfolio createPortfolio(User user, String symbol, BigDecimal initialBalance) {
-        try {
-            Portfolio portfolio = Portfolio.createWithBalance(user, symbol, initialBalance);
-            return portfolioRepository.save(portfolio);
-        } catch (Exception e) {
-            throw e;
-        }
+        Portfolio portfolio = Portfolio.createWithBalance(user, symbol, initialBalance);
+        return portfolioRepository.save(portfolio);
     }
 
     @LogExecutionTime
@@ -69,15 +65,23 @@ public class PortfolioService {
 
     @LogExecutionTime
     private void updateAssetOnBuyOrder(Portfolio portfolio, String symbol, BigDecimal amount, BigDecimal price) {
+        // 기존 자산 조회 또는 새 자산 생성
         PortfolioAsset asset = assetRepository.findByPortfolioIdAndSymbol(portfolio.getId(), symbol)
             .orElseGet(() -> {
                 PortfolioAsset newAsset = new PortfolioAsset();
                 newAsset.setPortfolio(portfolio);
                 newAsset.setSymbol(symbol);
+                
+                // 새 자산인 경우 포트폴리오에 추가
+                portfolio.addAsset(newAsset);
+                
                 return newAsset;
             });
-
+        
+        // 자산 업데이트
         updateAssetOnBuy(asset, amount, price);
+        
+        // 저장
         assetRepository.save(asset);
     }
 
@@ -112,40 +116,9 @@ public class PortfolioService {
 
         try {
             if (request.isBuy()) {
-                validateBuyOrder(portfolio, orderAmount);
-                // processBuyOrder는 내부적으로 usdBalance를 업데이트함
-                portfolio.processBuyOrder(request.getSymbol(), request.getAmount(), request.getPrice(), orderAmount);
-                // 자산 업데이트
-                updateAssetOnBuyOrder(portfolio, request.getSymbol(), request.getAmount(), request.getPrice());
-                
-                // 포트폴리오 저장
-                portfolioRepository.save(portfolio);
+                processBuyOrder(portfolio, request, orderAmount);
             } else {
-                PortfolioAsset asset = validateSellOrder(portfolio, request.getSymbol(), request.getAmount());
-                // processSellOrder는 내부적으로 usdBalance를 업데이트함
-                portfolio.processSellOrder(request.getSymbol(), request.getAmount(), request.getPrice(), orderAmount);
-                
-                asset.setAmount(asset.getAmount().subtract(request.getAmount()));
-                
-                if (asset.getAmount().compareTo(BigDecimal.ZERO) == 0) {
-                    // 1. 먼저 포트폴리오의 자산 컬렉션에서 제거
-                    if (portfolio.getAssets() != null) {
-                        portfolio.getAssets().remove(asset);
-                    }
-                    
-                    // 2. 포트폴리오를 먼저 저장 (자산이 제거된 상태로)
-                    portfolioRepository.save(portfolio);
-                    
-                    // 3. 그 다음 자산 엔티티 삭제
-                    assetRepository.delete(asset);
-                    
-                    log.info("Asset deleted for portfolio: portfolioId={}, symbol={}", 
-                             portfolio.getId(), asset.getSymbol());
-                } else {
-                    // 자산 업데이트 후 저장
-                    assetRepository.save(asset);
-                    portfolioRepository.save(portfolio);
-                }
+                processSellOrder(portfolio, request, orderAmount);
             }
         } catch (Exception e) {
             log.error("Error updating portfolio: {}", e.getMessage(), e);
@@ -153,8 +126,62 @@ public class PortfolioService {
         }
     }
 
+    /**
+     * 매수 주문에 대한 포트폴리오 처리
+     */
     @LogExecutionTime
-    private void updateAssetOnSellOrder(Portfolio portfolio, PortfolioAsset asset, BigDecimal amount, BigDecimal price) {
-        // 이 메서드를 더 이상 사용하지 않음 - 로직을 updatePortfolioForOrder로 옮김
+    private void processBuyOrder(Portfolio portfolio, OrderExecutionRequest request, BigDecimal orderAmount) {
+        validateBuyOrder(portfolio, orderAmount);
+        
+        // processBuyOrder는 내부적으로 usdBalance를 업데이트함
+        portfolio.processBuyOrder(request.getSymbol(), request.getAmount(), request.getPrice(), orderAmount);
+        
+        // 자산 업데이트
+        updateAssetOnBuyOrder(portfolio, request.getSymbol(), request.getAmount(), request.getPrice());
+        
+        // 포트폴리오 저장
+        portfolioRepository.save(portfolio);
+    }
+
+    /**
+     * 매도 주문에 대한 포트폴리오 처리
+     */
+    @LogExecutionTime
+    private void processSellOrder(Portfolio portfolio, OrderExecutionRequest request, BigDecimal orderAmount) {
+        PortfolioAsset asset = validateSellOrder(portfolio, request.getSymbol(), request.getAmount());
+        
+        // processSellOrder는 내부적으로 usdBalance를 업데이트함
+        portfolio.processSellOrder(request.getSymbol(), request.getAmount(), request.getPrice(), orderAmount);
+        
+        // 매도 후 자산 업데이트
+        asset.setAmount(asset.getAmount().subtract(request.getAmount()));
+        
+        if (asset.getAmount().compareTo(BigDecimal.ZERO) == 0) {
+            // 자산 수량이 0이면 자산 삭제 처리
+            removeAsset(portfolio, asset);
+            log.info("Asset deleted for portfolio: portfolioId={}, symbol={}", 
+                     portfolio.getId(), asset.getSymbol());
+        } else {
+            // 자산 업데이트 후 저장
+            assetRepository.save(asset);
+            portfolioRepository.save(portfolio);
+        }
+    }
+
+    /**
+     * 포트폴리오에서 자산을 제거합니다.
+     * 이 메서드는 자산의 수량이 0이 되었을 때 호출됩니다.
+     * 
+     * @param portfolio 대상 포트폴리오
+     * @param asset 제거할 자산
+     */
+    @LogExecutionTime
+    private void removeAsset(Portfolio portfolio, PortfolioAsset asset) {
+        // 영속성 관리를 위해 컬렉션에서 제거
+        portfolio.removeAsset(asset);
+        
+        // 포트폴리오 저장 후 자산 삭제
+        portfolioRepository.save(portfolio);
+        assetRepository.delete(asset);
     }
 } 

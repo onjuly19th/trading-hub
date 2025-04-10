@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { TRADING_CONFIG, COLORS } from '@/config/constants';
+import { TRADING_CONFIG, COLORS, ENDPOINTS } from '@/config/constants';
 import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
-import { api, ENDPOINTS } from '@/lib/api';
 import ErrorMessage from '@/components/Common/ErrorMessage';
 import TradeHistory from './TradeHistory';
-import { formatNumber } from '@/utils/formatNumber';
+import { formatCryptoPrice } from '@/utils/formatNumber';
 
 export default function OrderBook({ 
   symbol = TRADING_CONFIG.DEFAULT_SYMBOL,
@@ -328,10 +327,10 @@ export default function OrderBook({
                     
                     {/* 가격과 수량 */}
                     <div className="relative z-10 text-xs font-medium" style={{ color: COLORS.SELL }}>
-                      {formatNumber(ask.price)}
+                      {formatCryptoPrice(ask.price)}
                     </div>
                     <div className="relative z-10 text-xs text-gray-700">
-                      {formatNumber(ask.amount)}
+                      {formatCryptoPrice(ask.amount)}
                     </div>
                   </div>
                 );
@@ -343,7 +342,7 @@ export default function OrderBook({
               <span className="font-bold text-sm" style={{ 
                 color: priceDirection >= 0 ? COLORS.BUY : COLORS.SELL 
               }}>
-                {formatNumber(orderBook.currentPrice)}
+                {formatCryptoPrice(orderBook.currentPrice)}
               </span>
               <span className="text-xs ml-2" style={{ 
             color: orderBook.priceChange >= 0 ? COLORS.BUY : COLORS.SELL 
@@ -369,10 +368,10 @@ export default function OrderBook({
                     
                     {/* 가격과 수량 */}
                     <div className="relative z-10 text-xs font-medium" style={{ color: COLORS.BUY }}>
-                      {formatNumber(bid.price)}
+                      {formatCryptoPrice(bid.price)}
                     </div>
                     <div className="relative z-10 text-xs text-gray-700">
-                      {formatNumber(bid.amount)}
+                      {formatCryptoPrice(bid.amount)}
                     </div>
                   </div>
                 );

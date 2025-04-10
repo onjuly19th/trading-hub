@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import LoginButton from '@/components/Auth/LoginButton';
+import AuthButton from '@/components/Auth/AuthButton';
 
 const Header = ({ selectedCoin }) => {
   return (
@@ -30,7 +30,7 @@ const Header = ({ selectedCoin }) => {
           <p className="text-gray-600">{selectedCoin?.name || 'BTC/USDT'} 차트</p>
         </div>
       </div>
-      <LoginButton />
+      <AuthButton />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { API_CONFIG, MAJOR_COINS } from '@/config/constants';
+import { API_CONFIG, MAJOR_CRYPTOS } from '@/config/constants';
 
 export class WebSocketManager {
   static instance = null;
@@ -34,8 +34,8 @@ export class WebSocketManager {
       this.isConnecting = true;
       
       // 모든 메이저 코인에 대해 trade, ticker, depth20 스트림 구성
-      const streams = MAJOR_COINS.flatMap(coin => {
-        const symbol = coin.symbol.toLowerCase();
+      const streams = MAJOR_CRYPTOS.flatMap(crypto => {
+        const symbol = crypto.symbol.toLowerCase();
         return [
           `${symbol}@trade`,
           `${symbol}@ticker`,

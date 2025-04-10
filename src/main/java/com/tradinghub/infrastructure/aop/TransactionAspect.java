@@ -31,7 +31,7 @@ public class TransactionAspect {
         boolean readOnly = transactional.readOnly();
         String isolationLevel = transactional.isolation().name();
         
-        log.info("🔄 Transaction STARTED: {}.{}() [isolation={}, readOnly={}]", 
+        log.info("Transaction STARTED: {}.{}() [isolation={}, readOnly={}]", 
                 className, methodName, isolationLevel, readOnly);
         
         long startTime = System.currentTimeMillis();
@@ -40,13 +40,13 @@ public class TransactionAspect {
             Object result = joinPoint.proceed();
             
             long executionTime = System.currentTimeMillis() - startTime;
-            log.info("🔄 Transaction COMMITTED: {}.{}() completed in {}ms", 
+            log.info("Transaction COMMITTED: {}.{}() completed in {}ms", 
                     className, methodName, executionTime);
             
             return result;
         } catch (Exception e) {
             long executionTime = System.currentTimeMillis() - startTime;
-            log.error("🔄 Transaction ROLLED BACK: {}.{}() after {}ms due to: {}", 
+            log.error("Transaction ROLLED BACK: {}.{}() after {}ms due to: {}", 
                     className, methodName, executionTime, e.getMessage());
             
             throw e;

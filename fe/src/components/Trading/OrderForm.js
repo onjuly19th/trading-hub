@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api, ENDPOINTS } from '@/lib/api';
+import { TRADING_CONFIG, COLORS, ENDPOINTS } from '@/config/constants';
+import { OrderAPIClient } from '@/lib/api/OrderAPIClient';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
-import { TRADING_CONFIG, COLORS } from '@/config/constants';
-import { formatNumber } from '@/utils/formatNumber';
+import { formatCryptoPrice } from '@/utils/formatNumber';
 
 export default function OrderForm({ symbol, currentPrice, isConnected, userBalance, refreshBalance, coinBalance }) {
-  const [orderType, setOrderType] = useState('limit'); // 'limit' or 'market'
+  const [orderType, setOrderType] = useState('market'); // 'limit' or 'market'
   const [side, setSide] = useState('buy'); // 'buy' or 'sell'
   const [price, setPrice] = useState('');
   const [amount, setAmount] = useState('');
@@ -15,6 +15,9 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  
+  // OrderAPIClient 인스턴스
+  const orderClient = OrderAPIClient.getInstance();
 
   // 현재가가 변경될 때 지정가 필드를 현재가로 업데이트 (초기 로드 시)
   useEffect(() => {
@@ -50,7 +53,8 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
 
       console.log('Submitting order:', orderData);
 
-      const response = await api.post(ENDPOINTS.ORDERS.CREATE, orderData);
+      // api.post 대신 orderClient.createOrder 사용
+      const response = await orderClient.createOrder(orderData);
       console.log('Order response:', response);
       
       // 주문 성공
@@ -61,8 +65,6 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
       // 3초 후 성공 메시지 제거
       setTimeout(() => {
         setOrderSuccess(false);
-        
-        // 웹소켓을 통한 실시간 업데이트로 대체됨 - refreshBalance 호출 제거
       }, 3000);
 
     } catch (err) {
@@ -203,7 +205,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
               </div>
               <div className="h-10 flex items-center px-3 border border-gray-300 rounded-md bg-gray-50">
                 <span className="flex-1">
-                  ${formatNumber(currentPrice)}
+                  ${formatCryptoPrice(currentPrice)}
                 </span>
                 <span className="text-gray-500">USDT</span>
               </div>
@@ -281,7 +283,7 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
             </div>
             <div className="h-10 flex items-center px-3 border border-gray-300 rounded-md bg-gray-50">
               <span className="flex-1">
-                ${formatNumber(parseFloat(total))}
+                ${formatCryptoPrice(parseFloat(total))}
               </span>
               <span className="text-gray-500">USDT</span>
             </div>

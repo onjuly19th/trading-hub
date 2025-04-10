@@ -30,7 +30,7 @@ public class PortfolioEventListener {
     @EventListener
     @Transactional
     public void handleOrderExecuted(OrderExecutedEvent event) {
-        log.info("주문 체결 이벤트 수신: 주문 ID={}, 사용자 ID={}, 심볼={}, 수량={}, 가격={}",
+        log.info("Order execution event received: orderId={}, userId={}, symbol={}, amount={}, price={}",
             event.getOrderId(), event.getUserId(), event.getSymbol(), event.getAmount(), event.getPrice());
         
         // 이벤트 정보로 포트폴리오 업데이트 요청 생성
@@ -48,6 +48,6 @@ public class PortfolioEventListener {
         Portfolio portfolio = portfolioService.getPortfolio(event.getUserId());
         webSocketHandler.notifyPortfolioUpdate(portfolio);
         
-        log.info("주문 체결에 따른 포트폴리오 업데이트 및 알림 완료: 사용자 ID={}", event.getUserId());
+        log.info("Portfolio update and notification completed for order execution: userId={}", event.getUserId());
     }
 } 

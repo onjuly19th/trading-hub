@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { COLORS, TRADING_CONFIG } from '@/config/constants';
-import { api, ENDPOINTS } from '@/lib/api';
+import { COLORS, TRADING_CONFIG, ENDPOINTS } from '@/config/constants';
+import { OrderAPIClient } from '@/lib/api/OrderAPIClient';
 import { BackendSocketManager } from '@/lib/websocket/BackendSocketManager';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 
@@ -12,6 +12,9 @@ export default function TradeHistory() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('open'); // 'open' | 'history'
+  
+  // OrderAPIClient 인스턴스
+  const orderClient = OrderAPIClient.getInstance();
 
   // REST API로 주문 내역과 거래 내역 모두 조회
   const fetchData = useCallback(async () => {
@@ -19,17 +22,15 @@ export default function TradeHistory() {
       setIsLoading(true);
       console.log('[TradeHistory] REST API로 데이터 조회 시작');
       
-      let apiEndpoint;
+      let ordersResponse;
       if (activeTab === 'open') {
         // 미체결 주문 조회
-        apiEndpoint = ENDPOINTS.ORDERS.LIST;
+        ordersResponse = await orderClient.getOrders();
       } else {
         // 체결된 주문 및 취소된 주문 조회 (거래 내역)
-        apiEndpoint = ENDPOINTS.ORDERS.HISTORY;
+        ordersResponse = await orderClient.getOrderHistory();
       }
       
-      // 주문 내역 조회
-      const ordersResponse = await api.get(apiEndpoint);
       console.log('[TradeHistory] 주문 내역 응답:', ordersResponse);
       
       // 주문 데이터 처리
@@ -60,34 +61,41 @@ export default function TradeHistory() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, orderClient]);
 
   // 실시간 주문 업데이트 처리 함수
   const handleOrderUpdate = useCallback((orderData) => {
     console.log('실시간 주문 업데이트 수신:', orderData);
-    setLastReceivedData({ type: 'order', data: orderData, time: new Date().toISOString() });
+    console.log('[TradeHistory-DEBUG] 웹소켓으로 주문 업데이트 수신! ID:', orderData.id, '상태:', orderData.status);
+    
+    // API 응답 구조에 따라 데이터 추출
+    const data = orderData.data ? orderData.data : orderData;
+    
+    setLastReceivedData({ type: 'order', data: data, time: new Date().toISOString() });
     
     setOrders(prevOrders => {
       // 이미 존재하는 주문인지 확인
-      const existingIndex = prevOrders.findIndex(order => order.id === orderData.id);
+      const existingIndex = prevOrders.findIndex(order => order.id === data.id);
       
       if (existingIndex >= 0) {
         // 기존 주문 업데이트
+        console.log(`[TradeHistory-DEBUG] 기존 주문 업데이트: ID:${data.id}, 상태: ${data.status}`);
         const updatedOrders = [...prevOrders];
         updatedOrders[existingIndex] = {
           ...updatedOrders[existingIndex],
-          ...orderData,
-          status: orderData.status,
+          ...data,
+          status: data.status,
           // timestamp를 Date 객체로 변환
-          timestamp: new Date(orderData.createdAt || orderData.timestamp).getTime()
+          timestamp: new Date(data.createdAt || data.timestamp).getTime()
         };
         return updatedOrders;
       } else {
         // 새 주문 추가
+        console.log(`[TradeHistory-DEBUG] 새 주문 추가: ID:${data.id}, 상태: ${data.status}`);
         return [
           {
-            ...orderData,
-            timestamp: new Date(orderData.createdAt || orderData.timestamp).getTime()
+            ...data,
+            timestamp: new Date(data.createdAt || data.timestamp).getTime()
           },
           ...prevOrders
         ];
@@ -98,7 +106,7 @@ export default function TradeHistory() {
   // 주문 취소
   const handleCancelOrder = async (orderId) => {
     try {
-      await api.delete(ENDPOINTS.ORDERS.CANCEL(orderId));
+      await orderClient.cancelOrder(orderId);
       // 주문 취소는 백엔드 웹소켓을 통해 알림이 오므로 별도 처리 불필요
     } catch (err) {
       console.error('Failed to cancel order:', err);

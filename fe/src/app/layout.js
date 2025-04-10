@@ -5,18 +5,20 @@ import { useEffect } from "react";
 import "./globals.css";
 import NavigationButton from '@/components/Common/NavigationButton';
 import { BackendSocketManager } from '@/lib/websocket/BackendSocketManager';
-import { authService } from '@/lib/authService';
+import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
 
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
 });
 
+const authClient = AuthAPIClient.getInstance();
+
 export default function RootLayout({ children }) {
   // 웹소켓 연결 관리
   useEffect(() => {
     // 로그인 상태일 때만 웹소켓 연결
-    if (authService.isAuthenticated()) {
+    if (authClient.isAuthenticated()) {
       const socketManager = BackendSocketManager.getInstance();
       socketManager.connect();
       
@@ -27,12 +29,14 @@ export default function RootLayout({ children }) {
   }, []);
 
   return (
-    <html lang="en">
+    <html lang="ko">
       <body className={`${inter.className} antialiased`}>
         <div className="fixed top-1 left-4 z-50">
           <NavigationButton />
         </div>
-        {children}
+        <div className="min-h-screen bg-gray-100">
+          {children}
+        </div>
       </body>
     </html>
   );

@@ -24,6 +24,16 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     Optional<Portfolio> findByUserId(Long userId);
     
     /**
+     * 사용자 ID로 포트폴리오와 자산 컬렉션을 함께 조회 (FETCH JOIN 사용)
+     * 지연 로딩 문제를 해결하기 위한 메소드
+     * 
+     * @param userId 사용자 ID
+     * @return 포트폴리오와 자산 컬렉션이 함께 로딩된 결과 (존재하지 않으면 빈 Optional)
+     */
+    @Query("SELECT p FROM Portfolio p LEFT JOIN FETCH p.assets WHERE p.user.id = :userId")
+    Optional<Portfolio> findByUserIdWithAssets(@Param("userId") Long userId);
+    
+    /**
      * 사용자 ID로 포트폴리오 조회 (비관적 쓰기 락 적용)
      * 포트폴리오 업데이트 작업에 사용 (잔액 변경, 자산 추가/제거 등)
      * 동시성 제어를 위해 비관적 락을 사용하여 트랜잭션 충돌 방지

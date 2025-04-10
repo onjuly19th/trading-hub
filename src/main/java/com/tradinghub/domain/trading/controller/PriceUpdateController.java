@@ -40,7 +40,8 @@ public class PriceUpdateController {
             // 지정가 주문 체결 처리
             orderExecutionService.checkAndExecuteOrders(symbol, price);
             
-            log.info("Price update processed: symbol={}, price={}", symbol, price);
+            // 로그를 DEBUG 레벨로 변경하여 로그 출력 최소화
+            log.debug("Price update processed: symbol={}, price={}", symbol, price);
         } catch (Exception e) {
             log.error("Error processing price update: error={}", e.getMessage(), e);
         }

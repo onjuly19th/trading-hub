@@ -39,7 +39,7 @@ public class PortfolioService {
     @LogExecutionTime
     @Transactional(readOnly = true)
     public Portfolio getPortfolio(Long userId) {
-        return portfolioRepository.findByUserId(userId)
+        return portfolioRepository.findByUserIdWithAssets(userId)
             .orElseThrow(() -> new PortfolioNotFoundException("Portfolio not found for user: " + userId));
     }
 
@@ -93,13 +93,16 @@ public class PortfolioService {
 
     @LogExecutionTime
     private void updateAssetOnBuy(PortfolioAsset asset, BigDecimal amount, BigDecimal price) {
-        BigDecimal totalCost = amount.multiply(price).setScale(8, RoundingMode.HALF_UP);
-        asset.setAmount(asset.getAmount().add(amount));
-        asset.setAveragePrice(
-            asset.getAmount().multiply(asset.getAveragePrice())
-                .add(totalCost)
-                .divide(asset.getAmount(), 8, RoundingMode.HALF_UP)
-        );
+        BigDecimal oldAmount = asset.getAmount() != null ? asset.getAmount() : BigDecimal.ZERO;
+        BigDecimal oldAveragePrice = asset.getAveragePrice() != null ? asset.getAveragePrice() : BigDecimal.ZERO;
+        BigDecimal newAmount = oldAmount.add(amount);
+        
+        // 평균 매수가 계산: ((기존수량 * 기존평균가) + (신규수량 * 현재가)) / 총수량
+        BigDecimal totalCost = oldAmount.multiply(oldAveragePrice).add(amount.multiply(price));
+        BigDecimal newAveragePrice = totalCost.divide(newAmount, 4, RoundingMode.HALF_UP);
+        
+        asset.setAmount(newAmount);
+        asset.setAveragePrice(newAveragePrice);
     }
 
     /**

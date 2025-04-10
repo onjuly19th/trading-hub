@@ -30,9 +30,17 @@ public class OrderExecutionService {
     @Transactional
     public void checkAndExecuteOrders(String symbol, BigDecimal currentPrice) {
         var executableOrders = orderRepository.findExecutableOrders(symbol, currentPrice);
-        log.info("현재가 {}에서 체결 가능한 {}개의 주문 확인됨", currentPrice, executableOrders.size());
         
-        // OrderService의 executeOrder 메소드를 활용하여 주문 체결
-        executableOrders.forEach(orderService::executeOrder);
+        // 실행 가능한 주문이 있을 때만 INFO 로그 출력
+        if (!executableOrders.isEmpty()) {
+            log.info("Found {} executable orders at current price {} for {}", 
+                    executableOrders.size(), currentPrice, symbol);
+            
+            // OrderService의 executeOrder 메소드를 활용하여 주문 체결
+            executableOrders.forEach(orderService::executeOrder);
+        } else {
+            // 주문이 없는 경우 DEBUG 레벨로 로깅
+            log.debug("No executable orders at current price {} for {}", currentPrice, symbol);
+        }
     }
 } 

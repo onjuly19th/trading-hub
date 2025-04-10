@@ -9,19 +9,36 @@ export const API_CONFIG = {
   BINANCE_LOGO_URL: 'https://bin.bnbstatic.com/static/assets/logos'
 };
 
-// 기본 코인 티커
+// API 엔드포인트 정의
+export const ENDPOINTS = {
+  AUTH: {
+    LOGIN: '/auth/login',
+    SIGNUP: '/auth/signup'
+  },
+  PORTFOLIO: {
+    SUMMARY: '/portfolio'
+  },
+  ORDERS: {
+    CREATE: '/orders',
+    CANCEL: (orderId) => `/orders/${orderId}`,
+    LIST: '/orders',
+    HISTORY: '/orders/history'
+  }
+};
+
+// 기본 암호화폐 티커
 export const MAJOR_TICKERS = ['BTC', 'ETH', 'XRP', 'BNB', 'SOL', 'TRX', 'DOGE', 'ADA', 'XLM', 'LINK'];
 
-// 코인 객체 생성 팩토리 함수
-const createCoinObject = (ticker) => ({
+// 암호화폐 객체 생성 팩토리 함수
+const createCryptoObject = (ticker) => ({
   symbol: `${ticker}USDT`,
   name: `${ticker}/USDT`,
   ticker: ticker,
   logo: `${API_CONFIG.BINANCE_LOGO_URL}/${ticker}.png`
 });
 
-// MAJOR_COINS 생성
-export const MAJOR_COINS = MAJOR_TICKERS.map(createCoinObject);
+// MAJOR_CRYPTOS 생성
+export const MAJOR_CRYPTOS = MAJOR_TICKERS.map(createCryptoObject);
 
 // 거래 설정
 export const TRADING_CONFIG = {
@@ -70,7 +87,7 @@ export const COLORS = {
   SELL: CHART_CONFIG.COLORS.CANDLES.DOWN, // 매도 - 빨간색
 };
 
-export const DEFAULT_COIN = {
+export const DEFAULT_CRYPTO = {
   symbol: 'BTCUSDT',
   name: 'BTC/USDT',
   logo: 'https://bin.bnbstatic.com/static/assets/logos/BTC.png'

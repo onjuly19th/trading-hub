@@ -45,17 +45,17 @@ public class PerformanceAspect {
             
             // 실행 시간에 따른 경고 로깅
             if (executionTime > 500) {
-                log.warn("⚠ PERFORMANCE ALERT: {}.{}() took {}ms to execute - investigation required", 
+                log.warn("PERFORMANCE ALERT: {}.{}() took {}ms to execute - investigation required", 
                          className, methodName, executionTime);
             } else if (executionTime > 200) {
-                log.info("⚠ PERFORMANCE NOTICE: {}.{}() took {}ms to execute", 
+                log.info("PERFORMANCE NOTICE: {}.{}() took {}ms to execute", 
                          className, methodName, executionTime);
             }
             
             return result;
         } catch (Exception e) {
             long executionTime = System.currentTimeMillis() - start;
-            log.error("⚠ PERFORMANCE EXCEPTION: {}.{}() failed after {}ms", 
+            log.error("PERFORMANCE EXCEPTION: {}.{}() failed after {}ms", 
                       className, methodName, executionTime);
             throw e;
         }

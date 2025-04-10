@@ -1,7 +1,11 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { API_CONFIG } from '@/config/constants';
-import { authService } from '@/lib/authService';
+import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
+import { TokenManager } from '@/lib/auth/TokenManager';
+
+const authClient = AuthAPIClient.getInstance();
+const tokenManager = TokenManager.getInstance();
 
 export class BackendSocketManager {
   static instance = null;
@@ -24,11 +28,11 @@ export class BackendSocketManager {
 
   connect() {
     if (this.isConnecting || this.isConnected) return;
-    if (!authService.isAuthenticated()) return;
+    if (!authClient.isAuthenticated()) return;
 
     try {
       this.isConnecting = true;
-      const userId = authService.getUsername();
+      const userId = tokenManager.getUsername();
       
       if (!userId) {
         console.error('[BackendSocketManager] Cannot connect: No user ID found');
@@ -41,7 +45,7 @@ export class BackendSocketManager {
       this.client = new Client({
         webSocketFactory: () => new SockJS(API_CONFIG.SOCKET_URL),
         connectHeaders: {
-          Authorization: `Bearer ${authService.getToken()}`
+          Authorization: `Bearer ${tokenManager.getToken()}`
         },
         // STOMP 디버그 로그 비활성화
         // debug: process.env.NODE_ENV === 'development' ? 
@@ -62,8 +66,15 @@ export class BackendSocketManager {
         // 전체 주문 구독
         this.client.subscribe('/topic/orders', (message) => {
           try {
-            console.log('[BackendSocketManager] 전체 주문 메시지 수신:', message.body);
+            console.log('[BackendSocketManager] Global orders message received:', message.body);
             const data = JSON.parse(message.body);
+            console.log('[BackendSocketManager] Parsed order data:', data);
+            
+            // API 응답 구조 확인
+            if (data.data) {
+              console.log('[BackendSocketManager] Order data is wrapped in data field');
+            }
+            
             this.notifyOrderSubscribers(data);
           } catch (e) {
             console.error('[BackendSocketManager] Error parsing order message:', e);
@@ -73,8 +84,15 @@ export class BackendSocketManager {
         // 사용자별 주문 구독 (username을 사용)
         this.client.subscribe(`/queue/user/${userId}/orders`, (message) => {
           try {
-            console.log(`[BackendSocketManager] 사용자(${userId}) 주문 메시지 수신:`, message.body);
+            console.log(`[BackendSocketManager] User(${userId}) order message received:`, message.body);
             const data = JSON.parse(message.body);
+            console.log('[BackendSocketManager] Parsed user order data:', data);
+            
+            // API 응답 구조 확인
+            if (data.data) {
+              console.log('[BackendSocketManager] User order data is wrapped in data field');
+            }
+            
             this.notifyOrderSubscribers(data);
           } catch (e) {
             console.error('[BackendSocketManager] Error parsing user order message:', e);
@@ -84,8 +102,15 @@ export class BackendSocketManager {
         // 포트폴리오 업데이트 구독 추가
         this.client.subscribe(`/queue/user/${userId}/portfolio`, (message) => {
           try {
-            console.log(`[BackendSocketManager] 사용자(${userId}) 포트폴리오 업데이트 수신:`, message.body);
+            console.log(`[BackendSocketManager] User(${userId}) portfolio update received:`, message.body);
             const data = JSON.parse(message.body);
+            console.log('[BackendSocketManager] Parsed portfolio data:', data);
+            
+            // API 응답 구조 확인
+            if (data.data) {
+              console.log('[BackendSocketManager] Portfolio data is wrapped in data field');
+            }
+            
             this.notifyPortfolioSubscribers(data);
           } catch (e) {
             console.error('[BackendSocketManager] Error parsing portfolio update message:', e);

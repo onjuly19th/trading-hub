@@ -1,20 +1,24 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { usePortfolio } from '@/hooks/usePortfolio';
-import { authService } from '@/lib/authService';
-import { TRADING_CONFIG, API_CONFIG, COLORS, MAJOR_COINS } from '@/config/constants';
-import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
-import { BackendSocketManager } from '@/lib/websocket/BackendSocketManager';
 import TradingViewChart from '@/components/Chart/TradingViewChart';
-import OrderForm from '@/components/Trading/OrderForm';
-import OrderBook from '@/components/Trading/OrderBook';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
-import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import OrderBook from '@/components/Trading/OrderBook';
+import OrderForm from '@/components/Trading/OrderForm';
 import TradeHistory from '@/components/Trading/TradeHistory';
+import { API_CONFIG, COLORS, MAJOR_CRYPTOS } from '@/config/constants';
+import { usePortfolio } from '@/hooks/usePortfolio';
+import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
+import { OrderAPIClient } from '@/lib/api/OrderAPIClient';
+import { BackendSocketManager } from '@/lib/websocket/BackendSocketManager';
+import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
 import { formatNumber } from '@/utils/formatNumber';
+import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+const authClient = AuthAPIClient.getInstance();
+const orderClient = OrderAPIClient.getInstance();
 
 // throttle 함수 정의
 function throttle(func, limit) {
@@ -42,8 +46,8 @@ export default function TradingContainer() {
   const [priceChange, setPriceChange] = useState(0);
   const [isAssetsExpanded, setIsAssetsExpanded] = useState(true);
   const [isOtherAssetsExpanded, setIsOtherAssetsExpanded] = useState(false);
-  const [coinData, setCoinData] = useState(MAJOR_COINS.map(coin => ({
-    ...coin,
+  const [cryptoData, setCryptoData] = useState(MAJOR_CRYPTOS.map(crypto => ({
+    ...crypto,
     currentPrice: 0,
     priceChangePercent: 0
   })));
@@ -51,8 +55,8 @@ export default function TradingContainer() {
   const prevPriceRef = useRef('0');
   const tradeCallbackRef = useRef(null);
   const tickerCallbackRefs = useRef({});
-  const username = authService.getUsername();
-  const isAuthenticated = authService.isAuthenticated();
+  const username = authClient.getUsername();
+  const isAuthenticated = authClient.isAuthenticated();
   
   const { userBalance, error: portfolioError, formatUSD, refreshBalance, isLoading: portfolioLoading, setUserBalance } = usePortfolio();
 
@@ -88,10 +92,10 @@ export default function TradingContainer() {
 
   // coinData가 업데이트될 때마다 자산 가격 정보 업데이트
   useEffect(() => {
-    if (userBalance?.assets?.length > 0 && coinData.length > 0) {
+    if (userBalance?.assets?.length > 0 && cryptoData.length > 0) {
       const updatedAssets = userBalance.assets.map(asset => {
         // 해당 코인의 현재 가격 정보 찾기
-        const coinInfo = coinData.find(c => c.symbol === asset.symbol);
+        const coinInfo = cryptoData.find(c => c.symbol === asset.symbol);
         
         // 코인 정보가 있으면 currentPrice 업데이트
         if (coinInfo && coinInfo.currentPrice) {
@@ -116,11 +120,11 @@ export default function TradingContainer() {
         }));
       }
     }
-  }, [coinData]); // userBalance 의존성 제거하고 setUserBalance도 제거
+  }, [cryptoData]); // userBalance 의존성 제거하고 setUserBalance도 제거
 
   // 백엔드 웹소켓을 통한 포트폴리오 업데이트 구독
   useEffect(() => {
-    if (!authService.isAuthenticated()) return;
+    if (!authClient.isAuthenticated()) return;
     
     const socketManager = BackendSocketManager.getInstance();
     
@@ -133,7 +137,7 @@ export default function TradingContainer() {
         
         // 현재 coinData의 가격 정보로 자산 업데이트
         const updatedAssets = assets.map(asset => {
-          const coinInfo = coinData.find(c => c.symbol === asset.symbol);
+          const coinInfo = cryptoData.find(c => c.symbol === asset.symbol);
           return {
             ...asset,
             currentPrice: coinInfo?.currentPrice || asset.currentPrice || 0
@@ -152,7 +156,7 @@ export default function TradingContainer() {
     
     // 컴포넌트 언마운트 시 구독 해제
     return () => unsubscribe();
-  }, [coinData]); // setUserBalance 의존성 제거
+  }, [cryptoData]); // setUserBalance 의존성 제거
 
   // WebSocket 데이터 구독
   useEffect(() => {
@@ -183,8 +187,8 @@ export default function TradingContainer() {
     const backendManager = BackendSocketManager.getInstance();
     
     // 각 코인에 대한 ticker 구독 설정
-    MAJOR_COINS.forEach(coin => {
-      const symbol = coin.symbol;
+    MAJOR_CRYPTOS.forEach(crypto => {
+      const symbol = crypto.symbol;
       
       // 기존 구독 해제
       if (tickerCallbackRefs.current[symbol]) {
@@ -203,10 +207,10 @@ export default function TradingContainer() {
           backendManager.sendPriceUpdate(symbol, newPrice);
         }
         
-        setCoinData(prevCoinData => {
+        setCryptoData(prevCryptoData => {
           // 이전 코인 데이터 찾기
-          const prevCoin = prevCoinData.find(c => c.symbol === symbol);
-          const prevPrice = prevCoin?.currentPrice || 0;
+          const prevCrypto = prevCryptoData.find(c => c.symbol === symbol);
+          const prevPrice = prevCrypto?.currentPrice || 0;
           
           // 가격 방향 계산 (상승/하락/유지)
           let priceDirection = 0;
@@ -215,14 +219,14 @@ export default function TradingContainer() {
           }
           
           // 새 배열 생성하기 전에 데이터 변경 여부 확인
-          const coinToUpdate = prevCoinData.find(c => c.symbol === symbol);
-          if (coinToUpdate && 
-              coinToUpdate.currentPrice === newPrice && 
-              coinToUpdate.priceChangePercent === parseFloat(data.priceChangePercent || 0)) {
-            return prevCoinData; // 변경 사항 없으면 이전 상태 반환
+          const cryptoToUpdate = prevCryptoData.find(c => c.symbol === symbol);
+          if (cryptoToUpdate && 
+              cryptoToUpdate.currentPrice === newPrice && 
+              cryptoToUpdate.priceChangePercent === parseFloat(data.priceChangePercent || 0)) {
+            return prevCryptoData; // 변경 사항 없으면 이전 상태 반환
           }
           
-          return prevCoinData.map(c => 
+          return prevCryptoData.map(c => 
             c.symbol === symbol 
               ? { 
                   ...c, 
@@ -241,8 +245,8 @@ export default function TradingContainer() {
     
     // 컴포넌트 언마운트 시 모든 구독 해제
     return () => {
-      MAJOR_COINS.forEach(coin => {
-        const symbol = coin.symbol;
+      MAJOR_CRYPTOS.forEach(crypto => {
+        const symbol = crypto.symbol;
         if (tickerCallbackRefs.current[symbol]) {
           manager.unsubscribe(symbol, 'ticker', tickerCallbackRefs.current[symbol]);
         }
@@ -251,7 +255,7 @@ export default function TradingContainer() {
   }, []);
 
   const handleLogout = () => {
-    authService.logout();
+    authClient.logout();
     router.push('/auth/login');
   };
 
@@ -304,7 +308,7 @@ export default function TradingContainer() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image
-              src={MAJOR_COINS.find(coin => coin.symbol === asset.symbol)?.logo || `${API_CONFIG.BINANCE_LOGO_URL}/GENERIC.png`}
+              src={MAJOR_CRYPTOS.find(crypto => crypto.symbol === asset.symbol)?.logo || `${API_CONFIG.BINANCE_LOGO_URL}/GENERIC.png`}
               alt={symbol}
               width={20}
               height={20}
@@ -326,45 +330,45 @@ export default function TradingContainer() {
     );
   };
 
-  const renderCoinItem = (coin) => {
-    // coinData에서 현재 코인 정보 찾기
-    const coinInfo = coinData.find(c => c.symbol === coin.symbol) || coin;
+  const renderCryptoItem = (crypto) => {
+    // cryptoData에서 현재 코인 정보 찾기
+    const cryptoInfo = cryptoData.find(c => c.symbol === crypto.symbol) || crypto;
     
     return (
       <div 
-        key={coin.symbol}
+        key={crypto.symbol}
         className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 transition-colors ${
-          currentSymbol === coin.symbol ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+          currentSymbol === crypto.symbol ? 'bg-blue-50 border-l-4 border-blue-500' : ''
         }`}
-        onClick={() => handleCoinSelect(coin)}
+        onClick={() => handleCoinSelect(crypto)}
       >
         <div className="mr-2">
           <Image
-            src={coin.logo}
-            alt={coin.name}
+            src={crypto.logo}
+            alt={crypto.name}
             width={24}
             height={24}
             className="rounded-full"
           />
         </div>
         <div className="flex-1">
-          <div className="font-medium">{coin.name.replace('/USDT', '')}</div>
+          <div className="font-medium">{crypto.name.replace('/USDT', '')}</div>
           <div className="text-sm text-gray-500">USDT</div>
         </div>
         
         {/* 가격 및 변동률 표시 추가 */}
         <div className="text-right">
           <div className="text-sm font-semibold" style={{ 
-            color: (coinInfo.priceDirection || 0) > 0 ? COLORS.BUY : 
-                  (coinInfo.priceDirection || 0) < 0 ? COLORS.SELL : 'inherit'
+            color: (cryptoInfo.priceDirection || 0) > 0 ? COLORS.BUY : 
+                  (cryptoInfo.priceDirection || 0) < 0 ? COLORS.SELL : 'inherit'
           }}>
-            ${formatNumber(parseFloat(coinInfo.currentPrice || 0))}
+            ${formatNumber(parseFloat(cryptoInfo.currentPrice || 0))}
           </div>
           <div className="text-xs" style={{ 
-            color: (coinInfo.priceChangePercent || 0) >= 0 ? COLORS.BUY : COLORS.SELL 
+            color: (cryptoInfo.priceChangePercent || 0) >= 0 ? COLORS.BUY : COLORS.SELL 
           }}>
-            {(coinInfo.priceChangePercent || 0) >= 0 ? '+' : ''}
-            {(coinInfo.priceChangePercent || 0).toFixed(2)}%
+            {(cryptoInfo.priceChangePercent || 0) >= 0 ? '+' : ''}
+            {(cryptoInfo.priceChangePercent || 0).toFixed(2)}%
           </div>
         </div>
       </div>
@@ -398,7 +402,7 @@ export default function TradingContainer() {
             코인 목록
           </div>
           <div>
-            {MAJOR_COINS.map(renderCoinItem)}
+            {MAJOR_CRYPTOS.map(renderCryptoItem)}
           </div>
         </div>
 
@@ -458,7 +462,7 @@ export default function TradingContainer() {
         <div className="p-4 bg-white border-b border-gray-200 flex items-center">
           <div className="flex items-center">
             <Image
-              src={MAJOR_COINS.find(coin => coin.symbol === currentSymbol)?.logo || `${API_CONFIG.BINANCE_LOGO_URL}/GENERIC.png`}
+              src={MAJOR_CRYPTOS.find(crypto => crypto.symbol === currentSymbol)?.logo || `${API_CONFIG.BINANCE_LOGO_URL}/GENERIC.png`}
               alt={currentSymbol}
               width={32}
               height={32}

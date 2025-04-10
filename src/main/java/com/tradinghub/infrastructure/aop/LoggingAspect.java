@@ -31,7 +31,7 @@ public class LoggingAspect {
         Object[] args = joinPoint.getArgs();
         String params = Arrays.toString(args);
         
-        log.info("→ Executing {}.{}() with params: {}", className, methodName, params);
+        log.info("Executing {}.{}() with params: {}", className, methodName, params);
         
         try {
             // 메서드 실행
@@ -39,14 +39,14 @@ public class LoggingAspect {
             
             // 실행 시간 및 결과 로깅
             long executionTime = System.currentTimeMillis() - start;
-            log.info("← Completed {}.{}() in {}ms with result: {}", 
+            log.info("Completed {}.{}() in {}ms with result: {}", 
                      className, methodName, executionTime, result);
             
             return result;
         } catch (Exception e) {
             // 예외 발생 시 로깅
             long executionTime = System.currentTimeMillis() - start;
-            log.error("✖ Exception in {}.{}() after {}ms - {} : {}", 
+            log.error("Exception in {}.{}() after {}ms - {} : {}", 
                       className, methodName, executionTime, e.getClass().getSimpleName(), e.getMessage());
             throw e;
         }

@@ -46,7 +46,7 @@ public class SecurityAspect {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
         
-        log.info("🔒 Security: User '{}' is accessing {}.{}", username, className, methodName);
+        log.info("Security: User '{}' is accessing {}.{}", username, className, methodName);
     }
     
     /**
@@ -59,7 +59,7 @@ public class SecurityAspect {
             User user = (User) authentication.getPrincipal();
             String methodName = joinPoint.getSignature().getName();
             
-            log.info("🔒 Security: User '{}' (ID: {}) successfully performed operation '{}'", 
+            log.info("Security: User '{}' (ID: {}) successfully performed operation '{}'", 
                     user.getUsername(), user.getId(), methodName);
         }
     }
@@ -74,7 +74,7 @@ public class SecurityAspect {
             String username = authentication != null ? authentication.getName() : "anonymousUser";
             String methodName = joinPoint.getSignature().getName();
             
-            log.warn("⚠ Security: Access denied for user '{}' attempting to execute '{}'", 
+            log.warn("Security: Access denied for user '{}' attempting to execute '{}'", 
                     username, methodName);
         }
     }

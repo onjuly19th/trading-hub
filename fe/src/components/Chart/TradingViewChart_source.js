@@ -313,15 +313,8 @@ const TradingViewChart = ({
         infoBox.className = 'crosshair-info-box';
         
         if (chartElement) {
-          // 이전에 추가된 스타일 제거
-          const existingStyle = document.getElementById('chart-divider-style');
-          if (existingStyle) {
-            existingStyle.remove();
-          }
-
           // 구분선을 위한 스타일 추가
           const dividerStyle = document.createElement('style');
-          dividerStyle.id = 'chart-divider-style'; // ID 추가하여 나중에 찾을 수 있도록 함
           dividerStyle.textContent = `
             .chart-divider {
               position: absolute;
@@ -373,13 +366,11 @@ const TradingViewChart = ({
               top: 3px;
               left: 3px;
               max-width: 90%;
-              padding: 3px 8px;
-              background: ${isDarkMode ? 'rgba(24, 26, 32, 0.7)' : 'rgba(255, 255, 255, 0.9)'};
-              border: 1px solid ${isDarkMode ? 'rgba(100, 100, 100, 0.5)' : 'rgba(200, 200, 200, 0.7)'};
-              box-shadow: 0 2px 4px ${isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'};
+              padding: 3px 4px;
+              background: rgba(24, 26, 32, 0.5);
               border-radius: 4px;
               z-index: 5;
-              color: ${isDarkMode ? '#eaecef' : '#333'};
+              color: #eaecef;
               font-size: 12px;
               line-height: 1.5;
               display: none;
@@ -397,7 +388,7 @@ const TradingViewChart = ({
             }
             
             .info-label {
-              color: ${isDarkMode ? '#929aa5' : '#666'};
+              color: #929aa5;
               padding-right: 4px;
             }
             
@@ -410,16 +401,10 @@ const TradingViewChart = ({
             }
             
             .info-value-neutral {
-              color: ${isDarkMode ? '#eaecef' : '#333'};
+              color: #eaecef;
             }
           `;
           document.head.appendChild(dividerStyle);
-          
-          // 이전 구분선 요소 제거
-          const existingDivider = chartElement.querySelector('.chart-divider');
-          if (existingDivider) {
-            existingDivider.remove();
-          }
           
           // 구분선 요소 추가
           const divider = document.createElement('div');
@@ -427,22 +412,10 @@ const TradingViewChart = ({
           chartElement.style.position = 'relative';
           chartElement.appendChild(divider);
           
-          // 이전 오른쪽 스케일 분리기 제거
-          const existingRightSeparator = chartElement.querySelector('.chart-scale-separator');
-          if (existingRightSeparator) {
-            existingRightSeparator.remove();
-          }
-          
           // 오른쪽 스케일 분리기 추가
           const rightScaleSeparator = document.createElement('div');
           rightScaleSeparator.className = 'chart-scale-separator';
           chartElement.appendChild(rightScaleSeparator);
-          
-          // 이전 왼쪽 스케일 분리기 제거
-          const existingLeftSeparator = chartElement.querySelector('.chart-volume-separator');
-          if (existingLeftSeparator) {
-            existingLeftSeparator.remove();
-          }
           
           // 왼쪽 스케일 분리기 추가
           const leftScaleSeparator = document.createElement('div');
@@ -451,12 +424,6 @@ const TradingViewChart = ({
           
           // 차트 요소에 클래스 추가
           chartElement.classList.add('chart-container');
-          
-          // 이전 호버 정보 블록 제거
-          const existingInfoBox = chartElement.querySelector('.crosshair-info-box');
-          if (existingInfoBox) {
-            existingInfoBox.remove();
-          }
           
           // 호버 정보 블록 추가
           chartElement.appendChild(infoBox);
@@ -507,35 +474,26 @@ const TradingViewChart = ({
           window.removeEventListener('resize', handleResize);
           
           // 스타일 및 구분선 제거
-          const dividerStyle = document.getElementById('chart-divider-style');
-          if (dividerStyle) {
+          const dividerStyle = document.querySelector('style');
+          if (dividerStyle && dividerStyle.textContent.includes('chart-divider')) {
             dividerStyle.remove();
           }
           
           const chartElement = chartContainerRef.current;
-          if (chartElement) {
-            // 각 요소 제거
-            const divider = chartElement.querySelector('.chart-divider');
-            if (divider) {
-              divider.remove();
-            }
-            
-            // 스케일 분리기 제거
-            const rightScaleSeparator = chartElement.querySelector('.chart-scale-separator');
-            if (rightScaleSeparator) {
-              rightScaleSeparator.remove();
-            }
-            
-            const leftScaleSeparator = chartElement.querySelector('.chart-volume-separator');
-            if (leftScaleSeparator) {
-              leftScaleSeparator.remove();
-            }
-            
-            // 호버 정보 블록 제거
-            const infoBoxElement = chartElement.querySelector('.crosshair-info-box');
-            if (infoBoxElement) {
-              infoBoxElement.remove();
-            }
+          const divider = chartElement?.querySelector('.chart-divider');
+          if (divider) {
+            divider.remove();
+          }
+          
+          // 스케일 분리기 제거
+          const rightScaleSeparator = chartElement?.querySelector('.chart-scale-separator');
+          if (rightScaleSeparator) {
+            rightScaleSeparator.remove();
+          }
+          
+          const leftScaleSeparator = chartElement?.querySelector('.chart-volume-separator');
+          if (leftScaleSeparator) {
+            leftScaleSeparator.remove();
           }
         };
       } catch (err) {
@@ -567,35 +525,26 @@ const TradingViewChart = ({
       }
       
       // 스타일 및 구분선 제거
-      const dividerStyle = document.getElementById('chart-divider-style');
-      if (dividerStyle) {
+      const dividerStyle = document.querySelector('style');
+      if (dividerStyle && dividerStyle.textContent.includes('chart-divider')) {
         dividerStyle.remove();
       }
       
       const chartElement = chartContainerRef.current;
-      if (chartElement) {
-        // 각 요소 제거
-        const divider = chartElement.querySelector('.chart-divider');
-        if (divider) {
-          divider.remove();
-        }
-        
-        // 스케일 분리기 제거
-        const rightScaleSeparator = chartElement.querySelector('.chart-scale-separator');
-        if (rightScaleSeparator) {
-          rightScaleSeparator.remove();
-        }
-        
-        const leftScaleSeparator = chartElement.querySelector('.chart-volume-separator');
-        if (leftScaleSeparator) {
-          leftScaleSeparator.remove();
-        }
-        
-        // 호버 정보 블록 제거
-        const infoBoxElement = chartElement.querySelector('.crosshair-info-box');
-        if (infoBoxElement) {
-          infoBoxElement.remove();
-        }
+      const divider = chartElement?.querySelector('.chart-divider');
+      if (divider) {
+        divider.remove();
+      }
+      
+      // 스케일 분리기 제거
+      const rightScaleSeparator = chartElement?.querySelector('.chart-scale-separator');
+      if (rightScaleSeparator) {
+        rightScaleSeparator.remove();
+      }
+      
+      const leftScaleSeparator = chartElement?.querySelector('.chart-volume-separator');
+      if (leftScaleSeparator) {
+        leftScaleSeparator.remove();
       }
     };
   }, [symbol, isDarkMode, timeFrame]);
@@ -879,7 +828,7 @@ const TradingViewChart = ({
       <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         {/* 심볼 및 날짜 */}
         <div className="flex flex-wrap items-center justify-between">
-          <div className="text-sm font-medium flex items-center text-gray-900 dark:text-white">
+          <div className="text-sm font-medium flex items-center">
             {symbol}
             <span className={`ml-2 text-xs font-bold ${parseFloat(chartStats.changePercent) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {parseFloat(chartStats.changePercent) >= 0 ? '+' : ''}{chartStats.changePercent}%
@@ -891,20 +840,20 @@ const TradingViewChart = ({
         {/* OHLC 정보 */}
         <div className="flex flex-wrap items-center mt-1 gap-x-4 text-xs">
           <div className="flex items-center">
-            <span className="font-medium text-gray-500 dark:text-gray-400">O: </span>
-            <span className="ml-1 text-gray-900 dark:text-white">{chartStats.open}</span>
+            <span className="font-medium text-gray-500">O: </span>
+            <span className="ml-1">{chartStats.open}</span>
           </div>
           <div className="flex items-center">
-            <span className="font-medium text-gray-500 dark:text-gray-400">H: </span>
-            <span className="ml-1 text-gray-900 dark:text-white">{chartStats.high}</span>
+            <span className="font-medium text-gray-500">H: </span>
+            <span className="ml-1">{chartStats.high}</span>
           </div>
           <div className="flex items-center">
-            <span className="font-medium text-gray-500 dark:text-gray-400">L: </span>
-            <span className="ml-1 text-gray-900 dark:text-white">{chartStats.low}</span>
+            <span className="font-medium text-gray-500">L: </span>
+            <span className="ml-1">{chartStats.low}</span>
           </div>
           <div className="flex items-center">
-            <span className="font-medium text-gray-500 dark:text-gray-400">C: </span>
-            <span className="ml-1 text-gray-900 dark:text-white">{chartStats.close}</span>
+            <span className="font-medium text-gray-500">C: </span>
+            <span className="ml-1">{chartStats.close}</span>
           </div>
         </div>
         
@@ -912,17 +861,17 @@ const TradingViewChart = ({
         <div className="flex flex-wrap items-center mt-1 gap-x-6 text-xs">
           <div className="flex items-center">
             <span className="inline-block w-2 h-2 rounded-full bg-blue-600 mr-1"></span>
-            <span className="font-medium text-gray-700 dark:text-gray-300">MA(7): </span>
-            <span className="ml-1 text-gray-900 dark:text-white">{chartStats.ma7}</span>
+            <span className="font-medium">MA(7): </span>
+            <span className="ml-1">{chartStats.ma7}</span>
           </div>
           <div className="flex items-center">
             <span className="inline-block w-2 h-2 rounded-full bg-orange-600 mr-1"></span>
-            <span className="font-medium text-gray-700 dark:text-gray-300">MA(25): </span>
-            <span className="ml-1 text-gray-900 dark:text-white">{chartStats.ma25}</span>
+            <span className="font-medium">MA(25): </span>
+            <span className="ml-1">{chartStats.ma25}</span>
           </div>
           <div className="flex items-center">
-            <span className="font-medium text-gray-700 dark:text-gray-300">Vol({chartStats.symbol}): </span>
-            <span className="ml-1 text-gray-900 dark:text-white">{chartStats.volume}</span>
+            <span className="font-medium">Vol({chartStats.symbol}): </span>
+            <span className="ml-1">{chartStats.volume}</span>
           </div>
         </div>
       </div>

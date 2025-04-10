@@ -12,6 +12,7 @@ export function usePortfolio() {
   });
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchUserBalance = useCallback(async () => {
     try {
@@ -52,6 +53,7 @@ export function usePortfolio() {
       });
       
       setError(null);
+      setIsInitialized(true);
     } catch (error) {
       console.error('Error in fetchUserBalance:', error);
       
@@ -71,11 +73,13 @@ export function usePortfolio() {
     }
   }, []);
 
+  // 초기 로딩 시에만 데이터를 가져옵니다
   useEffect(() => {
-    fetchUserBalance();
-    const intervalId = setInterval(fetchUserBalance, 300000);
-    return () => clearInterval(intervalId);
-  }, [fetchUserBalance]);
+    if (!isInitialized && authClient.isAuthenticated()) {
+      console.log('[usePortfolio] Fetching initial portfolio data');
+      fetchUserBalance();
+    }
+  }, [fetchUserBalance, isInitialized]);
 
   const formatUSD = useCallback((amount) => {
     if (amount === null || amount === undefined) {
@@ -94,6 +98,7 @@ export function usePortfolio() {
   const refreshBalance = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('[usePortfolio] Manually refreshing portfolio data');
       const portfolioData = await portfolioClient.getPortfolioSummary();
       
       // 백엔드 API의 데이터 구조에 맞게 조정
@@ -132,8 +137,10 @@ export function usePortfolio() {
     userBalance,
     error,
     isLoading,
+    isInitialized,
     formatUSD,
     refreshBalance,
-    setUserBalance
+    setUserBalance,
+    fetchUserBalance
   };
 } 

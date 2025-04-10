@@ -57,7 +57,8 @@ export default function TradingContainer() {
     userBalance, 
     refreshBalance, 
     isLoading: portfolioLoading, 
-    setUserBalance 
+    setUserBalance,
+    isInitialized
   } = usePortfolio();
 
   // 로그인 확인 및 리다이렉트
@@ -66,6 +67,19 @@ export default function TradingContainer() {
       router.push('/auth/login');
     }
   }, [isAuthenticated, router]);
+
+  // 초기 로딩 시 백엔드 웹소켓 연결 설정
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    console.log('[TradingContainer] Initializing backend socket connection');
+    const backendManager = BackendSocketManager.getInstance();
+    
+    // 연결이 되어 있지 않으면 연결 시도
+    if (!backendManager.isConnected && !backendManager.isConnecting) {
+      backendManager.connect();
+    }
+  }, [isAuthenticated]);
 
   // 메모이제이션된 트레이드 콜백 함수
   const tradeCallback = useCallback((data) => {
@@ -92,9 +106,9 @@ export default function TradingContainer() {
     }
   }, [currentSymbol]);
 
-  // 포트폴리오 업데이트 콜백 함수
+  // 포트폴리오 업데이트 콜백 함수 - 웹소켓을 통해 받은 데이터 처리
   const portfolioUpdateCallback = useCallback((portfolioData) => {
-    console.log('[TradingContainer] Portfolio update received:', portfolioData);
+    console.log('[TradingContainer] Portfolio update received via websocket:', portfolioData);
     
     try {
       // API 응답 구조에 따라 데이터 추출
@@ -169,7 +183,7 @@ export default function TradingContainer() {
     }
   }, [setUserBalance]);
 
-  // WebSocket 데이터 구독
+  // WebSocket 데이터 구독 (Binance 거래 데이터)
   useEffect(() => {
     const manager = WebSocketManager.getInstance();
     
@@ -192,25 +206,29 @@ export default function TradingContainer() {
     };
   }, [currentSymbol, tradeCallback]);
 
-  // 백엔드 웹소켓 구독 (포트폴리오 업데이트)
+  // 백엔드 웹소켓 구독 (포트폴리오 업데이트) - 이 부분은 자산 정보의 실시간 업데이트를 위한 핵심 부분
   useEffect(() => {
-    console.log('[TradingContainer] Setting up backend socket subscriptions');
+    if (!isAuthenticated) return;
+    
+    console.log('[TradingContainer] Setting up portfolio subscription');
     const backendManager = BackendSocketManager.getInstance();
     
     // 포트폴리오 업데이트 구독
     const unsubscribePortfolio = backendManager.subscribeToPortfolio(portfolioUpdateCallback);
     
-    console.log('[TradingContainer] Backend socket subscriptions active');
+    console.log('[TradingContainer] Portfolio subscription active');
     
     // 언마운트 시 구독 해제
     return () => {
-      console.log('[TradingContainer] Cleaning up backend socket subscriptions');
+      console.log('[TradingContainer] Cleaning up portfolio subscription');
       unsubscribePortfolio();
     };
-  }, [portfolioUpdateCallback]);
+  }, [isAuthenticated, portfolioUpdateCallback]);
 
   // 모든 코인의 ticker 데이터 구독
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const manager = WebSocketManager.getInstance();
     const backendManager = BackendSocketManager.getInstance();
     
@@ -279,7 +297,7 @@ export default function TradingContainer() {
         }
       });
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // coinData가 업데이트될 때마다 자산 가격 정보 업데이트
   useEffect(() => {

@@ -32,14 +32,17 @@ export const formatNumber = (number) => {
 export const formatCryptoPrice = (price) => {
   if (price === undefined || price === null) return '0';
   
+  // 절댓값으로 숫자 크기 비교하여 소수점 자릿수 결정
+  const absPrice = Math.abs(price);
+  
   // 작은 숫자는 더 많은 소수점 자리를 표시
-  if (price < 0.01) {
-    return price.toFixed(8);
-  }
-  else if (price < 1) {
+  if (absPrice < 0.01) {
     return price.toFixed(6);
   }
-  else if (price < 1000) {
+  else if (absPrice < 1) {
+    return price.toFixed(4);
+  }
+  else if (absPrice < 1000) {
     return price.toFixed(2);
   }
   

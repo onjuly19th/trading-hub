@@ -184,4 +184,28 @@ class PortfolioServiceTest {
         verify(assetRepository).save(any(PortfolioAsset.class));
         verify(portfolioRepository).save(any(Portfolio.class));
     }
+
+    @Test
+    @DisplayName("매도 시 자산 수량이 0이 되면 삭제하는 기능 테스트")
+    void sellAllAssetsShouldDeleteAsset() {
+        // given
+        // 전체 매도 요청 (1 BTC)
+        OrderExecutionRequest fullSellRequest = OrderExecutionRequest.builder()
+            .symbol("BTC")
+            .amount(new BigDecimal("1.0")) // 전체 수량 매도
+            .price(new BigDecimal("55000"))
+            .side(OrderSide.SELL)
+            .build();
+        
+        when(portfolioRepository.findByUserIdForUpdate(anyLong())).thenReturn(Optional.of(portfolio));
+        when(assetRepository.findByPortfolioIdAndSymbol(anyLong(), eq("BTC"))).thenReturn(Optional.of(portfolioAsset));
+        when(portfolioRepository.save(any(Portfolio.class))).thenReturn(portfolio);
+        
+        // when
+        portfolioService.updatePortfolioForOrder(1L, fullSellRequest);
+        
+        // then
+        verify(assetRepository).delete(portfolioAsset); // 자산 삭제 확인
+        verify(portfolioRepository).save(portfolio); // 포트폴리오 저장 확인
+    }
 } 

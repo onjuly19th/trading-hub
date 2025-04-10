@@ -246,7 +246,7 @@ export default function TradeHistory() {
       )}
 
       {/* 주문 목록 */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-visible">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
             <div

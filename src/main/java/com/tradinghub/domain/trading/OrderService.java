@@ -7,16 +7,16 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tradinghub.common.exception.InsufficientBalanceException;
-import com.tradinghub.common.exception.InvalidOrderException;
-import com.tradinghub.common.exception.OrderNotFoundException;
-import com.tradinghub.common.exception.UnauthorizedOperationException;
+import com.tradinghub.common.exception.auth.UnauthorizedOperationException;
+import com.tradinghub.common.exception.order.InvalidOrderException;
+import com.tradinghub.common.exception.order.OrderNotFoundException;
+import com.tradinghub.common.exception.portfolio.InsufficientBalanceException;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
+import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
 import com.tradinghub.domain.trading.event.OrderExecutedEvent;
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
-import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
 import com.tradinghub.infrastructure.aop.LogExecutionTime;
 import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
 
@@ -188,7 +188,7 @@ public class OrderService {
     @Transactional
     public void cancelOrder(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException(orderId));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
 
         if (!order.getUser().getId().equals(userId)) {
             throw new UnauthorizedOperationException("order cancellation");

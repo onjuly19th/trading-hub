@@ -10,7 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import com.tradinghub.common.exception.UnauthorizedOperationException;
+import com.tradinghub.common.exception.auth.UnauthorizedOperationException;
 import com.tradinghub.domain.user.User;
 
 import lombok.extern.slf4j.Slf4j;

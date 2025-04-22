@@ -2,12 +2,12 @@ package com.tradinghub.domain.portfolio;
 
 import java.util.Optional;
 
-import jakarta.persistence.LockModeType;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 
 /**
  * 포트폴리오(Portfolio) 엔티티에 대한 데이터 액세스 인터페이스

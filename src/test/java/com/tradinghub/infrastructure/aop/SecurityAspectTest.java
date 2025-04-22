@@ -1,5 +1,8 @@
 package com.tradinghub.infrastructure.aop;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.aspectj.lang.JoinPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,10 +14,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.tradinghub.common.exception.UnauthorizedOperationException;
+import com.tradinghub.common.exception.auth.UnauthorizedOperationException;
 import com.tradinghub.domain.user.User;
-
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SecurityAspectTest {

@@ -1,13 +1,16 @@
 package com.tradinghub.common.exception;
 
-import com.tradinghub.common.response.ApiResponse;
+import java.time.LocalDateTime;
+import java.util.stream.Collectors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -16,60 +19,124 @@ public class GlobalExceptionHandler {
 
     // BusinessException 처리
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
-        log.error("BusinessException: {}", e.getMessage());
+    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e, HttpServletRequest request) {
+        log.error("BusinessException occurred: code={}, message={}, status={}, path={}", 
+            e.getErrorCode(), e.getMessage(), e.getStatus(), request.getRequestURI());
+        
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(e.getErrorCode())
+                .message(e.getMessage())
+                .timestamp(LocalDateTime.now())
+                .path(request.getRequestURI())
+                .status(e.getStatus().value())
+                .build();
+        
         return ResponseEntity
                 .status(e.getStatus())
-                .body(ApiResponse.error(e.getErrorCode(), e.getMessage()));
+                .body(errorResponse);
     }
 
     // Validation 예외 처리 (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(
-            MethodArgumentNotValidException e) {
-        log.error("Validation error: {}", e.getMessage());
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException e, HttpServletRequest request) {
         
-        FieldError fieldError = e.getBindingResult().getFieldError();
-        String errorMessage = fieldError != null 
-            ? fieldError.getDefaultMessage() 
+        String errorMessage = e.getBindingResult().getFieldError() != null 
+            ? e.getBindingResult().getFieldError().getDefaultMessage() 
             : "Invalid request parameter";
+        
+        var fieldErrors = e.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> ErrorResponse.FieldError.builder()
+                        .field(fieldError.getField())
+                        .rejectedValue(fieldError.getRejectedValue())
+                        .message(fieldError.getDefaultMessage())
+                        .build())
+                .collect(Collectors.toList());
+            
+        log.error("Validation error: fieldErrors={}, path={}", fieldErrors, request.getRequestURI());
+        
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(ErrorCodes.INVALID_INPUT)
+                .message(errorMessage)
+                .timestamp(LocalDateTime.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .fieldErrors(fieldErrors)
+                .build();
             
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("INVALID_INPUT", errorMessage));
+                .body(errorResponse);
     }
 
     // Validation 예외 처리
     @ExceptionHandler(BindException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBindException(BindException e) {
-        log.error("Validation error: {}", e.getMessage());
+    public ResponseEntity<ErrorResponse> handleBindException(BindException e, HttpServletRequest request) {
         String errorMessage = e.getBindingResult()
                 .getAllErrors()
                 .get(0)
                 .getDefaultMessage();
+        
+        var fieldErrors = e.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> ErrorResponse.FieldError.builder()
+                        .field(fieldError.getField())
+                        .rejectedValue(fieldError.getRejectedValue())
+                        .message(fieldError.getDefaultMessage())
+                        .build())
+                .collect(Collectors.toList());
+        
+        log.error("Bind error: fieldErrors={}, path={}", fieldErrors, request.getRequestURI());
+        
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(ErrorCodes.INVALID_INPUT)
+                .message(errorMessage)
+                .timestamp(LocalDateTime.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .fieldErrors(fieldErrors)
+                .build();
+            
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("INVALID_INPUT", errorMessage));
+                .body(errorResponse);
     }
 
     // IllegalArgumentException 예외 처리
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
-        log.error("Invalid argument: {}", e.getMessage());
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException e, HttpServletRequest request) {
+        log.error("Invalid argument: message={}, path={}, timestamp={}", 
+            e.getMessage(), request.getRequestURI(), LocalDateTime.now());
+            
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(ErrorCodes.INVALID_ARGUMENT)
+                .message(e.getMessage())
+                .timestamp(LocalDateTime.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .build();
+            
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("INVALID_ARGUMENT", e.getMessage()));
+                .body(errorResponse);
     }
 
     // 기타 예외 처리
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
-        log.error("Unexpected error occurred: ", e);
+    public ResponseEntity<ErrorResponse> handleException(Exception e, HttpServletRequest request) {
+        log.error("Unexpected error occurred: type={}, message={}, path={}", 
+            e.getClass().getSimpleName(), e.getMessage(), request.getRequestURI(), e);
+            
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(ErrorCodes.INTERNAL_SERVER_ERROR)
+                .message("An internal server error occurred")
+                .timestamp(LocalDateTime.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .build();
+            
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(
-                    "INTERNAL_SERVER_ERROR",
-                    "An internal server error occurred"
-                ));
+                .body(errorResponse);
     }
 }

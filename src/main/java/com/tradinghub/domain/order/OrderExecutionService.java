@@ -24,7 +24,7 @@ public class OrderExecutionService {
      * 매수 주문: 현재가가 지정가 이하일 때 체결
      * 매도 주문: 현재가가 지정가 이상일 때 체결
      *
-     * @param symbol 거래 심볼 (예: BTC/USDT)
+     * @param symbol 거래 심볼 (예: BTCUSDT)
      * @param currentPrice 현재 시장 가격
      */
     @Transactional

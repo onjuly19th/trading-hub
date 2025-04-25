@@ -40,7 +40,17 @@ public class Order {
     @JoinColumn(name = "user_id")
     private User user;
 
-    /** 거래 심볼 (예: BTC/USDT) */
+    /**
+     * 거래 심볼
+     * 
+     * 거래 쌍을 나타내는 식별자로, 다음과 같은 형식을 따릅니다:
+     * - 티커(ticker): 기본 암호화폐 심볼 (예: BTC)
+     * - 심볼(symbol): 거래소에서 사용하는 전체 심볼 (예: BTCUSDT)
+     * - 이름(name): 사용자 친화적인 표시 이름 (예: BTC/USDT)
+     * 
+     * 현재 시스템에서는 심볼(symbol) 형식을 사용하며, 
+     * 예를 들어 "BTCUSDT"와 같이 티커와 기준 화폐를 붙여서 사용합니다.
+     */
     @Column(nullable = false)
     private String symbol;
     

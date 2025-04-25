@@ -3,11 +3,10 @@ package com.tradinghub.infrastructure.websocket;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
-import com.tradinghub.common.response.ApiResponse;
+import com.tradinghub.domain.order.Order;
+import com.tradinghub.domain.order.dto.OrderResponse;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.dto.PortfolioResponse;
-import com.tradinghub.domain.trading.Order;
-import com.tradinghub.domain.trading.dto.OrderResponse;
 import com.tradinghub.domain.user.User;
 
 import lombok.RequiredArgsConstructor;
@@ -85,7 +84,7 @@ public class OrderWebSocketHandler {
             
             // 사용자의 포트폴리오 정보 업데이트 (username 사용)
             String destination = "/queue/user/" + user.getUsername() + "/portfolio";
-            messagingTemplate.convertAndSend(destination, ApiResponse.success(portfolioResponse));
+            messagingTemplate.convertAndSend(destination, portfolioResponse);
             
             log.info("Portfolio update notification sent: userId={}, username={}, destination={}", 
                 user.getId(), user.getUsername(), destination);

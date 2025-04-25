@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradinghub.common.response.ApiResponse;
 import com.tradinghub.domain.user.UserService;
 import com.tradinghub.domain.user.dto.AuthRequest;
 import com.tradinghub.domain.user.dto.AuthResponse;
@@ -88,8 +87,7 @@ public class UserAuthControllerTest {
         // given
         when(userService.signup(any(AuthRequest.class))).thenReturn(authResponse);
         
-        ResponseEntity<ApiResponse<AuthResponse>> response = 
-            ResponseEntity.ok(ApiResponse.success(authResponse));
+        ResponseEntity<AuthResponse> response = ResponseEntity.ok(authResponse);
         when(userAuthController.signup(any(AuthRequest.class))).thenReturn(response);
 
         // when & then
@@ -106,8 +104,7 @@ public class UserAuthControllerTest {
         // given
         when(userService.login(any(AuthRequest.class))).thenReturn(authResponse);
         
-        ResponseEntity<ApiResponse<AuthResponse>> response = 
-            ResponseEntity.ok(ApiResponse.success(authResponse));
+        ResponseEntity<AuthResponse> response = ResponseEntity.ok(authResponse);
         when(userAuthController.login(any(AuthRequest.class))).thenReturn(response);
 
         // when & then

@@ -8,15 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tradinghub.domain.order.Order;
-import com.tradinghub.domain.order.dto.OrderExecutionRequest;
 import com.tradinghub.domain.order.event.OrderExecutedEvent;
 import com.tradinghub.domain.order.service.OrderCommandService;
 import com.tradinghub.domain.order.service.OrderQueryService;
-import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
 import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 주문 관련 애플리케이션 로직을 처리하는 서비스
@@ -27,12 +26,12 @@ import lombok.RequiredArgsConstructor;
  * 3. 웹소켓 알림
  * 4. 트랜잭션 관리
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderApplicationService {
     private final OrderCommandService orderCommandService;
     private final OrderQueryService orderQueryService;
-    private final PortfolioService portfolioService;
     private final OrderWebSocketHandler webSocketHandler;
     private final ApplicationEventPublisher eventPublisher;
     
@@ -53,9 +52,11 @@ public class OrderApplicationService {
         // 도메인 로직 위임
         Order order = orderCommandService.createMarketOrder(userId, symbol, side, price, amount);
         
-        // 애플리케이션 로직 처리
-        publishOrderExecutedEvent(order);
+        // 웹소켓 알림은 동기적으로 처리 (UI 즉시 갱신)
         webSocketHandler.notifyNewOrder(order);
+        
+        // 포트폴리오 업데이트 및 알림 발송은 이벤트를 통해 비동기적으로 처리
+        publishOrderExecutedEvent(order);
         
         return order;
     }
@@ -100,15 +101,19 @@ public class OrderApplicationService {
     @ExecutionTimeLog
     @Transactional
     public void executeOrder(Order order) {
+        log.debug("Order execution started: orderId={}, userId={}, symbol={}", 
+                 order.getId(), order.getUser().getId(), order.getSymbol());
+                 
+        // 주문 상태 변경 - 핵심 비즈니스 로직 (동기적 처리)
         Order executedOrder = orderCommandService.executeOrder(order);
         
-        // 포트폴리오 업데이트
-        OrderExecutionRequest request = OrderExecutionRequest.from(executedOrder);
-        portfolioService.updatePortfolioForOrder(executedOrder.getUser().getId(), request);
-        
-        // 이벤트 발행 및 알림
-        publishOrderExecutedEvent(executedOrder);
+        // 웹소켓 알림은 동기적으로 처리 (UI 즉시 갱신)
         webSocketHandler.notifyOrderUpdate(executedOrder);
+        
+        // 포트폴리오 업데이트 및 알림 발송은 이벤트를 통해 비동기적으로 처리
+        publishOrderExecutedEvent(executedOrder);
+        
+        log.debug("Order execution completed and async event published: orderId={}", executedOrder.getId());
     }
     
     /**
@@ -126,9 +131,13 @@ public class OrderApplicationService {
     
     /**
      * 주문 실행 이벤트 발행
+     * 이 이벤트는 비동기적으로 처리될 포트폴리오 업데이트 및 알림 발송 등의 후속 작업을 트리거합니다.
      */
     private void publishOrderExecutedEvent(Order order) {
-        eventPublisher.publishEvent(new OrderExecutedEvent(order));
+        OrderExecutedEvent event = new OrderExecutedEvent(order);
+        log.debug("Order execution event published: orderId={}, userId={}, symbol={}", 
+                 event.getOrderId(), event.getUserId(), event.getSymbol());
+        eventPublisher.publishEvent(event);
     }
     
     // 조회 메서드 - 단순 위임

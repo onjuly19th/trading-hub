@@ -11,12 +11,14 @@ import com.tradinghub.domain.order.Order;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * 주문 정보를 클라이언트에 전달하기 위한 응답 DTO 클래스입니다.
  * 주문의 상세 정보와 실행 결과를 포함합니다.
  */
 @Getter
+@Setter
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OrderResponse {

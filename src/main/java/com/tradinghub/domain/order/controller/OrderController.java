@@ -24,6 +24,7 @@ import com.tradinghub.domain.order.application.OrderApplicationService;
 import com.tradinghub.domain.order.dto.OrderRequest;
 import com.tradinghub.domain.order.dto.OrderResponse;
 import com.tradinghub.domain.user.User;
+import com.tradinghub.domain.user.UserRepository;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
@@ -51,6 +52,7 @@ import lombok.RequiredArgsConstructor;
 @Validated
 public class OrderController {
     private final OrderApplicationService orderService;
+    private final UserRepository userRepository;
     
     // -----------------------------
     // Create Operations
@@ -73,7 +75,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(
             @Valid @RequestBody OrderRequest request, Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
+        User user = getUserFromAuthentication(authentication);
         
         validateOrderRequest(request);
         
@@ -127,7 +129,7 @@ public class OrderController {
      */
     @GetMapping
     public ResponseEntity<List<OrderResponse>> getUserOrders(Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
+        User user = getUserFromAuthentication(authentication);
         List<Order> orders = orderService.getOrdersByUserId(user.getId());
         List<OrderResponse> orderResponses = OrderResponse.fromList(orders);
         
@@ -145,7 +147,7 @@ public class OrderController {
      */
     @GetMapping("/history")
     public ResponseEntity<List<OrderResponse>> getOrderHistory(Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
+        User user = getUserFromAuthentication(authentication);
         List<Order> completedOrders = orderService.getCompletedOrdersByUserId(user.getId());
         
         return ResponseEntity.ok(OrderResponse.fromList(completedOrders));
@@ -163,7 +165,7 @@ public class OrderController {
     @GetMapping("/symbol/{symbol}")
     public ResponseEntity<List<OrderResponse>> getOrdersBySymbol(
             @PathVariable String symbol, Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
+        User user = getUserFromAuthentication(authentication);
         List<Order> orders = orderService.getOrdersByUserIdAndSymbol(user.getId(), symbol);
         
         return ResponseEntity.ok(OrderResponse.fromList(orders));
@@ -191,7 +193,7 @@ public class OrderController {
     @DeleteMapping("/{orderId}")
     public ResponseEntity<Void> cancelOrder(
             @PathVariable Long orderId, Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
+        User user = getUserFromAuthentication(authentication);
         orderService.cancelOrder(orderId, user.getId());
         
         return ResponseEntity.ok().build();
@@ -217,5 +219,15 @@ public class OrderController {
         if (request.getType() == Order.OrderType.LIMIT && request.getPrice() == null) {
             throw new InvalidOrderException("Limit order requires a price");
         }
+    }
+
+    private User getUserFromAuthentication(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedOperationException("User is not authenticated");
+        }
+        
+        String username = authentication.getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UnauthorizedOperationException("User not found: " + username));
     }
 } 

@@ -74,7 +74,7 @@ public class PerformanceMonitor {
                 if (args.length > 0 && args[0] instanceof Order) {
                     Order order = (Order) args[0];
                     log.error(
-                        "주문 체결 실패 - 주문ID: {}, 사용자ID: {}, 심볼: {}, 타입: {}, 방향: {}, 가격: {}, 수량: {}, 실행시간: {}ms, 오류: {}",
+                        "Order execution failed - orderId: {}, userId: {}, symbol: {}, type: {}, side: {}, price: {}, amount: {}, execution time: {}ms, error: {}",
                         order.getId(), order.getUser().getId(), order.getSymbol(),
                         order.getType(), order.getSide(), order.getPrice(),
                         order.getAmount(), executionTime, e.getMessage()

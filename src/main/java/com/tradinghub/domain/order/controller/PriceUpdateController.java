@@ -13,13 +13,11 @@ import com.tradinghub.domain.order.dto.PriceUpdate;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 실시간 가격 업데이트를 처리하는 웹소켓 컨트롤러
  * 프론트엔드에서 바이낸스로부터 받은 가격 데이터를 수신하여 지정가 주문 체결에 사용
  */
-@Slf4j
 @Controller
 @RequiredArgsConstructor
 @Validated

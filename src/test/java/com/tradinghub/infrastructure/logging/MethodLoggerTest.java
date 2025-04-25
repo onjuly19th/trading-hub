@@ -60,7 +60,6 @@ class MethodLoggerTest {
 
     // 테스트를 위한 내부 클래스
     private static class TestService {
-        @SuppressWarnings("unused")
         public String testMethod(String arg) {
             return arg;
         }

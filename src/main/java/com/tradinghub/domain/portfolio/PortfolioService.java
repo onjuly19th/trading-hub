@@ -17,7 +17,6 @@ import com.tradinghub.domain.user.User;
 import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 사용자 포트폴리오 관리를 담당하는 서비스 클래스
@@ -36,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
  * @see PortfolioAsset 포트폴리오 자산 엔티티
  * @see OrderExecutionRequest 주문 실행 요청
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PortfolioService {

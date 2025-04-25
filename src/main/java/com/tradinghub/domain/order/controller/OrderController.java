@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.tradinghub.common.exception.auth.UnauthorizedOperationException;
 import com.tradinghub.common.exception.order.InvalidOrderException;
+import com.tradinghub.common.exception.order.OrderNotFoundException;
+import com.tradinghub.common.exception.portfolio.InsufficientBalanceException;
 import com.tradinghub.domain.order.Order;
 import com.tradinghub.domain.order.application.OrderApplicationService;
 import com.tradinghub.domain.order.dto.OrderRequest;
@@ -26,7 +29,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 주문 관련 REST API 엔드포인트를 제공하는 컨트롤러
@@ -43,7 +45,6 @@ import lombok.extern.slf4j.Slf4j;
  * @see OrderRequest 주문 생성 요청 DTO
  * @see OrderResponse 주문 응답 DTO
  */
-@Slf4j
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor

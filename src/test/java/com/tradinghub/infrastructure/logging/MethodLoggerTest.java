@@ -1,4 +1,4 @@
-package com.tradinghub.infrastructure.aop;
+package com.tradinghub.infrastructure.logging;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -12,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class LoggingAspectTest {
+class MethodLoggerTest {
 
-    private LoggingAspect loggingAspect;
+    private MethodLogger methodLogger;
 
     @Mock
     private ProceedingJoinPoint joinPoint;
@@ -24,7 +24,7 @@ class LoggingAspectTest {
 
     @BeforeEach
     void setUp() {
-        loggingAspect = new LoggingAspect();
+        methodLogger = new MethodLogger();
     }
 
     @Test
@@ -37,7 +37,7 @@ class LoggingAspectTest {
         when(joinPoint.proceed()).thenReturn("testResult");
 
         // when
-        Object result = loggingAspect.logExecutionTime(joinPoint);
+        Object result = methodLogger.logExecutionTime(joinPoint);
 
         // then
         assertEquals("testResult", result);
@@ -54,7 +54,7 @@ class LoggingAspectTest {
         when(joinPoint.proceed()).thenThrow(new RuntimeException("Test exception"));
 
         // when & then
-        assertThrows(RuntimeException.class, () -> loggingAspect.logExecutionTime(joinPoint));
+        assertThrows(RuntimeException.class, () -> methodLogger.logExecutionTime(joinPoint));
         verify(joinPoint).proceed();
     }
 

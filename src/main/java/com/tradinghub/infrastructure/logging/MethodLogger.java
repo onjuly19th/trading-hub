@@ -1,4 +1,6 @@
-package com.tradinghub.infrastructure.aop;
+package com.tradinghub.infrastructure.logging;
+
+import java.util.Arrays;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -8,12 +10,14 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
-
+/**
+ * 메서드 실행 시간 로깅을 담당하는 로거
+ * 모든 서비스 메서드의 실행을 로깅합니다.
+ */
 @Aspect
 @Component
 @Slf4j
-public class LoggingAspect {
+public class MethodLogger {
 
     /**
      * 모든 서비스 메서드의 실행을 로깅합니다.

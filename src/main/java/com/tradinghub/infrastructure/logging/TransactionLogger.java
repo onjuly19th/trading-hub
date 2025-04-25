@@ -1,4 +1,4 @@
-package com.tradinghub.infrastructure.aop;
+package com.tradinghub.infrastructure.logging;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -9,10 +9,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 트랜잭션 실행 로깅을 담당하는 로거
+ * 트랜잭션 시작, 커밋, 롤백 시점에 대한 로깅을 수행합니다.
+ */
 @Aspect
 @Component
 @Slf4j
-public class TransactionAspect {
+public class TransactionLogger {
 
     /**
      * @Transactional 어노테이션이 적용된 모든 메서드

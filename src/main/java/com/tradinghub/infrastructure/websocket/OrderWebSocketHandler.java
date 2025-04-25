@@ -39,8 +39,8 @@ public class OrderWebSocketHandler {
     private void sendOrderNotification(Order order, String eventType) {
         try {
             OrderResponse orderResponse = OrderResponse.from(order);
-            log.debug("Preparing WebSocket message - Order {}: orderId={}, userId={}, symbol={}, status={}", 
-                    eventType, order.getId(), order.getUser().getId(), order.getSymbol(), order.getStatus());
+            log.debug("Preparing WebSocket message - Order {}: orderId={}, symbol={}, status={}", 
+                    eventType, order.getId(), order.getSymbol(), order.getStatus());
             
             // 전체 주문 내역 업데이트
             messagingTemplate.convertAndSend("/topic/orders", orderResponse);
@@ -50,11 +50,11 @@ public class OrderWebSocketHandler {
             String destination = "/queue/user/" + order.getUser().getUsername() + "/orders";
             messagingTemplate.convertAndSend(destination, orderResponse);
             
-            log.info("Order {} notification sent: orderId={}, userId={}, destination={}", 
-                eventType, order.getId(), order.getUser().getId(), destination);
+            log.info("Order {} notification sent: orderId={}, destination={}", 
+                eventType, order.getId(), destination);
         } catch (Exception e) {
-            log.error("Failed to send order {} notification: orderId={}, userId={}, error={}", 
-                    eventType, order.getId(), order.getUser().getId(), e.getMessage(), e);
+            log.error("Failed to send order {} notification: orderId={}, error={}", 
+                    eventType, order.getId(), e.getMessage(), e);
         }
     }
     
@@ -79,18 +79,18 @@ public class OrderWebSocketHandler {
     private void sendPortfolioNotification(User user, Portfolio portfolio) {
         try {
             PortfolioResponse portfolioResponse = PortfolioResponse.from(portfolio);
-            log.debug("Preparing WebSocket message - Portfolio update: userId={}, username={}", 
-                    user.getId(), user.getUsername());
+            log.debug("Preparing WebSocket message - Portfolio update: username={}", 
+                    user.getUsername());
             
             // 사용자의 포트폴리오 정보 업데이트 (username 사용)
             String destination = "/queue/user/" + user.getUsername() + "/portfolio";
             messagingTemplate.convertAndSend(destination, portfolioResponse);
             
-            log.info("Portfolio update notification sent: userId={}, username={}, destination={}", 
-                user.getId(), user.getUsername(), destination);
+            log.info("Portfolio update notification sent: username={}, destination={}", 
+                user.getUsername(), destination);
         } catch (Exception e) {
-            log.error("Failed to send portfolio update notification: userId={}, username={}, error={}", 
-                    user.getId(), user.getUsername(), e.getMessage(), e);
+            log.error("Failed to send portfolio update notification: username={}, error={}", 
+                    user.getUsername(), e.getMessage(), e);
         }
     }
 } 

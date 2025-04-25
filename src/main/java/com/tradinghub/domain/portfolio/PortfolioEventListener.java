@@ -36,8 +36,8 @@ public class PortfolioEventListener {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleOrderExecuted(OrderExecutedEvent event) {
         try {
-            log.info("Portfolio update started: userId={}, orderId={}, symbol={}", 
-                event.getUserId(), event.getOrderId(), event.getSymbol());
+            log.info("Portfolio update started: orderId={}, symbol={}", 
+                event.getOrderId(), event.getSymbol());
                 
             OrderExecutionRequest request = OrderExecutionRequest.builder()
                 .symbol(event.getSymbol())
@@ -51,11 +51,10 @@ public class PortfolioEventListener {
             Portfolio portfolio = portfolioService.getPortfolio(event.getUserId());
             webSocketHandler.notifyPortfolioUpdate(portfolio);
             
-            log.info("Portfolio updated: userId={}, symbol={}", event.getUserId(), event.getSymbol());
+            log.info("Portfolio updated: symbol={}", event.getSymbol());
         } catch (Exception e) {
-            // 비동기 처리 중 발생한 예외는 로깅하고 관리자에게 알림
-            log.error("Error updating portfolio: userId={}, error={}", 
-                event.getUserId(), e.getMessage(), e);
+            log.error("Error updating portfolio: error={}", 
+                e.getMessage(), e);
             // 여기서는 예외를 다시 던지지 않음 - 실패한 업데이트를 관리자 대시보드에 표시하는 등의 추가 작업 가능
         }
     }

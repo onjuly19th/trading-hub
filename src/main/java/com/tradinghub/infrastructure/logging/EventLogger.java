@@ -10,6 +10,8 @@ import com.tradinghub.domain.order.event.OrderExecutedEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
+
 /**
  * 이벤트 처리에 대한 로깅을 담당하는 로거
  * 이벤트 리스너의 실행 시작, 종료, 실패 등을 로깅합니다.
@@ -36,27 +38,26 @@ public class EventLogger {
             OrderExecutedEvent event = (OrderExecutedEvent) args[0];
             String methodName = joinPoint.getSignature().getName();
             String className = joinPoint.getTarget().getClass().getSimpleName();
-            Class<?> declaringClass = joinPoint.getSignature().getDeclaringType();
-            boolean isAsync = declaringClass.isAnnotationPresent(Async.class) ||
-                                hasAsyncAnnotation(joinPoint);
-            String executionType = isAsync ? "Async" : "Sync";
-            
-            // 이벤트 처리 시작 로깅
-            log.info("[{}] {} event handling started: handler={}.{}, orderId={}, userId={}, symbol={}",
+            boolean isAsync = joinPoint.getSignature().getDeclaringType().isAnnotationPresent(Async.class) ||
+                             hasAsyncAnnotation(joinPoint);
+
+            String executionType = isAsync ? "Asynchronous" : "Synchronous";
+
+            // 이벤트 처리 시작 로깅 - userId 제거
+            log.info("[{}] {} event handling started: handler={}.{}, orderId={}, symbol={}",
                 executionType,
                 event.getClass().getSimpleName(),
                 className,
                 methodName,
                 event.getOrderId(),
-                event.getUserId(),
                 event.getSymbol()
             );
-            
+
             long startTime = System.currentTimeMillis();
             try {
                 Object result = joinPoint.proceed();
-                
-                // 이벤트 처리 완료 로깅
+
+                // 이벤트 처리 완료 로깅 - userId 정보는 이미 MDC 컨텍스트에 있음
                 log.info("[{}] {} event handling completed: handler={}.{}, execution time={}ms",
                     executionType,
                     event.getClass().getSimpleName(),
@@ -64,10 +65,10 @@ public class EventLogger {
                     methodName,
                     System.currentTimeMillis() - startTime
                 );
-                
+
                 return result;
             } catch (Exception e) {
-                // 이벤트 처리 실패 로깅
+                // 이벤트 처리 실패 로깅 - userId 정보는 이미 MDC 컨텍스트에 있음
                 log.error("[{}] {} event handling failed: handler={}.{}, error={}, execution time={}ms",
                     executionType,
                     event.getClass().getSimpleName(),
@@ -88,11 +89,22 @@ public class EventLogger {
      */
     private boolean hasAsyncAnnotation(ProceedingJoinPoint joinPoint) {
         try {
+            // 메서드의 파라미터 타입을 동적으로 가져와야 할 수 있음
+            // 여기서는 OrderExecutedEvent로 가정
+            Class<?>[] parameterTypes = Arrays.stream(joinPoint.getArgs())
+                                             .map(Object::getClass)
+                                             .toArray(Class<?>[]::new);
+            // 정확한 파라미터 타입을 사용하도록 수정 (예시, 실제 파라미터에 맞게 조정 필요)
+            // 만약 EventListener 메서드가 항상 OrderExecutedEvent만 받는다면 아래처럼 사용 가능
             return joinPoint.getTarget().getClass()
-                    .getMethod(joinPoint.getSignature().getName(), OrderExecutedEvent.class)
+                    .getMethod(joinPoint.getSignature().getName(), OrderExecutedEvent.class) // 실제 파라미터 타입 사용
                     .isAnnotationPresent(Async.class);
+        } catch (NoSuchMethodException e) {
+             log.warn("Could not find method {} to check for @Async annotation, assuming synchronous.", joinPoint.getSignature().getName());
+             return false; // 메서드를 찾지 못하면 동기로 간주하거나 다른 처리
         } catch (Exception e) {
-            return false;
+            log.error("Error checking for @Async annotation on {}: {}", joinPoint.getSignature().getName(), e.getMessage());
+            return false; // 예외 발생 시 기본값
         }
     }
 }

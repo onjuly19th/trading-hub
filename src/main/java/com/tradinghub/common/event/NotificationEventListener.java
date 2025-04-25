@@ -26,8 +26,8 @@ public class NotificationEventListener {
     @EventListener
     @Async("taskExecutor")
     public void handleOrderExecuted(OrderExecutedEvent event) {
-        log.info("NotificationEventListener: order executed event received - userId={}, orderId={}", 
-            event.getUserId(), event.getOrderId());
+        log.info("NotificationEventListener: order executed event received - orderId={}", 
+            event.getOrderId());
         
         try {
             // 비동기 처리 중 예외가 발생해도 메인 트랜잭션에 영향을 주지 않도록 try-catch로 감싸기
@@ -39,13 +39,13 @@ public class NotificationEventListener {
                 event.getPrice()
             );
             
-            log.info("Sending notification to user ID={}: {}", event.getUserId(), notificationMessage);
+            log.info("Sending notification: {}", notificationMessage);
             
             // TODO: 실제 알림 전송 로직 구현
             // emailService.sendEmail(user.getEmail(), "Order Execution Notification", notificationMessage);
             // pushNotificationService.sendPushNotification(userId, notificationMessage);
         } catch (Exception e) {
-            // 비동기 처리 중 발생한 예외는 로깅만 하고 전파하지 않음
+            // userId 정보는 MDC에 있음
             log.error("Error sending notification: {}", e.getMessage(), e);
         }
     }

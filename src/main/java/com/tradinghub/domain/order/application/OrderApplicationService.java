@@ -101,8 +101,8 @@ public class OrderApplicationService {
     @ExecutionTimeLog
     @Transactional
     public void executeOrder(Order order) {
-        log.debug("Order execution started: orderId={}, userId={}, symbol={}", 
-                 order.getId(), order.getUser().getId(), order.getSymbol());
+        log.debug("Order execution started: orderId={}, symbol={}", 
+                 order.getId(), order.getSymbol());
                  
         // 주문 상태 변경 - 핵심 비즈니스 로직 (동기적 처리)
         Order executedOrder = orderCommandService.executeOrder(order);
@@ -135,8 +135,8 @@ public class OrderApplicationService {
      */
     private void publishOrderExecutedEvent(Order order) {
         OrderExecutedEvent event = new OrderExecutedEvent(order);
-        log.debug("Order execution event published: orderId={}, userId={}, symbol={}", 
-                 event.getOrderId(), event.getUserId(), event.getSymbol());
+        log.debug("Order execution event published: orderId={}, symbol={}", 
+                 event.getOrderId(), event.getSymbol());
         eventPublisher.publishEvent(event);
     }
     

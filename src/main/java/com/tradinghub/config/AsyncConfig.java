@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import com.tradinghub.infrastructure.async.MdcTaskDecorator;
 
 /**
  * 비동기 이벤트 처리를 위한 설정 클래스
@@ -38,6 +39,9 @@ public class AsyncConfig {
         
         // 태스크가 완료되면 스레드를 제거
         executor.setWaitForTasksToCompleteOnShutdown(true);
+        
+        // 중요: MDC 컨텍스트 전파를 위한 TaskDecorator 설정
+        executor.setTaskDecorator(new MdcTaskDecorator());
         
         // 초기화
         executor.initialize();

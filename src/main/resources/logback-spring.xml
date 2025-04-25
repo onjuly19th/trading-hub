@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 기본 Spring Boot 설정 포함 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="LOGS_PATH" value="./logs"/> <!-- 로그 파일 경로 설정 -->
+
+    <!-- 콘솔 Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- 로그 패턴 수정: [%X{requestId:-N/A}] [%X{userId:-N/A}] 추가 -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId:-N/A}] [%X{userId:-N/A}] - %msg%n%throwable</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 파일 Appender (Rolling) -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_PATH}/tradinghub.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_PATH}/tradinghub.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory> <!-- 30일 보관 -->
+        </rollingPolicy>
+        <encoder>
+            <!-- 로그 패턴 수정: [%X{requestId:-N/A}] [%X{userId:-N/A}] 추가 -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId:-N/A}] [%X{userId:-N/A}] - %msg%n%throwable</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 기본 로거 설정 -->
+    <root level="INFO"> <!-- 기본 로그 레벨 -->
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <!-- 특정 패키지 로그 레벨 설정 (예시) -->
+    <logger name="com.tradinghub" level="DEBUG" additivity="false">
+         <appender-ref ref="CONSOLE"/>
+         <appender-ref ref="FILE"/>
+    </logger>
+
+    <!-- Spring 관련 로거 레벨 설정 -->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="org.hibernate.SQL" level="DEBUG"/> <!-- SQL 로깅 필요시 DEBUG -->
+    <logger name="org.hibernate.type.descriptor.sql" level="TRACE"/> <!-- 파라미터 로깅 필요시 TRACE -->
+
+</configuration>

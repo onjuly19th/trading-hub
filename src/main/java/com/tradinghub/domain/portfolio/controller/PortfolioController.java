@@ -10,25 +10,27 @@ import com.tradinghub.domain.portfolio.dto.PortfolioResponse;
 import com.tradinghub.domain.user.User;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
+/**
+ * 포트폴리오 관련 요청을 처리하는 컨트롤러
+ */
 @RestController
 @RequestMapping("/api/portfolio")
 @RequiredArgsConstructor
 public class PortfolioController {
     private final PortfolioService portfolioService;
 
+    /**
+     * 사용자의 포트폴리오를 조회합니다.
+     * 로깅은 PortfolioLoggingAspect에서 처리합니다.
+     * 
+     * @param authentication 인증 정보
+     * @return 포트폴리오 정보를 담은 응답
+     */
     @GetMapping
-    public ResponseEntity<ApiResponse<PortfolioResponse>> getPortfolio(Authentication authentication) {
+    public ResponseEntity<PortfolioResponse> getPortfolio(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        log.info("Fetching portfolio: userId={}, username={}", user.getId(), user.getUsername());
-        
         Portfolio portfolio = portfolioService.getPortfolio(user.getId());
-        
-        log.debug("Portfolio fetched: userId={}, assetCount={}", 
-                user.getId(), portfolio.getAssets() != null ? portfolio.getAssets().size() : 0);
-                
-        return ResponseEntity.ok(ApiResponse.success(PortfolioResponse.from(portfolio)));
+        return ResponseEntity.ok(PortfolioResponse.from(portfolio));
     }
 } 

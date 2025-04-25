@@ -1,15 +1,37 @@
 package com.tradinghub.domain.user.dto;
 
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * 인증 요청(로그인/회원가입)에 대한 응답 DTO
+ */
 @Getter
 @Builder
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthResponse {
+    /**
+     * 사용자 고유 식별자
+     */
     private Long userId;
+
+    /**
+     * 사용자명
+     */
     private String username;
+
+    /**
+     * JWT 인증 토큰
+     * 로그인 성공 시에만 값이 설정됨
+     * 이후 API 요청 시 Authorization 헤더에 포함하여 사용
+     */
     private String token;
     
     /**

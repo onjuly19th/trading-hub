@@ -18,10 +18,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 
+import com.tradinghub.domain.order.Order.OrderSide;
+import com.tradinghub.domain.order.dto.OrderExecutionRequest;
 import com.tradinghub.domain.user.User;
-import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
-import com.tradinghub.domain.trading.Order.OrderSide;
-import com.tradinghub.infrastructure.aop.LoggingAspect;
+import com.tradinghub.infrastructure.logging.MethodLogger;
 
 @ExtendWith(MockitoExtension.class)
 class PortfolioServiceTest {
@@ -98,7 +98,7 @@ class PortfolioServiceTest {
     @DisplayName("createPortfolio 메서드 실행 시간 로깅 테스트")
     void createPortfolio_LogExecutionTime() {
         // given
-        LoggingAspect loggingAspect = new LoggingAspect();
+        MethodLogger loggingAspect = new MethodLogger();
         AspectJProxyFactory factory = new AspectJProxyFactory(portfolioService);
         factory.addAspect(loggingAspect);
         PortfolioService proxy = factory.getProxy();
@@ -117,7 +117,7 @@ class PortfolioServiceTest {
     @DisplayName("getPortfolio 메서드 실행 시간 로깅 테스트")
     void getPortfolio_LogExecutionTime() {
         // given
-        LoggingAspect loggingAspect = new LoggingAspect();
+        MethodLogger loggingAspect = new MethodLogger();
         AspectJProxyFactory factory = new AspectJProxyFactory(portfolioService);
         factory.addAspect(loggingAspect);
         PortfolioService proxy = factory.getProxy();
@@ -137,7 +137,7 @@ class PortfolioServiceTest {
     @DisplayName("updatePortfolioForOrder 메서드 실행 시간 로깅 테스트 - 매수")
     void updatePortfolioForOrder_Buy_LogExecutionTime() {
         // given
-        LoggingAspect loggingAspect = new LoggingAspect();
+        MethodLogger loggingAspect = new MethodLogger();
         AspectJProxyFactory factory = new AspectJProxyFactory(portfolioService);
         factory.addAspect(loggingAspect);
         PortfolioService proxy = factory.getProxy();
@@ -163,7 +163,7 @@ class PortfolioServiceTest {
     @DisplayName("updatePortfolioForOrder 메서드 실행 시간 로깅 테스트 - 매도")
     void updatePortfolioForOrder_Sell_LogExecutionTime() {
         // given
-        LoggingAspect loggingAspect = new LoggingAspect();
+        MethodLogger loggingAspect = new MethodLogger();
         AspectJProxyFactory factory = new AspectJProxyFactory(portfolioService);
         factory.addAspect(loggingAspect);
         PortfolioService proxy = factory.getProxy();

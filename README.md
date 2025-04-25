@@ -1,5 +1,4 @@
-# <img src="https://raw.githubusercontent.com/onjuly19th/trading-hub/real-time/fe/public/trading-icon.svg" alt="Trading Icon" width="30"/> Trading Hub
-[페이지 업데이트 중]
+#
 
 ## 1. 설명
 Trading Hub는 실시간 암호화폐 시세 정보를 제공하고 모의 투자 서비스를 제공하는 웹 애플리케이션입니다. Binance API를 활용하여 실시간 시세를 제공하고, 사용자가 암호화폐를 매수/매도할 수 있는 기능을 제공합니다.

@@ -13,11 +13,9 @@ import com.tradinghub.common.exception.auth.DuplicateUsernameException;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.user.dto.AuthRequest;
 import com.tradinghub.domain.user.dto.AuthResponse;
-import com.tradinghub.infrastructure.aop.LogExecutionTime;
 import com.tradinghub.infrastructure.security.JwtService;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -43,10 +41,9 @@ public class UserService {
     @LogExecutionTime
     @Transactional
     public AuthResponse signup(AuthRequest request) {
-        try {
             // 중복 검사
             if (userRepository.existsByUsername(request.getUsername())) {
-                throw new RuntimeException("Username already exists");
+            throw new DuplicateUsernameException(request.getUsername());
             }
 
             // 사용자 생성

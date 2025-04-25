@@ -1,4 +1,4 @@
-package com.tradinghub.domain.trading.controller;
+package com.tradinghub.domain.order.controller;
 
 import java.math.BigDecimal;
 
@@ -6,8 +6,10 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 
-import com.tradinghub.domain.trading.OrderExecutionService;
-import com.tradinghub.domain.trading.dto.PriceUpdate;
+import com.tradinghub.common.exception.order.InvalidPriceFormatException;
+import com.tradinghub.common.exception.order.PriceUpdateProcessingException;
+import com.tradinghub.domain.order.OrderExecutionService;
+import com.tradinghub.domain.order.dto.PriceUpdate;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,19 +33,19 @@ public class PriceUpdateController {
      */
     @MessageMapping("/price-updates")
     public void processPriceUpdate(@Valid PriceUpdate priceUpdate) {
+        String symbol = priceUpdate.getSymbol();
+        BigDecimal price;
+        
         try {
-            String symbol = priceUpdate.getSymbol();
-            BigDecimal price = new BigDecimal(priceUpdate.getPrice());
-            
-            log.debug("Processing price update: symbol={}, price={}", symbol, price);
-            
-            // 지정가 주문 체결 처리
+            price = new BigDecimal(priceUpdate.getPrice());
+        } catch (NumberFormatException e) {
+            throw new InvalidPriceFormatException("Invalid price format: " + priceUpdate.getPrice(), e);
+        }
+        
+        try {
             orderExecutionService.checkAndExecuteOrders(symbol, price);
-            
-            // 로그를 DEBUG 레벨로 변경하여 로그 출력 최소화
-            log.debug("Price update processed: symbol={}, price={}", symbol, price);
         } catch (Exception e) {
-            log.error("Error processing price update: error={}", e.getMessage(), e);
+            throw new PriceUpdateProcessingException("Failed to process price update for symbol: " + symbol, e);
         }
     }
 } 

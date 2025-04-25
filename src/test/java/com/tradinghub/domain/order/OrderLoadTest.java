@@ -1,4 +1,4 @@
-package com.tradinghub.domain.trading;
+package com.tradinghub.domain.order;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,12 +31,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tradinghub.common.exception.portfolio.PortfolioNotFoundException;
+import com.tradinghub.domain.order.Order.OrderSide;
+import com.tradinghub.domain.order.Order.OrderType;
+import com.tradinghub.domain.order.dto.OrderCreateRequest;
+import com.tradinghub.domain.order.dto.OrderExecutionRequest;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
-import com.tradinghub.domain.trading.Order.OrderSide;
-import com.tradinghub.domain.trading.Order.OrderType;
-import com.tradinghub.domain.trading.dto.OrderCreateRequest;
-import com.tradinghub.domain.trading.dto.OrderExecutionRequest;
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
 

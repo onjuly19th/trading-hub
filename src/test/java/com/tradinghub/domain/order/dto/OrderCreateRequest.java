@@ -1,12 +1,13 @@
-package com.tradinghub.domain.trading.dto;
+package com.tradinghub.domain.order.dto;
 
-import com.tradinghub.domain.trading.Order.OrderSide;
-import com.tradinghub.domain.trading.Order.OrderType;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+
+import com.tradinghub.domain.order.Order.OrderSide;
+import com.tradinghub.domain.order.Order.OrderType;
 
 /**
  * 테스트 전용 주문 생성 요청 DTO 클래스

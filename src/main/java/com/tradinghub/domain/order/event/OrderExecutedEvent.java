@@ -1,11 +1,11 @@
-package com.tradinghub.domain.trading.event;
+package com.tradinghub.domain.order.event;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.tradinghub.common.event.DomainEvent;
-import com.tradinghub.domain.trading.Order;
-import com.tradinghub.domain.trading.Order.OrderSide;
+import com.tradinghub.domain.order.Order;
+import com.tradinghub.domain.order.Order.OrderSide;
 
 import lombok.Getter;
 

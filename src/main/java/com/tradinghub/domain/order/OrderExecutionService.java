@@ -1,4 +1,4 @@
-package com.tradinghub.domain.trading;
+package com.tradinghub.domain.order;
 
 import java.math.BigDecimal;
 

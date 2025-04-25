@@ -1,19 +1,18 @@
-package com.tradinghub.domain.trading.dto;
+package com.tradinghub.domain.order.dto;
 
 import java.math.BigDecimal;
+
+import com.tradinghub.domain.order.Order;
+import com.tradinghub.domain.order.Order.OrderSide;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-
-import com.tradinghub.domain.trading.Order;
-import com.tradinghub.domain.trading.Order.OrderSide;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * 주문 체결 요청 DTO

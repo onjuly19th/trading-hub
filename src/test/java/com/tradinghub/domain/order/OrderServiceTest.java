@@ -1,9 +1,15 @@
-package com.tradinghub.domain.trading;
+package com.tradinghub.domain.order;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -17,9 +23,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import com.tradinghub.domain.order.dto.OrderRequest;
 import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
-import com.tradinghub.domain.trading.dto.OrderRequest;
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
 import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;

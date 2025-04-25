@@ -1,4 +1,4 @@
-package com.tradinghub.domain.trading.dto;
+package com.tradinghub.domain.order.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

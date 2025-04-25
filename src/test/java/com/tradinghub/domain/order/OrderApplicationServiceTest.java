@@ -6,13 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,18 +21,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import com.tradinghub.common.exception.order.InvalidOrderException;
+import com.tradinghub.domain.order.application.OrderApplicationService;
 import com.tradinghub.domain.order.dto.OrderRequest;
-import com.tradinghub.domain.portfolio.Portfolio;
+import com.tradinghub.domain.order.service.OrderCommandService;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
 import com.tradinghub.infrastructure.websocket.OrderWebSocketHandler;
 
 @ExtendWith(MockitoExtension.class)
-public class OrderServiceTest {
+public class OrderApplicationServiceTest {
 
     @Mock
-    private OrderRepository orderRepository;
+    private OrderCommandService orderCommandService;
     
     @Mock
     private UserRepository userRepository;
@@ -49,7 +49,7 @@ public class OrderServiceTest {
     private ApplicationEventPublisher eventPublisher;
     
     @InjectMocks
-    private OrderService orderService;
+    private OrderApplicationService orderApplicationService;
     
     private User testUser;
     private OrderRequest orderRequest;
@@ -74,13 +74,6 @@ public class OrderServiceTest {
     @DisplayName("지정가 주문 생성 성공 테스트")
     void createLimitOrder_success() {
         // given
-        when(userRepository.findById(anyLong())).thenReturn(Optional.of(testUser));
-        
-        // 테스트용 포트폴리오 모의 객체 (BUY 주문에 필요한 잔고 확인)
-        Portfolio portfolio = mock(Portfolio.class);
-        when(portfolio.getUsdBalance()).thenReturn(new BigDecimal("100000.00"));
-        when(portfolioService.getPortfolio(anyLong())).thenReturn(portfolio);
-        
         Order savedOrder = Order.builder()
             .user(testUser)
             .symbol("BTC")
@@ -91,12 +84,19 @@ public class OrderServiceTest {
             .status(Order.OrderStatus.PENDING)
             .build();
         
-        // OrderRepository.save() 메소드가 호출될 때 savedOrder를 반환하도록 설정
-        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+        // OrderCommandService.createLimitOrder() 메소드가 호출될 때 savedOrder를 반환하도록 설정
+        when(orderCommandService.createLimitOrder(
+            anyLong(), 
+            any(String.class), 
+            any(Order.OrderSide.class), 
+            any(BigDecimal.class), 
+            any(BigDecimal.class)
+        )).thenReturn(savedOrder);
+        
         doNothing().when(webSocketHandler).notifyNewOrder(any(Order.class));
         
         // when
-        Order result = orderService.createLimitOrder(
+        Order result = orderApplicationService.createLimitOrder(
             1L, 
             orderRequest.getSymbol(), 
             orderRequest.getSide(), 
@@ -113,22 +113,31 @@ public class OrderServiceTest {
         assertEquals(0, new BigDecimal("0.5").compareTo(result.getAmount()));
         assertEquals(Order.OrderStatus.PENDING, result.getStatus());
         
-        verify(userRepository).findById(1L);
-        verify(portfolioService).getPortfolio(1L);
-        verify(portfolio).getUsdBalance();
-        verify(orderRepository).save(any(Order.class));
-        verify(webSocketHandler).notifyNewOrder(any(Order.class));
+        verify(orderCommandService).createLimitOrder(
+            1L, 
+            orderRequest.getSymbol(),
+            orderRequest.getSide(),
+            orderRequest.getPrice(),
+            orderRequest.getAmount()
+        );
+        verify(webSocketHandler).notifyNewOrder(savedOrder);
     }
     
     @Test
-    @DisplayName("사용자가 존재하지 않을 때 지정가 주문 생성 실패 테스트")
-    void createLimitOrder_userNotFound() {
+    @DisplayName("OrderCommandService에서 예외 발생시 주문 생성 실패 테스트")
+    void createLimitOrder_serviceError() {
         // given
-        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(orderCommandService.createLimitOrder(
+            anyLong(), 
+            any(String.class), 
+            any(Order.OrderSide.class), 
+            any(BigDecimal.class), 
+            any(BigDecimal.class)
+        )).thenThrow(new InvalidOrderException("Invalid order"));
         
         // when & then
-        assertThrows(RuntimeException.class, () -> {
-            orderService.createLimitOrder(
+        assertThrows(InvalidOrderException.class, () -> {
+            orderApplicationService.createLimitOrder(
                 1L, 
                 orderRequest.getSymbol(), 
                 orderRequest.getSide(), 
@@ -137,7 +146,13 @@ public class OrderServiceTest {
             );
         });
         
-        verify(userRepository).findById(1L);
-        verifyNoInteractions(orderRepository, webSocketHandler, portfolioService);
+        verify(orderCommandService).createLimitOrder(
+            1L, 
+            orderRequest.getSymbol(),
+            orderRequest.getSide(),
+            orderRequest.getPrice(),
+            orderRequest.getAmount()
+        );
+        verifyNoInteractions(webSocketHandler);
     }
 } 

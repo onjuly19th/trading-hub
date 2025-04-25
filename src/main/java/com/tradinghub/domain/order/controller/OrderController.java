@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tradinghub.common.exception.order.InvalidOrderException;
 import com.tradinghub.domain.order.Order;
-import com.tradinghub.domain.order.OrderService;
+import com.tradinghub.domain.order.application.OrderApplicationService;
 import com.tradinghub.domain.order.dto.OrderRequest;
 import com.tradinghub.domain.order.dto.OrderResponse;
 import com.tradinghub.domain.user.User;
@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * 모든 엔드포인트는 인증된 사용자만 접근 가능합니다.
  * 
- * @see OrderService 주문 처리 서비스
+ * @see OrderApplicationService 주문 처리 서비스
  * @see OrderRequest 주문 생성 요청 DTO
  * @see OrderResponse 주문 응답 DTO
  */
@@ -49,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Validated
 public class OrderController {
-    private final OrderService orderService;
+    private final OrderApplicationService orderService;
     
     // -----------------------------
     // Create Operations

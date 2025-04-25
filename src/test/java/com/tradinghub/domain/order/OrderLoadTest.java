@@ -39,6 +39,7 @@ import com.tradinghub.domain.portfolio.Portfolio;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.user.User;
 import com.tradinghub.domain.user.UserRepository;
+import com.tradinghub.domain.order.application.OrderApplicationService;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -51,7 +52,7 @@ class OrderLoadTest {
     private static final int TIMEOUT_MINUTES = 5;
 
     @Autowired
-    private OrderService orderService;
+    private OrderApplicationService orderApplicationService;
 
     @Autowired
     private UserRepository userRepository;
@@ -194,7 +195,7 @@ class OrderLoadTest {
             Future<?> future = executorService.submit(() -> {
                 try {
                     OrderCreateRequest request = createRandomOrderRequest();
-                    Order order = orderService.createLimitOrder(
+                    Order order = orderApplicationService.createLimitOrder(
                         testUser.getId(),
                         request.getSymbol(),
                         request.getSide(),

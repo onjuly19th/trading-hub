@@ -25,4 +25,14 @@ public class OrderExecutionException extends BusinessException {
     public OrderExecutionException(String message) {
         super(message, ErrorCodes.Order.ORDER_EXECUTION_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+    
+    /**
+     * 주문 실행 실패 예외 생성
+     * 
+     * @param message 상세 에러 메시지
+     * @param cause 원인 예외
+     */
+    public OrderExecutionException(String message, Throwable cause) {
+        super(message, ErrorCodes.Order.ORDER_EXECUTION_ERROR, HttpStatus.INTERNAL_SERVER_ERROR, cause);
+    }
 } 

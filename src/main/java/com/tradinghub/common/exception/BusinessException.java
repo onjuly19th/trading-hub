@@ -31,4 +31,18 @@ public abstract class BusinessException extends RuntimeException {
         this.errorCode = errorCode;
         this.status = status;
     }
+    
+    /**
+     * 비즈니스 예외 생성
+     * 
+     * @param message 클라이언트에게 반환될 에러 메시지
+     * @param errorCode 애플리케이션에서 정의한 에러 코드
+     * @param status HTTP 응답 상태 코드
+     * @param cause 원인 예외
+     */
+    protected BusinessException(String message, String errorCode, HttpStatus status, Throwable cause) {
+        super(message, cause);
+        this.errorCode = errorCode;
+        this.status = status;
+    }
 } 

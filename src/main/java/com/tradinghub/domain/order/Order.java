@@ -195,4 +195,43 @@ public class Order {
         /** 실패: 주문 처리 중 오류 발생 */
         FAILED
     }
+
+    /**
+     * 주문이 현재 가격에 실행 가능한지 검사
+     *
+     * @param currentPrice 현재 시장 가격
+     * @return 실행 가능 여부
+     */
+    public boolean isExecutableAt(BigDecimal currentPrice) {
+        if (status != OrderStatus.PENDING || type != OrderType.LIMIT) {
+            return false;
+        }
+        
+        if (side == OrderSide.BUY) {
+            // 매수 주문: 현재가가 주문가 이하면 실행 가능
+            return currentPrice.compareTo(price) <= 0;
+        } else {
+            // 매도 주문: 현재가가 주문가 이상이면 실행 가능
+            return currentPrice.compareTo(price) >= 0;
+        }
+    }
+
+    /**
+     * 주문이 특정 상태인지 확인
+     *
+     * @param orderStatus 확인할 주문 상태
+     * @return 해당 상태인지 여부
+     */
+    public boolean hasStatus(OrderStatus orderStatus) {
+        return this.status == orderStatus;
+    }
+
+    /**
+     * 주문 총액 계산
+     *
+     * @return 주문 총액 (수량 * 가격)
+     */
+    public BigDecimal calculateTotalAmount() {
+        return this.amount.multiply(this.price);
+    }
 } 

@@ -17,6 +17,10 @@ public final class ErrorCodes {
         public static final String UNAUTHORIZED_OPERATION = "UNAUTHORIZED_OPERATION";
         public static final String INVALID_CREDENTIALS = "INVALID_CREDENTIALS";
         public static final String TOKEN_EXPIRED = "TOKEN_EXPIRED";
+        public static final String DUPLICATE_USERNAME = "DUPLICATE_USERNAME";
+        public static final String AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED";
+        public static final String ACCOUNT_LOCKED = "ACCOUNT_LOCKED";
+        public static final String INVALID_REQUEST = "INVALID_REQUEST";
     }
     
     // 주문 관련 에러

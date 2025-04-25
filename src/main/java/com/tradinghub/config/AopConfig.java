@@ -1,4 +1,4 @@
-package com.tradinghub.infrastructure.config;
+package com.tradinghub.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;

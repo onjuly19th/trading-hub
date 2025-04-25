@@ -1,9 +1,9 @@
-package com.tradinghub.domain.notification.event;
+package com.tradinghub.common.event;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import com.tradinghub.domain.trading.event.OrderExecutedEvent;
+import com.tradinghub.domain.order.event.OrderExecutedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

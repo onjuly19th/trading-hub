@@ -2,13 +2,14 @@ package com.tradinghub.domain.user;
 
 import java.util.Collections;
 
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tradinghub.common.exception.auth.AuthenticationFailedException;
+import com.tradinghub.common.exception.auth.DuplicateUsernameException;
 import com.tradinghub.domain.portfolio.PortfolioService;
 import com.tradinghub.domain.user.dto.AuthRequest;
 import com.tradinghub.domain.user.dto.AuthResponse;
@@ -56,40 +57,34 @@ public class UserService {
             // 사용자 저장
             user = userRepository.save(user);
             
-            try {
                 // 포트폴리오 생성 (초기 자산: 100만 달러)
                 portfolioService.createPortfolio(user, "BTC", new java.math.BigDecimal("1000000"));
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to create portfolio: " + e.getMessage());
-            }
             
             // JWT 토큰 생성
             UserDetails userDetails = convertToUserDetails(user);
             String token = jwtService.generateToken(userDetails);
             
             // 응답 생성
-            return AuthResponse.builder()
-                .userId(user.getId())
-                .username(user.getUsername())
-                .token(token)
-                .build();
-                
-        } catch (Exception e) {
-            throw new RuntimeException("Error occurred during user registration: " + e.getMessage());
-        }
+        return AuthResponse.success(user.getId(), user.getUsername(), token);
     }
 
-    @LogExecutionTime
+    /**
+     * 사용자 로그인을 처리합니다.
+     * 인증 성공 시 JWT 토큰을 발급합니다.
+     * 
+     * @param request 로그인 요청 정보 (사용자명, 비밀번호)
+     * @return 사용자 정보와 인증 토큰
+     * @throws AuthenticationFailedException 인증 실패 시 (잘못된 사용자명 또는 비밀번호)
+     */
     @Transactional(readOnly = true)
     public AuthResponse login(AuthRequest request) {
-        try {
             // 사용자 조회
             User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
+            .orElseThrow(() -> new AuthenticationFailedException("Invalid username or password"));
 
             // 비밀번호 검증
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                throw new BadCredentialsException("Invalid username or password");
+            throw new AuthenticationFailedException("Invalid username or password");
             }
 
             // JWT 토큰 생성
@@ -97,13 +92,6 @@ public class UserService {
             String token = jwtService.generateToken(userDetails);
 
             // 응답 생성
-            return AuthResponse.builder()
-                .userId(user.getId())
-                .username(user.getUsername())
-                .token(token)
-                .build();
-        } catch (Exception e) {
-            throw new RuntimeException("Error occurred during login: " + e.getMessage());
-        }
+        return AuthResponse.success(user.getId(), user.getUsername(), token);
     }
 } 

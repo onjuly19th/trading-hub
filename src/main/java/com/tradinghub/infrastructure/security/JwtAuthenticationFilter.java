@@ -19,8 +19,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import com.tradinghub.domain.user.User;
-import com.tradinghub.domain.user.UserRepository;
+import com.tradinghub.domain.model.user.User;
+import com.tradinghub.domain.repository.UserRepository;
 
 @Slf4j
 @Component

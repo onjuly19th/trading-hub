@@ -6,7 +6,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import com.tradinghub.domain.order.event.OrderExecutedEvent;
+import com.tradinghub.application.event.OrderExecutedEvent;
 
 import lombok.extern.slf4j.Slf4j;
 

@@ -1,4 +1,4 @@
-package com.tradinghub.interfaces.exception.order;
+package com.tradinghub.infrastructure.exception;
 
 public class PriceUpdateProcessingException extends RuntimeException {
     public PriceUpdateProcessingException(String message, Throwable cause) {

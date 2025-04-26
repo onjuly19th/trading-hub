@@ -125,13 +125,13 @@ class OrderControllerTest {
 
         result.andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.symbol").value("BTCUSDT"))
-                .andExpect(jsonPath("$.type").value("MARKET"))
-                .andExpect(jsonPath("$.side").value("BUY"))
-                .andExpect(jsonPath("$.price").value(50000.0))
-                .andExpect(jsonPath("$.amount").value(0.1))
-                .andExpect(jsonPath("$.status").value("FILLED"));
+                .andExpect(jsonPath("$.id").value(testOrderResponse.getId()))
+                .andExpect(jsonPath("$.symbol").value(testOrderResponse.getSymbol()))
+                .andExpect(jsonPath("$.type").value(testOrderResponse.getType().toString()))
+                .andExpect(jsonPath("$.side").value(testOrderResponse.getSide().toString()))
+                .andExpect(jsonPath("$.price").value(testOrderResponse.getPrice()))
+                .andExpect(jsonPath("$.amount").value(testOrderResponse.getAmount()))
+                .andExpect(jsonPath("$.status").value(testOrderResponse.getStatus().toString()));
     }
 
     @Test
@@ -198,13 +198,13 @@ class OrderControllerTest {
 
         result.andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].symbol").value("BTCUSDT"))
-                .andExpect(jsonPath("$[0].type").value("MARKET"))
-                .andExpect(jsonPath("$[0].side").value("BUY"))
-                .andExpect(jsonPath("$[0].price").value(50000.0))
-                .andExpect(jsonPath("$[0].amount").value(0.1))
-                .andExpect(jsonPath("$[0].status").value("FILLED"));
+                .andExpect(jsonPath("$[0].id").value(orderResponses.get(0).getId()))
+                .andExpect(jsonPath("$[0].symbol").value(orderResponses.get(0).getSymbol()))
+                .andExpect(jsonPath("$[0].type").value(orderResponses.get(0).getType().toString()))
+                .andExpect(jsonPath("$[0].side").value(orderResponses.get(0).getSide().toString()))
+                .andExpect(jsonPath("$[0].price").value(orderResponses.get(0).getPrice()))
+                .andExpect(jsonPath("$[0].amount").value(orderResponses.get(0).getAmount()))
+                .andExpect(jsonPath("$[0].status").value(orderResponses.get(0).getStatus().toString()));
     }
 
     @Test
@@ -213,7 +213,7 @@ class OrderControllerTest {
     void getOrderHistory_Success() throws Exception {
         // GIVEN
         List<Order> completedOrders = Collections.singletonList(testOrder);
-        List<OrderResponse> orderResponses = OrderResponse.fromList(completedOrders);
+        //List<OrderResponse> orderResponses = OrderResponse.fromList(completedOrders);
 
         given(orderService.getCompletedOrdersByUserId(anyLong()))
                 .willReturn(completedOrders);
@@ -242,7 +242,7 @@ class OrderControllerTest {
     void getOrdersBySymbol_Success() throws Exception {
         // GIVEN
         List<Order> orders = Collections.singletonList(testOrder);
-        List<OrderResponse> orderResponses = OrderResponse.fromList(orders);
+        //List<OrderResponse> orderResponses = OrderResponse.fromList(orders);
 
         given(orderService.getOrdersByUserIdAndSymbol(anyLong(), anyString()))
                 .willReturn(orders);

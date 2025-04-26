@@ -2,7 +2,7 @@ package com.tradinghub.application.exception.auth;
 
 import org.springframework.http.HttpStatus;
 
-import com.tradinghub.interfaces.exception.BusinessException;
+import com.tradinghub.application.exception.BusinessException;
 import com.tradinghub.interfaces.exception.ErrorCodes;
 
 /**

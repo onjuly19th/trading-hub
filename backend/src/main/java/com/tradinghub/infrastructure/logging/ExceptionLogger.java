@@ -9,7 +9,7 @@ import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 
-import com.tradinghub.interfaces.exception.BusinessException;
+import com.tradinghub.application.exception.BusinessException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class ExceptionLogger {
     /**
      * GlobalExceptionHandler의 모든 예외 처리 메서드를 대상으로 함
      */
-    @Pointcut("execution(* com.tradinghub.common.exception.GlobalExceptionHandler.*(..))")
+    @Pointcut("execution(* com.tradinghub.interfaces.exception.GlobalExceptionHandler.*(..))")
     private void exceptionHandlerMethods() {}
     
     /**

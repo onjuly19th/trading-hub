@@ -1,8 +1,6 @@
 package com.tradinghub.infrastructure.logging;
 
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -92,12 +90,6 @@ public class ApiLoggingAspect {
         String method = request.getMethod();
         String uri = request.getRequestURI();
         return String.format("[%s %s]", method, uri);
-    }
-
-    private String formatParameters(Object[] args) {
-        return Arrays.stream(args)
-                     .map(arg -> arg != null ? arg.toString() : "null")
-                     .collect(Collectors.joining(", ", "(", ")"));
     }
 
     private int extractStatusCode(Object result) {

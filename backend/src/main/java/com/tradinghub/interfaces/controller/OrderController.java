@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.tradinghub.application.exception.order.InvalidOrderException;
+import com.tradinghub.application.exception.order.OrderNotFoundException;
+import com.tradinghub.application.exception.portfolio.InsufficientBalanceException;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.OrderApplicationService;
 import com.tradinghub.domain.model.user.User;
@@ -22,9 +25,6 @@ import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.interfaces.dto.order.OrderRequest;
 import com.tradinghub.interfaces.dto.order.OrderResponse;
 import com.tradinghub.interfaces.exception.auth.UnauthorizedOperationException;
-import com.tradinghub.interfaces.exception.order.InvalidOrderException;
-import com.tradinghub.interfaces.exception.order.OrderNotFoundException;
-import com.tradinghub.interfaces.exception.portfolio.InsufficientBalanceException;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;

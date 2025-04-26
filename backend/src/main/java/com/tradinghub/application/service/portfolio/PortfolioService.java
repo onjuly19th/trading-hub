@@ -7,6 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tradinghub.application.exception.portfolio.AssetNotFoundException;
+import com.tradinghub.application.exception.portfolio.InsufficientAssetException;
+import com.tradinghub.application.exception.portfolio.InsufficientBalanceException;
+import com.tradinghub.application.exception.portfolio.PortfolioNotFoundException;
+import com.tradinghub.application.exception.portfolio.PortfolioUpdateException;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.portfolio.PortfolioAsset;
 import com.tradinghub.domain.model.user.User;
@@ -14,11 +19,6 @@ import com.tradinghub.domain.repository.PortfolioAssetRepository;
 import com.tradinghub.domain.repository.PortfolioRepository;
 import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
 import com.tradinghub.interfaces.dto.order.OrderExecutionRequest;
-import com.tradinghub.interfaces.exception.portfolio.AssetNotFoundException;
-import com.tradinghub.interfaces.exception.portfolio.InsufficientAssetException;
-import com.tradinghub.interfaces.exception.portfolio.InsufficientBalanceException;
-import com.tradinghub.interfaces.exception.portfolio.PortfolioNotFoundException;
-import com.tradinghub.interfaces.exception.portfolio.PortfolioUpdateException;
 
 import lombok.RequiredArgsConstructor;
 

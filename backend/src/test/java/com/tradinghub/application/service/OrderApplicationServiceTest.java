@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import com.tradinghub.application.exception.order.InvalidOrderException;
 import com.tradinghub.application.service.order.OrderCommandService;
 import com.tradinghub.application.service.portfolio.PortfolioService;
 import com.tradinghub.domain.model.order.Order;
@@ -28,7 +29,6 @@ import com.tradinghub.domain.model.order.OrderApplicationService;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.interfaces.dto.order.OrderRequest;
-import com.tradinghub.interfaces.exception.order.InvalidOrderException;
 import com.tradinghub.interfaces.websocket.OrderWebSocketHandler;
 
 @ExtendWith(MockitoExtension.class)

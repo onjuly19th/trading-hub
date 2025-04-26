@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tradinghub.application.exception.order.OrderNotFoundException;
 import com.tradinghub.application.service.order.OrderQueryService;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.Order.OrderSide;
@@ -23,7 +24,6 @@ import com.tradinghub.domain.model.order.Order.OrderType;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.OrderRepository;
 import com.tradinghub.domain.repository.UserRepository;
-import com.tradinghub.interfaces.exception.order.OrderNotFoundException;
 
 @SpringBootTest
 @ActiveProfiles("test")

@@ -23,6 +23,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.tradinghub.application.exception.order.InvalidOrderException;
+import com.tradinghub.application.exception.order.OrderExecutionException;
+import com.tradinghub.application.exception.order.OrderNotFoundException;
 import com.tradinghub.application.service.order.OrderCommandService;
 import com.tradinghub.application.service.order.OrderValidator;
 import com.tradinghub.domain.model.order.Order;
@@ -32,9 +35,6 @@ import com.tradinghub.domain.model.order.Order.OrderType;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.OrderRepository;
 import com.tradinghub.domain.repository.UserRepository;
-import com.tradinghub.interfaces.exception.order.InvalidOrderException;
-import com.tradinghub.interfaces.exception.order.OrderExecutionException;
-import com.tradinghub.interfaces.exception.order.OrderNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
 class OrderCommandServiceTest {

@@ -30,6 +30,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tradinghub.application.exception.portfolio.PortfolioNotFoundException;
 import com.tradinghub.application.service.portfolio.PortfolioService;
 import com.tradinghub.domain.dto.OrderCreateRequest;
 import com.tradinghub.domain.model.order.Order;
@@ -40,7 +41,6 @@ import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.interfaces.dto.order.OrderExecutionRequest;
-import com.tradinghub.interfaces.exception.portfolio.PortfolioNotFoundException;
 
 @SpringBootTest
 @ActiveProfiles("test")

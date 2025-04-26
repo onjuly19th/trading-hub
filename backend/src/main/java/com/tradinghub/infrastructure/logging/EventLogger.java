@@ -10,8 +10,6 @@ import com.tradinghub.application.event.OrderExecutedEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
-
 /**
  * 이벤트 처리에 대한 로깅을 담당하는 로거
  * 이벤트 리스너의 실행 시작, 종료, 실패 등을 로깅합니다.
@@ -89,11 +87,6 @@ public class EventLogger {
      */
     private boolean hasAsyncAnnotation(ProceedingJoinPoint joinPoint) {
         try {
-            // 메서드의 파라미터 타입을 동적으로 가져와야 할 수 있음
-            // 여기서는 OrderExecutedEvent로 가정
-            Class<?>[] parameterTypes = Arrays.stream(joinPoint.getArgs())
-                                             .map(Object::getClass)
-                                             .toArray(Class<?>[]::new);
             // 정확한 파라미터 타입을 사용하도록 수정 (예시, 실제 파라미터에 맞게 조정 필요)
             // 만약 EventListener 메서드가 항상 OrderExecutedEvent만 받는다면 아래처럼 사용 가능
             return joinPoint.getTarget().getClass()

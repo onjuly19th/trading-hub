@@ -1,8 +1,8 @@
-package com.tradinghub.interfaces.exception.order;
+package com.tradinghub.application.exception.order;
 
 import org.springframework.http.HttpStatus;
 
-import com.tradinghub.interfaces.exception.BusinessException;
+import com.tradinghub.application.exception.BusinessException;
 import com.tradinghub.interfaces.exception.ErrorCodes;
 
 /**

@@ -13,14 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.tradinghub.application.exception.order.InvalidOrderException;
+import com.tradinghub.application.exception.portfolio.InsufficientBalanceException;
 import com.tradinghub.application.service.order.OrderValidator;
 import com.tradinghub.application.service.portfolio.PortfolioService;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.interfaces.exception.auth.UnauthorizedOperationException;
-import com.tradinghub.interfaces.exception.order.InvalidOrderException;
-import com.tradinghub.interfaces.exception.portfolio.InsufficientBalanceException;
 
 @ExtendWith(MockitoExtension.class)
 class OrderValidatorTest {

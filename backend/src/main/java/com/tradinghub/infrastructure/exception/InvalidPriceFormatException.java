@@ -1,4 +1,4 @@
-package com.tradinghub.interfaces.exception.order;
+package com.tradinghub.infrastructure.exception;
 
 public class InvalidPriceFormatException extends RuntimeException {
     public InvalidPriceFormatException(String message, Throwable cause) {

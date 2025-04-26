@@ -1,7 +1,8 @@
-package com.tradinghub.interfaces.exception;
+package com.tradinghub.application.exception;
+
+import org.springframework.http.HttpStatus;
 
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
 
 /**
  * 비즈니스 로직 실행 중 발생하는 모든 예외의 기본 클래스

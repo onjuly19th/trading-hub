@@ -4,13 +4,13 @@ import java.math.BigDecimal;
 
 import org.springframework.stereotype.Component;
 
+import com.tradinghub.application.exception.order.InvalidOrderException;
+import com.tradinghub.application.exception.portfolio.InsufficientBalanceException;
 import com.tradinghub.application.service.portfolio.PortfolioService;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.interfaces.exception.auth.UnauthorizedOperationException;
-import com.tradinghub.interfaces.exception.order.InvalidOrderException;
-import com.tradinghub.interfaces.exception.portfolio.InsufficientBalanceException;
 
 import lombok.RequiredArgsConstructor;
 

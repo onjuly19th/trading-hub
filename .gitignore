@@ -38,3 +38,5 @@ build/
 *.mv.db
 *.h2.db
 logs/tradinghub.log
+/logs/
+backend/logs/tradinghub.log

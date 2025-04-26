@@ -5,9 +5,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.tradinghub.application.service.portfolio.PortfolioService;
 import com.tradinghub.domain.model.portfolio.Portfolio;
+import com.tradinghub.domain.model.user.User;
 import com.tradinghub.interfaces.dto.order.OrderExecutionRequest;
 import com.tradinghub.interfaces.websocket.OrderWebSocketHandler;
 
@@ -57,6 +60,24 @@ public class PortfolioEventListener {
             log.error("Error updating portfolio: error={}", 
                 e.getMessage(), e);
             // 여기서는 예외를 다시 던지지 않음 - 실패한 업데이트를 관리자 대시보드에 표시하는 등의 추가 작업 가능
+        }
+    }
+
+    /**
+     * UserSignedUpEvent 발생 시 포트폴리오를 생성합니다.
+     * 회원가입 트랜잭션이 성공적으로 커밋된 후에 실행됩니다.
+     * @param event 회원가입 이벤트
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleUserSignup(UserSignedUpEvent event) {
+        User user = event.getUser();
+        log.info("UserSignedUpEvent received: userID {}, username {}", user.getId(), user.getUsername());
+        try {
+            portfolioService.createPortfolio(user, "BTC", new java.math.BigDecimal("1000000"));
+            log.info("User {} portfolio created successfully", user.getUsername());
+        } catch (Exception e) {
+            log.error("Error creating user {} portfolio: {}", user.getUsername(), e);
+            // 실패 처리 로직
         }
     }
 } 

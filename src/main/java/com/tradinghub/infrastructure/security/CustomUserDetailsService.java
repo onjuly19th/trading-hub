@@ -1,4 +1,4 @@
-package com.tradinghub.application.service.auth; // 또는 infrastructure.security 등 적절한 위치
+package com.tradinghub.infrastructure.security;
 
 import java.util.Collections;
 

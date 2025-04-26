@@ -23,9 +23,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradinghub.application.service.auth.AuthResult;
+import com.tradinghub.application.service.auth.AuthSuccessDto;
 import com.tradinghub.application.service.auth.UserService;
 import com.tradinghub.domain.model.user.User;
+import com.tradinghub.infrastructure.security.CustomUserDetailsService;
 import com.tradinghub.infrastructure.security.JwtAuthenticationFilter;
 import com.tradinghub.infrastructure.security.JwtService;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
@@ -61,8 +62,11 @@ public class UserAuthControllerTest {
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @MockBean
+    private CustomUserDetailsService customUserDetailsService;
+
     private AuthRequest authRequest;
-    private AuthResult authResult;
+    private AuthSuccessDto authSuccessDto;
     private User testUser;
 
     @BeforeEach
@@ -76,17 +80,17 @@ public class UserAuthControllerTest {
         testUser = new User();
         testUser.setId(1L);
         testUser.setUsername("testuser");
-        testUser.setPassword("encoded_password");
+        // testUser.setPassword("encoded_password"); // 비밀번호는 검증에 직접 사용되지 않음
         
-        // 테스트용 인증 결과 객체 생성
-        authResult = new AuthResult(testUser, "test-jwt-token");
+        // 테스트용 인증 성공 DTO 생성 (AuthSuccessDto 사용)
+        authSuccessDto = new AuthSuccessDto(testUser.getId(), testUser.getUsername(), "test-jwt-token");
     }
 
     @Test
     @DisplayName("회원가입 API 테스트")
     void signup_success() throws Exception {
         // given
-        when(userService.signup(any(AuthRequest.class))).thenReturn(authResult);
+        when(userService.signup(any(AuthRequest.class))).thenReturn(authSuccessDto);
 
         // when & then
         mockMvc.perform(post("/api/auth/signup")
@@ -94,16 +98,16 @@ public class UserAuthControllerTest {
                 .content(objectMapper.writeValueAsString(authRequest)))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(testUser.getId()))
-                .andExpect(jsonPath("$.username").value(testUser.getUsername()))
-                .andExpect(jsonPath("$.token").value(authResult.getToken()));
+                .andExpect(jsonPath("$.userId").value(authSuccessDto.getUserId()))
+                .andExpect(jsonPath("$.username").value(authSuccessDto.getUsername()))
+                .andExpect(jsonPath("$.token").value(authSuccessDto.getToken()));
     }
 
     @Test
     @DisplayName("로그인 API 테스트")
     void login_success() throws Exception {
         // given
-        when(userService.login(any(AuthRequest.class))).thenReturn(authResult);
+        when(userService.login(any(AuthRequest.class))).thenReturn(authSuccessDto);
 
         // when & then
         mockMvc.perform(post("/api/auth/login")
@@ -111,8 +115,8 @@ public class UserAuthControllerTest {
                 .content(objectMapper.writeValueAsString(authRequest)))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(testUser.getId()))
-                .andExpect(jsonPath("$.username").value(testUser.getUsername()))
-                .andExpect(jsonPath("$.token").value(authResult.getToken()));
+                .andExpect(jsonPath("$.userId").value(authSuccessDto.getUserId()))
+                .andExpect(jsonPath("$.username").value(authSuccessDto.getUsername()))
+                .andExpect(jsonPath("$.token").value(authSuccessDto.getToken()));
     }
 } 

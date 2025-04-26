@@ -41,7 +41,7 @@ import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.infrastructure.security.JwtAuthenticationFilter;
 import com.tradinghub.infrastructure.security.JwtService;
 import com.tradinghub.infrastructure.security.SecurityConfig;
-import com.tradinghub.infrastructure.security.TradingUserDetailsService;
+import com.tradinghub.infrastructure.security.CustomUserDetailsService;
 import com.tradinghub.interfaces.dto.order.OrderRequest;
 import com.tradinghub.interfaces.dto.order.OrderResponse;
 
@@ -49,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @WebMvcTest(OrderController.class)
-@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtService.class, TradingUserDetailsService.class})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtService.class, CustomUserDetailsService.class})
 class OrderControllerTest {
 
     @Autowired

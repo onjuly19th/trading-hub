@@ -43,7 +43,7 @@ public class Portfolio {
     @JoinColumn(name = "user_id")
     private User user;
 
-    /** 기준 통화 심볼 (예: BTC, ETH 등) */
+    /** 기준 통화 심볼 */
     @Column(nullable = false)
     private String symbol;
 

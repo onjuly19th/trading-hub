@@ -4,10 +4,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.tradinghub.application.service.auth.AuthSuccessDto;
 import com.tradinghub.application.service.auth.UserService;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
 import com.tradinghub.interfaces.dto.auth.AuthResponse;
+import com.tradinghub.interfaces.dto.auth.AuthSuccessDto;
 
 import lombok.RequiredArgsConstructor;
 

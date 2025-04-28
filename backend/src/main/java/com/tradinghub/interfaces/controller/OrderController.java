@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +31,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * 주문 관련 REST API 엔드포인트를 제공하는 컨트롤러
@@ -50,6 +54,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Order Management", description = "주문 생성, 조회, 취소 관련 API")
 public class OrderController {
     private final OrderApplicationService orderService;
     private final UserRepository userRepository;
@@ -120,17 +125,21 @@ public class OrderController {
     // -----------------------------
     
     /**
-     * 로그인한 사용자의 전체 주문 목록을 조회합니다.
+     * 로그인한 사용자의 미체결 주문 목록을 조회합니다.
+     * 대기 중이거나 일부 체결된 주문만 포함됩니다.
      * 
      * @param authentication 인증 정보
-     * @return 주문 목록
+     * @return 미체결 주문 목록
      * @response 200 성공
      * @response 401 인증되지 않은 사용자
      */
     @GetMapping
+    @Operation(summary = "사용자 미체결 주문 조회", description = "로그인한 사용자의 PENDING 또는 PARTIALLY_FILLED 상태인 주문 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     public ResponseEntity<List<OrderResponse>> getUserOrders(Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
-        List<Order> orders = orderService.getOrdersByUserId(user.getId());
+        List<Order> orders = orderService.getPendingOrdersByUserId(user.getId());
         List<OrderResponse> orderResponses = OrderResponse.fromList(orders);
         
         return ResponseEntity.ok(orderResponses);
@@ -146,6 +155,9 @@ public class OrderController {
      * @response 401 인증되지 않은 사용자
      */
     @GetMapping("/history")
+    @Operation(summary = "사용자 거래 내역 조회", description = "로그인한 사용자의 완료(FILLED, CANCELLED)된 주문 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     public ResponseEntity<List<OrderResponse>> getOrderHistory(Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
         List<Order> completedOrders = orderService.getCompletedOrdersByUserId(user.getId());
@@ -222,12 +234,23 @@ public class OrderController {
     }
 
     private User getUserFromAuthentication(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedOperationException("User is not authenticated");
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal() == null) {
+             throw new UnauthorizedOperationException("User is not authenticated.");
         }
-        
-        String username = authentication.getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UnauthorizedOperationException("User not found: " + username));
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof User) {
+            return (User) principal;
+        } else if (principal instanceof UserDetails) {
+            String username = ((UserDetails) principal).getUsername();
+            return userRepository.findByUsername(username)
+                    .orElseThrow(() -> new UnauthorizedOperationException("User not found with username: " + username));
+        } else if (principal instanceof String && principal.equals("anonymousUser")) {
+             throw new UnauthorizedOperationException("Anonymous access is not allowed.");
+        }
+
+        // 예상치 못한 Principal 타입 처리
+        throw new UnauthorizedOperationException("Cannot determine user from principal: " + principal.getClass().getName());
     }
 } 

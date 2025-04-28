@@ -101,4 +101,15 @@ public class ExceptionLogger {
         }
         */
     }
+
+    public void logException(Exception exception, HttpServletRequest request) {
+        if (exception instanceof BusinessException) {
+            BusinessException be = (BusinessException) exception;
+            log.error("BusinessException occurred: code={}, message={}, status={}, path={}", 
+                be.getErrorCode(), be.getMessage(), be.getStatus(), request.getRequestURI());
+        } else {
+            log.error("Unexpected exception: message={}, path={}", 
+                exception.getMessage(), request.getRequestURI());
+        }
+    }
 }

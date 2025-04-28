@@ -1,4 +1,4 @@
-package com.tradinghub.application.service.auth;
+package com.tradinghub.interfaces.dto.auth;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

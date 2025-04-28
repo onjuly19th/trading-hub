@@ -1,15 +1,15 @@
 package com.tradinghub.application.event;
 
 import org.springframework.context.event.EventListener;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
 
 import com.tradinghub.application.service.portfolio.PortfolioService;
 import com.tradinghub.domain.model.portfolio.Portfolio;
@@ -73,6 +73,7 @@ public class PortfolioEventListener {
      * @param event 회원가입 이벤트
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Retryable(
         retryFor = { Exception.class },
         maxAttempts = 3,
@@ -82,7 +83,7 @@ public class PortfolioEventListener {
         User user = event.getUser();
         log.info("Portfolio creation try (User ID: {}, Username: {})...", user.getId(), user.getUsername());
 
-        portfolioService.createPortfolio(user, "BTC", new java.math.BigDecimal("1000000"));
+        portfolioService.createPortfolio(user, "USD", new java.math.BigDecimal("1000000"));
 
         log.info("User {} portfolio created successfully", user.getUsername());
     }

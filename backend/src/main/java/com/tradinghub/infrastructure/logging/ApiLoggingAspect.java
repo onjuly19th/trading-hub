@@ -63,14 +63,18 @@ public class ApiLoggingAspect {
     /**
      * API 메서드 실행 중 예외가 발생했을 때 로깅합니다.
      */
-    @AfterThrowing(pointcut = "controllerPointcut()", throwing = "ex")
-    public void logApiError(JoinPoint joinPoint, Throwable ex) {
-        HttpServletRequest request = getCurrentHttpRequest();
-        String requestInfo = formatRequestInfo(request);
-        String methodSignature = joinPoint.getSignature().toShortString();
-
-        log.error("API Error: {} {} - Error: {}",
-                  requestInfo, methodSignature, ex.getMessage(), ex);
+    @AfterThrowing(pointcut = "controllerPointcut()", throwing = "exception")
+    public void logApiError(JoinPoint joinPoint, Exception exception) {
+        String signature = joinPoint.getSignature().toShortString();
+        String methodName = signature.substring(signature.lastIndexOf(".") + 1);
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        String httpMethod = request.getMethod();
+        String uri = request.getRequestURI();
+        
+        log.error("API Error: [{}] {} - Error: {}", 
+            httpMethod + " " + uri,
+            methodName,
+            exception.getMessage());
     }
 
     // --- Helper Methods ---

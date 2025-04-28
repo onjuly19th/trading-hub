@@ -177,4 +177,16 @@ public class OrderApplicationService {
     public List<Order> getOrdersByUserIdAndSymbol(Long userId, String symbol) {
         return orderQueryService.getOrdersByUserIdAndSymbol(userId, symbol);
     }
+    
+    /**
+     * 사용자의 미체결 주문을 조회합니다.
+     *
+     * @param userId 사용자 ID
+     * @return 미체결 주문 목록
+     */
+    @ExecutionTimeLog
+    @Transactional(readOnly = true)
+    public List<Order> getPendingOrdersByUserId(Long userId) {
+        return orderQueryService.getPendingOrdersByUserId(userId);
+    }
 } 

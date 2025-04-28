@@ -46,6 +46,19 @@ public class OrderQueryService {
     }
     
     /**
+     * 사용자 ID로 미체결 주문 조회 (대기 중 또는 일부 체결)
+     *
+     * @param userId 사용자 ID
+     * @return 미체결 주문 목록 (생성일시 내림차순)
+     */
+    @ExecutionTimeLog
+    @Transactional(readOnly = true)
+    public List<Order> getPendingOrdersByUserId(Long userId) {
+        return orderRepository.findByUserIdAndStatusInOrderByCreatedAtDesc(
+                userId, List.of(Order.OrderStatus.PENDING));
+    }
+    
+    /**
      * 사용자 ID와 심볼로 주문 조회
      *
      * @param userId 사용자 ID

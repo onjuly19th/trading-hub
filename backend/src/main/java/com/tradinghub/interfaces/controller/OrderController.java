@@ -31,9 +31,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * 주문 관련 REST API 엔드포인트를 제공하는 컨트롤러
@@ -54,7 +51,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Order Management", description = "주문 생성, 조회, 취소 관련 API")
 public class OrderController {
     private final OrderApplicationService orderService;
     private final UserRepository userRepository;
@@ -134,9 +130,6 @@ public class OrderController {
      * @response 401 인증되지 않은 사용자
      */
     @GetMapping
-    @Operation(summary = "사용자 미체결 주문 조회", description = "로그인한 사용자의 PENDING 또는 PARTIALLY_FILLED 상태인 주문 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     public ResponseEntity<List<OrderResponse>> getUserOrders(Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
         List<Order> orders = orderService.getPendingOrdersByUserId(user.getId());
@@ -155,9 +148,6 @@ public class OrderController {
      * @response 401 인증되지 않은 사용자
      */
     @GetMapping("/history")
-    @Operation(summary = "사용자 거래 내역 조회", description = "로그인한 사용자의 완료(FILLED, CANCELLED)된 주문 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     public ResponseEntity<List<OrderResponse>> getOrderHistory(Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
         List<Order> completedOrders = orderService.getCompletedOrdersByUserId(user.getId());

@@ -7,13 +7,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tradinghub.application.event.UserSignedUpEvent; // 경로 수정됨
+import com.tradinghub.application.event.UserSignedUpEvent;
 import com.tradinghub.application.exception.auth.AuthenticationFailedException;
 import com.tradinghub.application.exception.auth.DuplicateUsernameException;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.infrastructure.security.JwtService;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
+import com.tradinghub.interfaces.dto.auth.AuthSuccessDto;
 
 /**
  * 사용자 인증 및 계정 관리를 처리하는 서비스

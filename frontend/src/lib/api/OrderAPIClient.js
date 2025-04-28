@@ -26,12 +26,12 @@ export class OrderAPIClient extends BaseAPIClient {
   }
 
   // 주문 목록 조회
-  async getOrders(params = {}) {
+  async getOrders(params = undefined) {
     return this.get(ENDPOINTS.ORDERS.LIST, params);
   }
 
   // 주문 히스토리 조회
-  async getOrderHistory(params = {}) {
+  async getOrderHistory(params = undefined) {
     return this.get(ENDPOINTS.ORDERS.HISTORY, params);
   }
 

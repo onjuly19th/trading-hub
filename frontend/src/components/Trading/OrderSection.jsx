@@ -27,7 +27,7 @@ export default function OrderSection({
       {/* 주문 내역 - 내부 스크롤 없이 컨테이너만 스크롤 가능하도록 설정 */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="p-3 bg-gray-50 border-b border-gray-200 font-medium sticky top-0 z-10">
-          주문/거래 내역
+          주문 내역
         </div>
         <TradeHistory />
       </div>

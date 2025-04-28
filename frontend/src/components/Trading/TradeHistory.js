@@ -222,7 +222,7 @@ export default function TradeHistory() {
           }`}
           onClick={() => setActiveTab('history')}
         >
-          거래 내역
+          체결 주문
         </button>
       </div>
 

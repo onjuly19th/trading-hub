@@ -21,8 +21,8 @@ export class AuthAPIClient extends BaseAPIClient {
   async login(credentials) {
     const response = await this.post(ENDPOINTS.AUTH.LOGIN, credentials);
     
-    if (response.status === 'SUCCESS' && response.data && response.data.token) {
-      this.tokenManager.setToken(response.data.token);
+    if (response && response.token) {
+      this.tokenManager.setToken(response.token);
       this.tokenManager.setUsername(credentials.username);
       return response;
     }
@@ -42,7 +42,7 @@ export class AuthAPIClient extends BaseAPIClient {
       
       return { 
         ...signupData, 
-        token: loginResponse.data.token,
+        token: loginResponse.token,
         autoLoginSuccess: true 
       };
     } catch (loginError) {

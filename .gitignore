@@ -40,3 +40,4 @@ build/
 logs/tradinghub.log
 /logs/
 backend/logs/tradinghub.log
+backend/logs/tradinghub.*.log

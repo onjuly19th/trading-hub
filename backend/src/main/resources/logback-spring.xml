@@ -9,27 +9,22 @@
     <!-- 콘솔 Appender -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <!-- 로그 패턴 수정: [%X{requestId:-N/A}] [%X{userId:-N/A}] 추가 -->
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId:-N/A}] [%X{userId:-N/A}] - %msg%n%throwable</pattern>
-            <charset>utf8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId}] [%X{username}] - %msg%n</pattern>
         </encoder>
     </appender>
 
     <!-- 파일 Appender (Rolling) -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOGS_PATH}/tradinghub.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOGS_PATH}/tradinghub.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>10MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-            <maxHistory>30</maxHistory> <!-- 30일 보관 -->
-        </rollingPolicy>
         <encoder>
-            <!-- 로그 패턴 수정: [%X{requestId:-N/A}] [%X{userId:-N/A}] 추가 -->
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId:-N/A}] [%X{userId:-N/A}] - %msg%n%throwable</pattern>
-            <charset>utf8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId}] [%X{username}] - %msg%n</pattern>
         </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_PATH}/tradinghub.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
     </appender>
 
     <!-- 기본 로거 설정 -->
@@ -48,5 +43,17 @@
     <logger name="org.springframework" level="INFO"/>
     <logger name="org.hibernate.SQL" level="DEBUG"/> <!-- SQL 로깅 필요시 DEBUG -->
     <logger name="org.hibernate.type.descriptor.sql" level="TRACE"/> <!-- 파라미터 로깅 필요시 TRACE -->
+
+    <!-- 예외 스택트레이스 줄이기 설정 -->
+    <logger name="com.tradinghub.infrastructure.logging.ExceptionLogger" level="ERROR" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+    
+    <!-- ApiLoggingAspect 로그 포맷팅 변경 -->
+    <logger name="com.tradinghub.infrastructure.logging.ApiLoggingAspect" level="ERROR" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
 
 </configuration>

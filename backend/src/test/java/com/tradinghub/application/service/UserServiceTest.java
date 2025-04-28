@@ -25,12 +25,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.tradinghub.application.event.UserSignedUpEvent;
 import com.tradinghub.application.exception.auth.DuplicateUsernameException;
-import com.tradinghub.application.service.auth.AuthSuccessDto;
 import com.tradinghub.application.service.auth.UserService;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.infrastructure.security.JwtService;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
+import com.tradinghub.interfaces.dto.auth.AuthSuccessDto;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {

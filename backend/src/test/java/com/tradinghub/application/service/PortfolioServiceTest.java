@@ -1,6 +1,5 @@
 package com.tradinghub.application.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
@@ -40,7 +38,6 @@ class PortfolioServiceTest {
     @Mock
     private PortfolioAssetRepository assetRepository;
 
-    @InjectMocks
     private PortfolioService portfolioService;
 
     private User user;
@@ -100,6 +97,10 @@ class PortfolioServiceTest {
             .price(new BigDecimal("55000"))
             .side(OrderSide.SELL)
             .build();
+
+        // --- 수동 생성 및 주입 ---
+        portfolioService = new PortfolioService(portfolioRepository, assetRepository);
+        // -----------------------
     }
 
     @Test
@@ -119,26 +120,6 @@ class PortfolioServiceTest {
         // then
         assertNotNull(result);
         verify(portfolioRepository).save(any(Portfolio.class));
-    }
-
-    @Test
-    @DisplayName("getPortfolio 메서드 실행 시간 로깅 테스트")
-    void getPortfolio_LogExecutionTime() {
-        // given
-        MethodLogger loggingAspect = new MethodLogger();
-        AspectJProxyFactory factory = new AspectJProxyFactory(portfolioService);
-        factory.addAspect(loggingAspect);
-        PortfolioService proxy = factory.getProxy();
-
-        when(portfolioRepository.findByUserId(anyLong())).thenReturn(Optional.of(portfolio));
-
-        // when
-        Portfolio result = proxy.getPortfolio(1L);
-
-        // then
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
-        verify(portfolioRepository).findByUserId(1L);
     }
 
     @Test

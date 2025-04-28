@@ -129,8 +129,8 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.symbol").value(testOrderResponse.getSymbol()))
                 .andExpect(jsonPath("$.type").value(testOrderResponse.getType().toString()))
                 .andExpect(jsonPath("$.side").value(testOrderResponse.getSide().toString()))
-                .andExpect(jsonPath("$.price").value(testOrderResponse.getPrice()))
-                .andExpect(jsonPath("$.amount").value(testOrderResponse.getAmount()))
+                .andExpect(jsonPath("$.price").value(testOrderResponse.getPrice().doubleValue()))
+                .andExpect(jsonPath("$.amount").value(testOrderResponse.getAmount().doubleValue()))
                 .andExpect(jsonPath("$.status").value(testOrderResponse.getStatus().toString()));
     }
 
@@ -179,22 +179,35 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("사용자의 모든 주문 조회 성공")
+    @DisplayName("사용자의 미체결 주문 조회 성공")
     @WithMockUser(username = "testUser")
-    void getUserOrders_Success() throws Exception {
+    void getPendingOrders_Success() throws Exception {
         // GIVEN
-        List<Order> orders = Collections.singletonList(testOrder);
-        List<OrderResponse> orderResponses = OrderResponse.fromList(orders);
+        // 미체결 상태의 주문 생성
+        Order pendingOrder = Order.builder()
+                .user(testUser)
+                .symbol("ETHUSDT")
+                .type(OrderType.LIMIT)
+                .side(OrderSide.SELL)
+                .price(new BigDecimal("3000.00"))
+                .amount(new BigDecimal("0.5"))
+                .status(OrderStatus.PENDING) // 미체결 상태
+                .build();
+        ReflectionTestUtils.setField(pendingOrder, "id", 2L); // 고유 ID 설정
 
-        given(orderService.getOrdersByUserId(anyLong()))
-                .willReturn(orders);
+        List<Order> pendingOrders = Collections.singletonList(pendingOrder);
+        List<OrderResponse> orderResponses = OrderResponse.fromList(pendingOrders);
+
+        // Mock 설정: getPendingOrdersByUserId 사용
+        given(orderService.getPendingOrdersByUserId(testUser.getId()))
+                .willReturn(pendingOrders);
 
         // WHEN & THEN
         ResultActions result = mockMvc.perform(get("/api/orders"));
 
         // Log the response for debugging
         String responseContent = result.andReturn().getResponse().getContentAsString();
-        log.error("Response content: {}", responseContent);
+        log.error("Response content for getPendingOrders_Success: {}", responseContent);
 
         result.andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -202,8 +215,8 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$[0].symbol").value(orderResponses.get(0).getSymbol()))
                 .andExpect(jsonPath("$[0].type").value(orderResponses.get(0).getType().toString()))
                 .andExpect(jsonPath("$[0].side").value(orderResponses.get(0).getSide().toString()))
-                .andExpect(jsonPath("$[0].price").value(orderResponses.get(0).getPrice()))
-                .andExpect(jsonPath("$[0].amount").value(orderResponses.get(0).getAmount()))
+                .andExpect(jsonPath("$[0].price").value(orderResponses.get(0).getPrice().doubleValue()))
+                .andExpect(jsonPath("$[0].amount").value(orderResponses.get(0).getAmount().doubleValue()))
                 .andExpect(jsonPath("$[0].status").value(orderResponses.get(0).getStatus().toString()));
     }
 

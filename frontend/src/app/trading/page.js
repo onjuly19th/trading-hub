@@ -1,6 +1,5 @@
 'use client';
 
-import React, { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
@@ -17,9 +16,5 @@ export default function TradingPage() {
     return <LoadingSpinner />;
   }
 
-  return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <TradingContainer />
-    </Suspense>
-  );
+  return <TradingContainer />;
 }

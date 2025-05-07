@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tradinghub.application.dto.auth.AuthResult;
 import com.tradinghub.application.event.UserSignedUpEvent;
 import com.tradinghub.application.exception.auth.AuthenticationFailedException;
 import com.tradinghub.application.exception.auth.DuplicateUsernameException;
@@ -14,7 +15,8 @@ import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.infrastructure.security.JwtService;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
-import com.tradinghub.interfaces.dto.auth.AuthSuccessDto;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * 사용자 인증 및 계정 관리를 처리하는 서비스
@@ -22,52 +24,26 @@ import com.tradinghub.interfaces.dto.auth.AuthSuccessDto;
  * UserDetails 로딩은 CustomUserDetailsService에 위임합니다.
  */
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final ApplicationEventPublisher eventPublisher;
-    private final UserDetailsService userDetailsService; // UserDetailsService 주입
-
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       JwtService jwtService,
-                       ApplicationEventPublisher eventPublisher,
-                       UserDetailsService userDetailsService) { // 생성자에 userDetailsService 추가
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.eventPublisher = eventPublisher;
-        this.userDetailsService = userDetailsService; // 주입받은 서비스 할당
-    }
-
-    // convertToUserDetails 메서드 제거
-    /*
-    private UserDetails convertToUserDetails(User user) {
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPassword()) // 주의: UserDetails에는 인코딩된 비밀번호가 포함되어야 함
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
-                .accountExpired(false)
-                .accountLocked(false)
-                .credentialsExpired(false)
-                .disabled(false)
-                .build();
-    }
-    */
+    private final UserDetailsService userDetailsService;
 
     /**
      * 새로운 사용자 계정을 생성합니다.
      * 회원가입 성공 시 UserSignedUpEvent를 발행합니다.
      *
      * @param request 회원가입 요청 정보 (사용자명, 비밀번호)
-     * @return 생성된 계정 정보와 인증 토큰이 포함된 AuthSuccessDto
+     * @return 생성된 계정 정보와 인증 토큰이 포함된 AuthResult
      * @throws DuplicateUsernameException 이미 존재하는 사용자명인 경우
      */
     @Transactional
-    public AuthSuccessDto signup(AuthRequest request) {
-        String username = request.getUsername();
-        String password = request.getPassword();
+    public AuthResult signup(AuthRequest request) {
+        String username = request.username();
+        String password = request.password();
 
         if (userRepository.existsByUsername(username)) {
             throw new DuplicateUsernameException(username);
@@ -86,7 +62,7 @@ public class UserService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getUsername());
         String token = jwtService.generateToken(userDetails);
 
-        return new AuthSuccessDto(savedUser.getId(), savedUser.getUsername(), token);
+        return new AuthResult(savedUser.getId(), savedUser.getUsername(), token);
     }
 
     /**
@@ -94,13 +70,13 @@ public class UserService {
      * 인증 성공 시 JWT 토큰을 발급합니다.
      *
      * @param request 로그인 요청 정보 (사용자명, 비밀번호)
-     * @return 사용자 정보와 인증 토큰이 포함된 AuthSuccessDto
+     * @return 사용자 정보와 인증 토큰이 포함된 AuthResult
      * @throws AuthenticationFailedException 인증 실패 시 (잘못된 사용자명 또는 비밀번호)
      */
     @Transactional(readOnly = true)
-    public AuthSuccessDto login(AuthRequest request) {
-        String username = request.getUsername();
-        String password = request.getPassword();
+    public AuthResult login(AuthRequest request) {
+        String username = request.username();
+        String password = request.password();
 
         // 1. 사용자 조회 (기존 로직 유지)
         // UserDetailsService는 Spring Security 인증 필터 체인에서 주로 사용됩니다.
@@ -118,6 +94,6 @@ public class UserService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         String token = jwtService.generateToken(userDetails);
 
-        return new AuthSuccessDto(user.getId(), user.getUsername(), token);
+        return new AuthResult(user.getId(), user.getUsername(), token);
     }
 } 

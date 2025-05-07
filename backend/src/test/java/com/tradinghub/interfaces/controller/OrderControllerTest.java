@@ -31,17 +31,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradinghub.application.service.order.OrderApplicationService;
 import com.tradinghub.domain.model.order.Order;
-import com.tradinghub.domain.model.order.OrderApplicationService;
 import com.tradinghub.domain.model.order.Order.OrderSide;
 import com.tradinghub.domain.model.order.Order.OrderStatus;
 import com.tradinghub.domain.model.order.Order.OrderType;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.UserRepository;
+import com.tradinghub.infrastructure.security.CustomUserDetailsService;
 import com.tradinghub.infrastructure.security.JwtAuthenticationFilter;
 import com.tradinghub.infrastructure.security.JwtService;
 import com.tradinghub.infrastructure.security.SecurityConfig;
-import com.tradinghub.infrastructure.security.CustomUserDetailsService;
 import com.tradinghub.interfaces.dto.order.OrderRequest;
 import com.tradinghub.interfaces.dto.order.OrderResponse;
 
@@ -95,12 +95,13 @@ class OrderControllerTest {
         // Set ID using reflection
         ReflectionTestUtils.setField(testOrder, "id", 1L);
 
-        testOrderRequest = new OrderRequest();
-        testOrderRequest.setSymbol("BTCUSDT");
-        testOrderRequest.setType(OrderType.MARKET);
-        testOrderRequest.setSide(OrderSide.BUY);
-        testOrderRequest.setPrice(new BigDecimal("50000.00"));
-        testOrderRequest.setAmount(new BigDecimal("0.1"));
+        testOrderRequest = new OrderRequest(
+                "BTCUSDT", 
+                OrderType.MARKET, 
+                OrderSide.BUY, 
+                new BigDecimal("50000.00"), 
+                new BigDecimal("0.1")
+        );
 
         testOrderResponse = OrderResponse.from(testOrder);
     }
@@ -125,13 +126,13 @@ class OrderControllerTest {
 
         result.andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(testOrderResponse.getId()))
-                .andExpect(jsonPath("$.symbol").value(testOrderResponse.getSymbol()))
-                .andExpect(jsonPath("$.type").value(testOrderResponse.getType().toString()))
-                .andExpect(jsonPath("$.side").value(testOrderResponse.getSide().toString()))
-                .andExpect(jsonPath("$.price").value(testOrderResponse.getPrice().doubleValue()))
-                .andExpect(jsonPath("$.amount").value(testOrderResponse.getAmount().doubleValue()))
-                .andExpect(jsonPath("$.status").value(testOrderResponse.getStatus().toString()));
+                .andExpect(jsonPath("$.id").value(testOrderResponse.id()))
+                .andExpect(jsonPath("$.symbol").value(testOrderResponse.symbol()))
+                .andExpect(jsonPath("$.type").value(testOrderResponse.type()))
+                .andExpect(jsonPath("$.side").value(testOrderResponse.side()))
+                .andExpect(jsonPath("$.price").value(testOrderResponse.price().doubleValue()))
+                .andExpect(jsonPath("$.amount").value(testOrderResponse.amount().doubleValue()))
+                .andExpect(jsonPath("$.status").value(testOrderResponse.status()));
     }
 
     @Test
@@ -139,7 +140,13 @@ class OrderControllerTest {
     @WithMockUser(username = "testUser")
     void createOrder_Success_LimitOrder() throws Exception {
         // GIVEN
-        testOrderRequest.setType(OrderType.LIMIT);
+        testOrderRequest = new OrderRequest(    
+                "BTCUSDT", 
+                OrderType.LIMIT, 
+                OrderSide.BUY, 
+                new BigDecimal("50000.00"), 
+                new BigDecimal("0.1")
+        );
         
         Order limitOrder = Order.builder()
                 .user(testUser)
@@ -211,13 +218,13 @@ class OrderControllerTest {
 
         result.andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].id").value(orderResponses.get(0).getId()))
-                .andExpect(jsonPath("$[0].symbol").value(orderResponses.get(0).getSymbol()))
-                .andExpect(jsonPath("$[0].type").value(orderResponses.get(0).getType().toString()))
-                .andExpect(jsonPath("$[0].side").value(orderResponses.get(0).getSide().toString()))
-                .andExpect(jsonPath("$[0].price").value(orderResponses.get(0).getPrice().doubleValue()))
-                .andExpect(jsonPath("$[0].amount").value(orderResponses.get(0).getAmount().doubleValue()))
-                .andExpect(jsonPath("$[0].status").value(orderResponses.get(0).getStatus().toString()));
+                .andExpect(jsonPath("$[0].id").value(orderResponses.get(0).id()))
+                .andExpect(jsonPath("$[0].symbol").value(orderResponses.get(0).symbol()))
+                .andExpect(jsonPath("$[0].type").value(orderResponses.get(0).type()))
+                .andExpect(jsonPath("$[0].side").value(orderResponses.get(0).side()))
+                .andExpect(jsonPath("$[0].price").value(orderResponses.get(0).price().doubleValue()))
+                .andExpect(jsonPath("$[0].amount").value(orderResponses.get(0).amount().doubleValue()))
+                .andExpect(jsonPath("$[0].status").value(orderResponses.get(0).status()));
     }
 
     @Test

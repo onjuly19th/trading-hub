@@ -18,12 +18,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.tradinghub.application.service.order.OrderApplicationService;
 import com.tradinghub.application.service.order.OrderExecutionService;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.Order.OrderSide;
 import com.tradinghub.domain.model.order.Order.OrderStatus;
 import com.tradinghub.domain.model.order.Order.OrderType;
-import com.tradinghub.domain.model.order.OrderApplicationService;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.OrderRepository;
 

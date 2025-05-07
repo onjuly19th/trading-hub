@@ -27,13 +27,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.tradinghub.application.exception.order.InvalidOrderException;
 import com.tradinghub.application.exception.order.OrderExecutionException;
 import com.tradinghub.application.exception.order.OrderNotFoundException;
+import com.tradinghub.application.service.order.OrderApplicationService;
 import com.tradinghub.application.service.order.OrderCommandService;
 import com.tradinghub.application.service.order.OrderQueryService;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.Order.OrderSide;
 import com.tradinghub.domain.model.order.Order.OrderStatus;
 import com.tradinghub.domain.model.order.Order.OrderType;
-import com.tradinghub.domain.model.order.OrderApplicationService;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.OrderRepository;
 import com.tradinghub.domain.repository.UserRepository;
@@ -88,12 +88,7 @@ class OrderApplicationServiceTest {
         BigDecimal amount = new BigDecimal("0.5");
         OrderSide side = OrderSide.BUY;
 
-        OrderRequest request = new OrderRequest();
-        request.setSymbol(symbol);
-        request.setType(OrderType.LIMIT);
-        request.setSide(side);
-        request.setPrice(price);
-        request.setAmount(amount);
+        //OrderRequest request = new OrderRequest(symbol, OrderType.LIMIT, side, price, amount);
 
         // Mock OrderCommandService
         Order mockOrder = Order.builder()
@@ -226,12 +221,7 @@ class OrderApplicationServiceTest {
         BigDecimal amount = new BigDecimal("0.5");
         OrderSide side = OrderSide.BUY;
 
-        OrderRequest request = new OrderRequest();
-        request.setSymbol(symbol);
-        request.setType(OrderType.MARKET);
-        request.setSide(side);
-        request.setPrice(price);
-        request.setAmount(amount);
+        //OrderRequest request = new OrderRequest(symbol, OrderType.MARKET, side, price, amount);
 
         // Mock OrderCommandService
         Order mockOrder = Order.builder()
@@ -432,12 +422,7 @@ class OrderApplicationServiceTest {
         BigDecimal amount = new BigDecimal("0.5");
         OrderSide side = OrderSide.BUY;
 
-        OrderRequest request = new OrderRequest();
-        request.setSymbol(symbol);
-        request.setType(OrderType.MARKET);
-        request.setSide(side);
-        request.setPrice(price);
-        request.setAmount(amount);
+        //OrderRequest request = new OrderRequest(symbol, OrderType.MARKET, side, price, amount);
 
         // Mock OrderCommandService
         Order mockOrder = Order.builder()
@@ -483,12 +468,7 @@ class OrderApplicationServiceTest {
         BigDecimal amount = new BigDecimal("0.5");
         OrderSide side = OrderSide.SELL;
 
-        OrderRequest request = new OrderRequest();
-        request.setSymbol(symbol);
-        request.setType(OrderType.MARKET);
-        request.setSide(side);
-        request.setPrice(price);
-        request.setAmount(amount);
+        //OrderRequest request = new OrderRequest(symbol, OrderType.MARKET, side, price, amount);
 
         // Mock OrderCommandService
         Order mockOrder = Order.builder()
@@ -534,13 +514,8 @@ class OrderApplicationServiceTest {
         BigDecimal amount = new BigDecimal("0.5");
         OrderSide side = OrderSide.BUY;
 
-        OrderRequest request = new OrderRequest();
-        request.setSymbol(symbol);
-        request.setType(OrderType.LIMIT);
-        request.setSide(side);
-        request.setPrice(price);
-        request.setAmount(amount);
-
+        //OrderRequest request = new OrderRequest(symbol, OrderType.LIMIT, side, price, amount);
+        
         // Mock OrderCommandService
         Order mockOrder = Order.builder()
                 .user(testUser)
@@ -584,21 +559,16 @@ class OrderApplicationServiceTest {
         BigDecimal amount = new BigDecimal("0.5");
         OrderSide side = OrderSide.SELL;
 
-        OrderRequest request = new OrderRequest();
-        request.setSymbol(symbol);
-        request.setType(OrderType.LIMIT);
-        request.setSide(side);
-        request.setPrice(price);
-        request.setAmount(amount);
+        OrderRequest request = new OrderRequest(symbol, OrderType.LIMIT, side, price, amount);
 
         // Mock OrderCommandService
         Order mockOrder = Order.builder()
                 .user(testUser)
-                .symbol(symbol)
-                .type(OrderType.LIMIT)
-                .side(side)
-                .price(price)
-                .amount(amount)
+                .symbol(request.symbol())
+                .type(request.type())
+                .side(request.side())
+                .price(request.price())
+                .amount(request.amount())
                 .status(OrderStatus.PENDING)
                 .build();
         ReflectionTestUtils.setField(mockOrder, "id", mockOrderId);

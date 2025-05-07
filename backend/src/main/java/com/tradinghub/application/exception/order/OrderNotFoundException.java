@@ -16,10 +16,10 @@ import com.tradinghub.interfaces.exception.ErrorCodes;
  * HTTP 상태 코드: {@link HttpStatus#NOT_FOUND} (404) 
  * 에러 코드: {@link ErrorCodes.Order#ORDER_NOT_FOUND}
  *
- * @see com.tradinghub.domain.model.order.OrderApplicationService#getOrdersByUserId(Long)
- * @see com.tradinghub.domain.model.order.OrderApplicationService#getCompletedOrdersByUserId(Long)
- * @see com.tradinghub.domain.model.order.OrderApplicationService#getOrdersByUserIdAndSymbol(Long, String)
- * @see com.tradinghub.domain.model.order.OrderApplicationService#cancelOrder(Long, Long)
+ * @see com.tradinghub.application.service.order.OrderApplicationService#getOrdersByUserId(Long)
+ * @see com.tradinghub.application.service.order.OrderApplicationService#getCompletedOrdersByUserId(Long)
+ * @see com.tradinghub.application.service.order.OrderApplicationService#getOrdersByUserIdAndSymbol(Long, String)
+ * @see com.tradinghub.application.service.order.OrderApplicationService#cancelOrder(Long, Long)
  */
 public class OrderNotFoundException extends BusinessException {
     

@@ -22,10 +22,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.tradinghub.application.exception.order.InvalidOrderException;
+import com.tradinghub.application.service.order.OrderApplicationService;
 import com.tradinghub.application.service.order.OrderCommandService;
 import com.tradinghub.application.service.portfolio.PortfolioService;
 import com.tradinghub.domain.model.order.Order;
-import com.tradinghub.domain.model.order.OrderApplicationService;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.interfaces.dto.order.OrderRequest;
@@ -63,12 +63,7 @@ public class OrderApplicationServiceTest {
         testUser.setUsername("testuser");
         
         // 테스트용 주문 요청 생성
-        orderRequest = new OrderRequest();
-        orderRequest.setSymbol("BTC");
-        orderRequest.setType(Order.OrderType.LIMIT);
-        orderRequest.setSide(Order.OrderSide.BUY);
-        orderRequest.setPrice(new BigDecimal("50000.00"));
-        orderRequest.setAmount(new BigDecimal("0.5"));
+        orderRequest = new OrderRequest("BTC", Order.OrderType.LIMIT, Order.OrderSide.BUY, new BigDecimal("50000.00"), new BigDecimal("0.5"));
     }
     
     @Test
@@ -99,10 +94,10 @@ public class OrderApplicationServiceTest {
         // when
         Order result = orderApplicationService.createLimitOrder(
             1L, 
-            orderRequest.getSymbol(), 
-            orderRequest.getSide(), 
-            orderRequest.getPrice(), 
-            orderRequest.getAmount()
+            orderRequest.symbol(), 
+            orderRequest.side(), 
+            orderRequest.price(), 
+            orderRequest.amount()
         );
         
         // then
@@ -116,10 +111,10 @@ public class OrderApplicationServiceTest {
         
         verify(orderCommandService).createLimitOrder(
             1L, 
-            orderRequest.getSymbol(),
-            orderRequest.getSide(),
-            orderRequest.getPrice(),
-            orderRequest.getAmount()
+            orderRequest.symbol(),
+            orderRequest.side(),
+            orderRequest.price(),
+            orderRequest.amount()
         );
         verify(webSocketHandler).notifyNewOrder(savedOrder);
     }
@@ -140,19 +135,19 @@ public class OrderApplicationServiceTest {
         assertThrows(InvalidOrderException.class, () -> {
             orderApplicationService.createLimitOrder(
                 1L, 
-                orderRequest.getSymbol(), 
-                orderRequest.getSide(), 
-                orderRequest.getPrice(), 
-                orderRequest.getAmount()
+                orderRequest.symbol(), 
+                orderRequest.side(), 
+                orderRequest.price(), 
+                orderRequest.amount()
             );
         });
         
         verify(orderCommandService).createLimitOrder(
             1L, 
-            orderRequest.getSymbol(),
-            orderRequest.getSide(),
-            orderRequest.getPrice(),
-            orderRequest.getAmount()
+            orderRequest.symbol(),
+            orderRequest.side(),
+            orderRequest.price(),
+            orderRequest.amount()
         );
         verifyNoInteractions(webSocketHandler);
     }

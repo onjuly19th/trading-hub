@@ -23,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.tradinghub.application.dto.auth.AuthResult;
 import com.tradinghub.application.event.UserSignedUpEvent;
 import com.tradinghub.application.exception.auth.DuplicateUsernameException;
 import com.tradinghub.application.service.auth.UserService;
@@ -30,7 +31,6 @@ import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.infrastructure.security.JwtService;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
-import com.tradinghub.interfaces.dto.auth.AuthSuccessDto;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -54,17 +54,10 @@ public class UserServiceTest {
     private UserService userService;
     
     private AuthRequest signupRequest;
-    private AuthRequest loginRequest;
     
     @BeforeEach
     void setUp() {
-        signupRequest = new AuthRequest();
-        signupRequest.setUsername("testuser");
-        signupRequest.setPassword("password123");
-
-        loginRequest = new AuthRequest();
-        loginRequest.setUsername("testuser");
-        loginRequest.setPassword("password123");
+        signupRequest = new AuthRequest("testuser", "password123");
     }
     
     @Test
@@ -94,13 +87,13 @@ public class UserServiceTest {
         when(jwtService.generateToken(userDetails)).thenReturn("test-jwt-token");
         
         // when
-        AuthSuccessDto authSuccessDto = userService.signup(signupRequest);
+        AuthResult authResult = userService.signup(signupRequest);
         
         // then
-        assertNotNull(authSuccessDto);
-        assertEquals(1L, authSuccessDto.getUserId());
-        assertEquals("testuser", authSuccessDto.getUsername());
-        assertEquals("test-jwt-token", authSuccessDto.getToken());
+        assertNotNull(authResult);
+        assertEquals(1L, authResult.userId());
+        assertEquals("testuser", authResult.username());
+        assertEquals("test-jwt-token", authResult.token());
         
         verify(userRepository).existsByUsername("testuser");
         verify(passwordEncoder).encode("password123");

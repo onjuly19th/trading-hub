@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,10 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tradinghub.application.exception.order.InvalidOrderException;
 import com.tradinghub.application.exception.order.OrderNotFoundException;
 import com.tradinghub.application.exception.portfolio.InsufficientBalanceException;
+import com.tradinghub.application.service.order.OrderApplicationService;
 import com.tradinghub.domain.model.order.Order;
-import com.tradinghub.domain.model.order.OrderApplicationService;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.UserRepository;
 import com.tradinghub.interfaces.dto.order.OrderRequest;
 import com.tradinghub.interfaces.dto.order.OrderResponse;
 import com.tradinghub.interfaces.exception.auth.UnauthorizedOperationException;
@@ -53,7 +51,6 @@ import lombok.RequiredArgsConstructor;
 @Validated
 public class OrderController {
     private final OrderApplicationService orderService;
-    private final UserRepository userRepository;
     
     // -----------------------------
     // Create Operations
@@ -81,14 +78,14 @@ public class OrderController {
         validateOrderRequest(request);
         
         Order order;
-        if (request.getType() == Order.OrderType.MARKET) {
+        if (request.type() == Order.OrderType.MARKET) {
             order = orderService.createMarketOrder(
-                    user.getId(), request.getSymbol(), request.getSide(), 
-                    request.getPrice(), request.getAmount());
+                    user.getId(), request.symbol(), request.side(), 
+                    request.price(), request.amount());
         } else {
             order = orderService.createLimitOrder(
-                    user.getId(), request.getSymbol(), request.getSide(), 
-                    request.getPrice(), request.getAmount());
+                    user.getId(), request.symbol(), request.side(), 
+                    request.price(), request.amount());
         }
         
         return ResponseEntity.ok(OrderResponse.from(order));
@@ -105,15 +102,14 @@ public class OrderController {
      * @response 401 인증되지 않은 사용자
      * @response 403 권한 없음
      */
-    @PostMapping("/execute")
+    // @PostMapping("/execute")
     public ResponseEntity<OrderResponse> executeOrders(
             @RequestParam @NotBlank(message = "Symbol is required") String symbol,
             @RequestParam @DecimalMin(value = "0.00000001", 
                                     message = "Price must be greater than 0") BigDecimal price) {
         int executedCount = orderService.executeOrdersAtPrice(symbol, price);
-        String message = String.format("Executed %d orders", executedCount);
         
-        return ResponseEntity.ok(OrderResponse.withMessage(message, executedCount));
+        return ResponseEntity.ok(OrderResponse.withExecutionResult(executedCount));
     }
 
     // -----------------------------
@@ -164,7 +160,7 @@ public class OrderController {
      * @response 200 조회 성공
      * @response 401 인증되지 않은 사용자
      */
-    @GetMapping("/symbol/{symbol}")
+    // @GetMapping("/symbol/{symbol}")
     public ResponseEntity<List<OrderResponse>> getOrdersBySymbol(
             @PathVariable String symbol, Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
@@ -218,29 +214,30 @@ public class OrderController {
         // Bean Validation은 price > 0인지 확인하므로 제거
         
         // LIMIT 주문에 price가 필요한지 확인 (Bean Validation으로는 확인할 수 없음)
-        if (request.getType() == Order.OrderType.LIMIT && request.getPrice() == null) {
+        if (request.type() == Order.OrderType.LIMIT && request.price() == null) {
             throw new InvalidOrderException("Limit order requires a price");
         }
     }
 
     private User getUserFromAuthentication(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal() == null) {
-             throw new UnauthorizedOperationException("User is not authenticated.");
+            throw new UnauthorizedOperationException("User is not authenticated.");
         }
 
         Object principal = authentication.getPrincipal();
-
+        
+        // Principal이 User 타입이면 바로 반환
         if (principal instanceof User) {
             return (User) principal;
-        } else if (principal instanceof UserDetails) {
-            String username = ((UserDetails) principal).getUsername();
-            return userRepository.findByUsername(username)
-                    .orElseThrow(() -> new UnauthorizedOperationException("User not found with username: " + username));
-        } else if (principal instanceof String && principal.equals("anonymousUser")) {
-             throw new UnauthorizedOperationException("Anonymous access is not allowed.");
         }
-
+        
+        // 일반적인 익명 사용자 처리
+        if (principal instanceof String && "anonymousUser".equals(principal)) {
+            throw new UnauthorizedOperationException("Anonymous access is not allowed.");
+        }
+        
         // 예상치 못한 Principal 타입 처리
-        throw new UnauthorizedOperationException("Cannot determine user from principal: " + principal.getClass().getName());
+        throw new UnauthorizedOperationException("Cannot determine user from principal: " + 
+            (principal != null ? principal.getClass().getName() : "null"));
     }
 } 

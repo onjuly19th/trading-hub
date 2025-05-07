@@ -31,13 +31,13 @@ public class PriceUpdateController {
      */
     @MessageMapping("/price-updates")
     public void processPriceUpdate(@Valid PriceUpdate priceUpdate) {
-        String symbol = priceUpdate.getSymbol();
+        String symbol = priceUpdate.symbol();
         BigDecimal price;
         
         try {
-            price = new BigDecimal(priceUpdate.getPrice());
+            price = new BigDecimal(priceUpdate.price());
         } catch (NumberFormatException e) {
-            throw new InvalidPriceFormatException("Invalid price format: " + priceUpdate.getPrice(), e);
+            throw new InvalidPriceFormatException("Invalid price format: " + priceUpdate.price(), e);
         }
         
         try {

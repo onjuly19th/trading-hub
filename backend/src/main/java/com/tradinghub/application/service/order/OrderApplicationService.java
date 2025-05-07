@@ -1,4 +1,4 @@
-package com.tradinghub.domain.model.order;
+package com.tradinghub.application.service.order;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tradinghub.application.event.OrderExecutedEvent;
-import com.tradinghub.application.service.order.OrderCommandService;
-import com.tradinghub.application.service.order.OrderQueryService;
+import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
 import com.tradinghub.interfaces.websocket.OrderWebSocketHandler;
 

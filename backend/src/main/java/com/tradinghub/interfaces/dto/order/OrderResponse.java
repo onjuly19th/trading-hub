@@ -9,112 +9,78 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.tradinghub.domain.model.order.Order;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 /**
- * 주문 정보를 클라이언트에 전달하기 위한 응답 DTO 클래스입니다.
+ * 주문 정보를 클라이언트에 전달하기 위한 응답 DTO 레코드입니다.
  * 주문의 상세 정보와 실행 결과를 포함합니다.
  */
-@Getter
-@Setter
-@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class OrderResponse {
+public record OrderResponse(
     /** 주문 고유 식별자 */
-    private Long id;
+    Long id,
     
     /** 거래 대상 암호화폐 심볼 (예: BTCUSDT) */
-    private String symbol;
+    String symbol,
     
     /** 주문 유형 (MARKET/LIMIT) */
-    private String type;
+    String type,
     
     /** 주문 방향 (BUY/SELL) */
-    private String side;
+    String side,
     
     /** 주문 가격 (USD) */
-    private BigDecimal price;
+    BigDecimal price,
     
     /** 주문 수량 */
-    private BigDecimal amount;
+    BigDecimal amount,
     
     /** 주문 상태 (PENDING/COMPLETED/CANCELLED/FAILED) */
-    private String status;
+    String status,
     
     /** 주문 생성 시각 */
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createdAt;
-    
-    /** 주문 최종 수정 시각 */
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedAt;
-    
-    /** 주문 처리 결과 메시지 */
-    private String message;
-    
-    /** 주문 실행 횟수 (부분 체결 시 사용) */
-    private int executedCount;
+    LocalDateTime createdAt,
     
     /** 실제 체결된 가격 */
-    private BigDecimal executedPrice;
-    
-    /** 응답 생성 시간 */
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime timestamp;
-
+    BigDecimal executedPrice
+) {
     /**
-     * Order 엔티티로부터 DTO 인스턴스를 생성합니다.
-     * 
-     * @param order 변환할 Order 엔티티
-     */
-    private OrderResponse(Order order) {
-        this.id = order.getId();
-        this.symbol = order.getSymbol();
-        this.type = order.getType().toString();
-        this.side = order.getSide().toString();
-        this.price = order.getPrice();
-        this.amount = order.getAmount();
-        this.status = order.getStatus().toString();
-        this.createdAt = order.getCreatedAt();
-        this.updatedAt = order.getUpdatedAt();
-        this.executedPrice = order.getExecutedPrice();
-        this.timestamp = LocalDateTime.now();
-    }
-
-    /**
-     * 메시지와 실행 카운트로 DTO 인스턴스를 생성합니다.
-     * 주로 주문 처리 결과를 전달할 때 사용됩니다.
-     * 
-     * @param message 결과 메시지
-     * @param executedCount 실행 횟수
-     */
-    private OrderResponse(String message, int executedCount) {
-        this.message = message;
-        this.executedCount = executedCount;
-        this.timestamp = LocalDateTime.now();
-    }
-    
-    /**
-     * Order 엔티티를 OrderResponse DTO로 변환합니다.
+     * Order 엔티티로부터 OrderResponse 인스턴스를 생성합니다.
      * 
      * @param order 변환할 Order 엔티티
      * @return 변환된 OrderResponse 객체
      */
     public static OrderResponse from(Order order) {
-        return new OrderResponse(order);
+        return new OrderResponse(
+            order.getId(),
+            order.getSymbol(),
+            order.getType().toString(),
+            order.getSide().toString(),
+            order.getPrice(),
+            order.getAmount(),
+            order.getStatus().toString(),
+            order.getCreatedAt(),
+            order.getExecutedPrice()
+        );
     }
     
     /**
-     * 메시지와 실행 카운트를 포함한 OrderResponse 객체를 생성합니다.
+     * Admin API에서 메시지를 담은 응답을 생성합니다.
      * 
-     * @param message 결과 메시지
      * @param executedCount 실행 횟수
      * @return 생성된 OrderResponse 객체
      */
-    public static OrderResponse withMessage(String message, int executedCount) {
-        return new OrderResponse(message, executedCount);
+    public static OrderResponse withExecutionResult(int executedCount) {
+        return new OrderResponse(
+            null, 
+            null, 
+            null, 
+            null, 
+            null, 
+            null, 
+            "EXECUTED", 
+            LocalDateTime.now(), 
+            null
+        );
     }
     
     /**

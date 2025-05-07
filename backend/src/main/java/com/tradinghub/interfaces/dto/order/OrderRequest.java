@@ -8,22 +8,18 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
- * 거래 주문 요청을 위한 DTO 클래스입니다.
+ * 거래 주문 요청을 위한 DTO 레코드입니다.
  * 주문에 필요한 모든 정보를 포함하며, 각 필드에 대한 유효성 검증 규칙을 정의합니다.
  */
-@Getter
-@Setter
-public class OrderRequest {
+public record OrderRequest(
     /**
      * 거래 대상 암호화폐의 심볼
      * 예: BTCUSDT, ETHUSDT
      */
     @NotBlank(message = "Symbol is required")
-    private String symbol;
+    String symbol,
 
     /**
      * 주문 유형
@@ -31,7 +27,7 @@ public class OrderRequest {
      * LIMIT: 지정가 주문
      */
     @NotNull(message = "Order type is required")
-    private Order.OrderType type;
+    Order.OrderType type,
 
     /**
      * 주문 방향
@@ -39,7 +35,7 @@ public class OrderRequest {
      * SELL: 매도 주문
      */
     @NotNull(message = "Order side is required")
-    private Order.OrderSide side;
+    Order.OrderSide side,
 
     /**
      * 주문 가격 (USD)
@@ -49,7 +45,7 @@ public class OrderRequest {
      */
     @DecimalMin(value = "0.00000001", message = "Price must be greater than 0")
     @DecimalMax(value = "1000000000", message = "Price is too high")
-    private BigDecimal price;
+    BigDecimal price,
 
     /**
      * 주문 수량
@@ -60,5 +56,5 @@ public class OrderRequest {
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.00000001", message = "Amount must be greater than 0")
     @DecimalMax(value = "1000000000", message = "Amount is too high")
-    private BigDecimal amount;
-} 
+    BigDecimal amount
+) {} 

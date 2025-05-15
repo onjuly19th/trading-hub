@@ -1,42 +1,24 @@
 'use client';
 
 import { Inter } from "next/font/google";
-import { useEffect } from "react";
 import "./globals.css";
 import NavigationButton from '@/components/Common/NavigationButton';
-import { BackendSocketManager } from '@/lib/websocket/BackendSocketManager';
-import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
+import { WebSocketProvider } from '@/contexts/WebSocketContext';
 
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const authClient = AuthAPIClient.getInstance();
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export default function RootLayout({ children }) {
-  // 웹소켓 연결 관리
-  useEffect(() => {
-    // 로그인 상태일 때만 웹소켓 연결
-    if (authClient.isAuthenticated()) {
-      const socketManager = BackendSocketManager.getInstance();
-      socketManager.connect();
-      
-      return () => {
-        socketManager.disconnect();
-      };
-    }
-  }, []);
-
   return (
     <html lang="ko">
       <body className={`${inter.className} antialiased`}>
-        <div className="fixed top-1 left-4 z-50">
-          <NavigationButton />
-        </div>
-        <div className="min-h-screen bg-gray-100">
-          {children}
-        </div>
+        <WebSocketProvider>
+          <div className="fixed top-1 left-4 z-50">
+            <NavigationButton />
+          </div>
+          <div className="min-h-screen bg-gray-100">
+            {children}
+          </div>
+        </WebSocketProvider>
       </body>
     </html>
   );

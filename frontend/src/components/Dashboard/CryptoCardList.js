@@ -1,41 +1,42 @@
 "use client";
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { MAJOR_CRYPTOS } from '@/config/constants';
-import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
+import { useWebSocket } from '@/contexts/WebSocketContext';
 import CryptoCard from './CryptoCard';
 
 const CryptoCardList = ({ onCryptoSelect }) => {
   const [prices, setPrices] = useState({});
-  
-  // 심볼 목록
-  const symbols = useMemo(() => MAJOR_CRYPTOS.map(crypto => crypto.symbol), []);
-  
+  const { webSocketService } = useWebSocket();
+
   useEffect(() => {
-    const manager = WebSocketManager.getInstance();
     const callbacks = {};
     
-    symbols.forEach(symbol => {
-      callbacks[symbol] = (data) => {
+    MAJOR_CRYPTOS.forEach(crypto => {
+      callbacks[crypto.symbol] = (data) => {
         if (data && data.price !== undefined && data.priceChangePercent !== undefined) {
           setPrices(prev => ({
             ...prev,
-            [symbol]: {
+            [crypto.symbol]: {
               price: data.price,
               change: data.priceChangePercent
             }
           }));
         }
       };
-      
-      manager.subscribe(symbol, 'ticker', callbacks[symbol]);
+
+      const topic = `/${crypto.ticker.toLowerCase()}/ticker`;
+      console.log(`Subscribing to topic: ${topic}`);
+      webSocketService.subscribe(topic, callbacks[crypto.symbol]);
     });
     
     return () => {
-      symbols.forEach(symbol => {
-        manager.unsubscribe(symbol, 'ticker', callbacks[symbol]);
+      MAJOR_CRYPTOS.forEach(crypto => {
+        const topic = `/${crypto.ticker.toLowerCase()}/ticker`;
+        console.log(`Unsubscribing from topic: ${topic}`);
+        webSocketService.unsubscribe(topic, callbacks[crypto.symbol]);
       });
     };
-  }, [symbols]);
+  }, [webSocketService]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -55,4 +56,4 @@ const CryptoCardList = ({ onCryptoSelect }) => {
   );
 };
 
-export default CryptoCardList; 
+export default CryptoCardList;

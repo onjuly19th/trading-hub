@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createChart, CrosshairMode } from 'lightweight-charts';
 import { API_CONFIG } from '@/config/constants';
-import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
 import { getDynamicChartColors } from '@/components/Chart/utils/styleUtils';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 
@@ -58,6 +57,8 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
   const ma25SeriesRef = useRef(null);
   const currentCandleRef = useRef(null);
   const wsCallbackRef = useRef(null);
+  const priceHistoryRef = useRef([]);
+  const MA_HISTORY_LIMIT = 200; // MA(25) 계산을 위한 충분한 데이터 유지
 
   // WebSocket 구독 설정
   useEffect(() => {
@@ -140,6 +141,14 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
         visible: true,
      });
 
+    // MA 시리즈 초기화
+    if (ma7SeriesRef.current) {
+      chart.removeSeries(ma7SeriesRef.current);
+    }
+    if (ma25SeriesRef.current) {
+      chart.removeSeries(ma25SeriesRef.current);
+    }
+
     ma7SeriesRef.current = chart.addLineSeries({
       color: '#2962FF',
       lineWidth: 1,
@@ -157,6 +166,9 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
     });
 
     chartRef.current = chart;
+
+    // 가격 이력 초기화
+    priceHistoryRef.current = [];
 
     const loadHistoricalData = async () => {
       setIsLoading(true);
@@ -183,13 +195,21 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
           color: parseFloat(d[4]) >= parseFloat(d[1]) ? colors.volume.up : colors.volume.down
         })).sort((a, b) => a.time - b.time);
 
+        // MA 데이터 설정 전에 기존 데이터 클리어
+        ma7SeriesRef.current.setData([]);
+        ma25SeriesRef.current.setData([]);
+
         const ma7Data = calculateMA(candlesticks, 7);
         const ma25Data = calculateMA(candlesticks, 25);
 
-        candlestickSeriesRef.current.setData(candlesticks);
-        volumeSeriesRef.current.setData(volumeData);
         ma7SeriesRef.current.setData(ma7Data);
         ma25SeriesRef.current.setData(ma25Data);
+
+        // 가격 이력 업데이트
+        priceHistoryRef.current = candlesticks;
+
+        candlestickSeriesRef.current.setData(candlesticks);
+        volumeSeriesRef.current.setData(volumeData);
 
         if (candlesticks.length > 0) {
           const lastCandle = candlesticks[candlesticks.length - 1];
@@ -280,16 +300,26 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
     return () => {
       window.removeEventListener('resize', handleResize);
       if (chartRef.current) {
+        if (ma7SeriesRef.current) {
+          chartRef.current.removeSeries(ma7SeriesRef.current);
+        }
+        if (ma25SeriesRef.current) {
+          chartRef.current.removeSeries(ma25SeriesRef.current);
+        }
         chartRef.current.remove();
         chartRef.current = null;
       }
       if(chartContainerRef.current && infoBox.parentNode === chartContainerRef.current){
           chartContainerRef.current.removeChild(infoBox);
       }
+      // 참조 초기화
+      ma7SeriesRef.current = null;
+      ma25SeriesRef.current = null;
+      priceHistoryRef.current = [];
     };
-  }, [symbol, timeFrame, isDarkMode, chartContainerRef]); // chartContainerRef 추가
+  }, [symbol, timeFrame, isDarkMode, chartContainerRef]); // symbol 의존성 확인
 
-  // 실시간 가격 업데이트
+  // 실시간 업데이트 효과 수정
   useEffect(() => {
     if (!tradeData || !candlestickSeriesRef.current || !volumeSeriesRef.current || !currentCandleRef.current) return;
 
@@ -301,7 +331,14 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
     let candleToUpdate = { ...currentCandleRef.current };
     let volumeToUpdateValue = candleToUpdate.volume || 0;
 
-    if (tradeTime > candleToUpdate.time) { // New candle
+    if (tradeTime > candleToUpdate.time) { // 새로운 캔들
+      // 완성된 캔들을 가격 이력에 추가
+      priceHistoryRef.current.push(candleToUpdate);
+      // 이력 제한 유지
+      if (priceHistoryRef.current.length > MA_HISTORY_LIMIT) {
+        priceHistoryRef.current.shift();
+      }
+      
       candleToUpdate = {
         time: tradeTime,
         open: price,
@@ -311,14 +348,19 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
         volume: volume
       };
       volumeToUpdateValue = volume;
-    } else if (tradeTime === candleToUpdate.time) { // Update current candle
+    } else if (tradeTime === candleToUpdate.time) { // 현재 캔들 업데이트
       candleToUpdate.high = Math.max(candleToUpdate.high, price);
       candleToUpdate.low = Math.min(candleToUpdate.low, price);
       candleToUpdate.close = price;
       volumeToUpdateValue = (candleToUpdate.volume || 0) + volume;
       candleToUpdate.volume = volumeToUpdateValue;
+      
+      // 가격 이력의 마지막 항목 업데이트
+      if (priceHistoryRef.current.length > 0) {
+        priceHistoryRef.current[priceHistoryRef.current.length - 1] = { ...candleToUpdate };
+      }
     } else {
-        return; // Old data, ignore
+      return; // 오래된 데이터는 무시
     }
 
     currentCandleRef.current = candleToUpdate;
@@ -328,24 +370,31 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
       value: volumeToUpdateValue,
       color: candleToUpdate.close >= candleToUpdate.open ? colors.volume.up : colors.volume.down
     });
-    
-    // Update MAs if new candle was formed or significant enough change (optional)
-    // For simplicity, MAs are updated on historical load and not tick-by-tick here
-    // but could be extended if needed.
 
-    // Update ChartStats for the latest candle
-    const date = new Date(candleToUpdate.time * 1000);
-    setChartStats(prev => ({
-      ...prev,
-      date: date.toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
-      open: candleToUpdate.open.toFixed(2),
-      high: candleToUpdate.high.toFixed(2),
-      low: candleToUpdate.low.toFixed(2),
-      close: candleToUpdate.close.toFixed(2),
-      volume: formatVolume(volumeToUpdateValue),
-      // Change and ChangePercent might require comparison with previous candle's close if not a new candle
-      // For simplicity, these are mainly set from historical load and could be refined here.
-    }));
+    // MA 업데이트
+    if (priceHistoryRef.current.length >= 7) { // MA7을 계산하기 위한 최소 데이터 확인
+      const ma7Data = calculateMA(priceHistoryRef.current, 7);
+      const ma25Data = calculateMA(priceHistoryRef.current, 25);
+
+      if (ma7Data.length > 0) {
+        ma7SeriesRef.current.update(ma7Data[ma7Data.length - 1]);
+      }
+      if (ma25Data.length > 0 && priceHistoryRef.current.length >= 25) {
+        ma25SeriesRef.current.update(ma25Data[ma25Data.length - 1]);
+      }
+
+      // 차트 통계 업데이트
+      setChartStats(prev => ({
+        ...prev,
+        ma7: ma7Data.length > 0 ? ma7Data[ma7Data.length - 1].value.toFixed(2) : prev.ma7,
+        ma25: ma25Data.length > 0 ? ma25Data[ma25Data.length - 1].value.toFixed(2) : prev.ma25,
+        volume: formatVolume(volumeToUpdateValue),
+        open: candleToUpdate.open.toFixed(2),
+        high: candleToUpdate.high.toFixed(2),
+        low: candleToUpdate.low.toFixed(2),
+        close: candleToUpdate.close.toFixed(2)
+      }));
+    }
 
   }, [tradeData, isDarkMode]);
 

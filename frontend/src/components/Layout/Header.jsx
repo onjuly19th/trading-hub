@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import AuthButton from '@/components/Auth/AuthButton';
 
-const Header = ({ selectedCoin }) => {
+const Header = ({ selectedCrypto }) => {
   return (
     <div className="flex justify-between items-center mb-6">
       <div>
@@ -18,16 +18,16 @@ const Header = ({ selectedCoin }) => {
         </div>
         <div className="flex items-center mt-1">
           <p className="text-gray-600">실시간 </p>
-          {selectedCoin?.logo && (
+          {selectedCrypto?.logo && (
             <Image 
-              src={selectedCoin.logo}
-              alt={selectedCoin?.name || 'Coin'}
+              src={selectedCrypto.logo}
+              alt={selectedCrypto?.name || 'Crypto'}
               width={20}
               height={20}
               className="mx-1 rounded-full"
             />
           )}
-          <p className="text-gray-600">{selectedCoin?.name || 'BTC/USDT'} 차트</p>
+          <p className="text-gray-600">{selectedCrypto?.name || 'BTC/USDT'} 차트</p>
         </div>
       </div>
       <AuthButton />

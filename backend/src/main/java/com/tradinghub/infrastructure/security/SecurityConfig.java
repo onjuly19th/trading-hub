@@ -31,7 +31,7 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**")
+                .ignoringRequestMatchers("/h2-console/**", "/ws/**", "/topic/**", "/queue/**", "/app/**", "/error")
                 .disable()
             )
             .headers(headers -> headers

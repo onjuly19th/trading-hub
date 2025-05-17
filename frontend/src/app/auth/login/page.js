@@ -1,8 +1,10 @@
 "use client";
 
 import dynamic from 'next/dynamic';
-import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const LoginContainer = dynamic(() => import('@/components/Auth/LoginContainer'), {
   ssr: false,
@@ -10,11 +12,14 @@ const LoginContainer = dynamic(() => import('@/components/Auth/LoginContainer'),
 });
 
 export default function LoginPage() {
-  const isChecking = useAuthCheck(false);
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
 
-  if (isChecking) {
-    return <LoadingSpinner />;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/trading');
+    }
+  }, [isAuthenticated, router]);
 
   return <LoginContainer />;
-} 
+}

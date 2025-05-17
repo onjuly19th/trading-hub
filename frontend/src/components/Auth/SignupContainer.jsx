@@ -1,15 +1,17 @@
+'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import SignupForm from './SignupForm';
-import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
-
-const authClient = AuthAPIClient.getInstance();
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignupContainer() {
+  const { signup, logout } = useAuth();
+  const router = useRouter();
+  
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
 
   const handleSignup = async (userData) => {
     if (isSubmitting) return;
@@ -19,21 +21,15 @@ export default function SignupContainer() {
     setMessage('');
 
     try {
-      const response = await authClient.signup(userData);
+      const response = await signup(userData);
       
-      // 자동 로그인 성공 여부 확인
       if (response.autoLoginSuccess) {
         setMessage('회원가입 및 자동 로그인이 완료되었습니다. 잠시 후 거래 페이지로 이동합니다.');
-        setTimeout(() => {
-          router.push('/trading');
-        }, 1500);
+        setTimeout(() => router.push('/trading'), 1500);
       } else {
-        // 회원가입은 성공했지만 자동 로그인 실패
         setMessage('회원가입이 완료되었습니다.');
         setError('자동 로그인에 실패했습니다. 로그인 페이지에서 다시 시도해주세요.');
-        setTimeout(() => {
-          router.push('/auth/login');
-        }, 2500);
+        setTimeout(() => router.push('/auth/login'), 2500);
       }
     } catch (err) {
       console.error('회원가입 에러:', err);
@@ -44,8 +40,7 @@ export default function SignupContainer() {
       } else {
         setError(err.message || '서버와의 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       }
-      // 에러 발생 시 토큰 제거
-      authClient.logout();
+      logout();
     } finally {
       setIsSubmitting(false);
     }
@@ -69,4 +64,4 @@ export default function SignupContainer() {
       </div>
     </div>
   );
-} 
+}

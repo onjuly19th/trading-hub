@@ -1,15 +1,15 @@
+'use client';
 import { useState } from 'react';
 import LoginForm from './LoginForm';
-import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
-
-const authClient = AuthAPIClient.getInstance();
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginContainer() {
   const [error, setError] = useState('');
+  const { login } = useAuth();
 
   const handleLogin = async (userData) => {
     try {
-      await authClient.login(userData);
+      await login(userData);
     } catch (error) {
       setError(error.message || '로그인 중 오류가 발생했습니다.');
     }
@@ -28,4 +28,4 @@ export default function LoginContainer() {
       </div>
     </div>
   );
-} 
+}

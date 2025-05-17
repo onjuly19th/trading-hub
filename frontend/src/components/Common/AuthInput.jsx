@@ -36,4 +36,4 @@ const AuthInput = ({
   );
 };
 
-export default AuthInput; 
+export default AuthInput;

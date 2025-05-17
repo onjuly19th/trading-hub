@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import AuthButton from '@/components/Auth/AuthButton';
+import AuthButton from '@/components/Common/AuthButton';
 
 const Header = ({ selectedCrypto }) => {
   return (

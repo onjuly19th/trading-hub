@@ -10,7 +10,7 @@ import { MAJOR_CRYPTOS } from '@/config/constants';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import Sidebar from './Sidebar';
 import TradingMainContent from './TradingMainContent';
-import { TokenManager } from '@/lib/auth/TokenManager';
+import { TokenManager } from '@/lib/auth/AuthTokenManager';
 
 // API 클라이언트 인스턴스
 const authClient = AuthAPIClient.getInstance();

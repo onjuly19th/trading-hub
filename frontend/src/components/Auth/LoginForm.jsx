@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AuthInput from './AuthInput';
+import AuthInput from '../Common/AuthInput';
 import Link from 'next/link';
 
 const LoginForm = ({ onSubmit, error }) => {
@@ -74,4 +74,4 @@ const LoginForm = ({ onSubmit, error }) => {
   );
 };
 
-export default LoginForm; 
+export default LoginForm;

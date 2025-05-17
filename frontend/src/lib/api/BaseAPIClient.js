@@ -1,11 +1,10 @@
 import { API_CONFIG } from '@/config/constants';
-import { TokenManager } from '@/lib/auth/TokenManager';
 
 export class BaseAPIClient {
-  constructor() {
+  constructor({ getToken }) {
     this.baseURL = API_CONFIG.BASE_URL;
     this.debug = process.env.NODE_ENV === 'development';
-    this.tokenManager = TokenManager.getInstance();
+    this.getToken = getToken;
   }
 
   // 로깅 메서드
@@ -35,7 +34,7 @@ export class BaseAPIClient {
       ...customHeaders
     };
 
-    const token = this.tokenManager.getToken();
+    const token = this.getToken?.();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -57,32 +56,12 @@ export class BaseAPIClient {
         this.warn(`${status} - ${error.request?.url}: ${errorMessage}`);
       }
       
-      // 401 또는 403 오류 시 인증 관련 처리
-      if (status === 401 || status === 403) {
-        // TokenManager를 통해 토큰과 사용자명 제거
-        if (this.tokenManager) {
-          this.tokenManager.removeToken();
-          this.tokenManager.removeUsername();
-        }
-        
-        // 오류 객체 반환
-        const enhancedError = {
+      throw {
           status,
           code: data?.code || 'AUTH_ERROR',
-          message: errorMessage,
-          data
-        };
-        throw enhancedError;
-      }
-      
-      // 일반 오류 객체 반환
-      const enhancedError = {
-        status,
-        code: data?.code || 'API_ERROR',
         message: errorMessage,
         data
       };
-      throw enhancedError;
     } else if (error.request) {
       // 요청은 성공했지만 응답을 받지 못한 경우
       this.error('No response received:', error.request);
@@ -171,4 +150,4 @@ export class BaseAPIClient {
   async delete(endpoint, options = {}) {
     return this.request('DELETE', endpoint, options);
   }
-} 
+}

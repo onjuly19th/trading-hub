@@ -33,7 +33,7 @@ export const MAJOR_TICKERS = ['BTC', 'ETH', 'XRP', 'BNB', 'SOL', 'TRX', 'DOGE', 
 const createCryptoObject = (ticker) => ({
   symbol: `${ticker}USDT`,
   name: `${ticker}/USDT`,
-  ticker: ticker,
+  ticker: ticker.toLowerCase(),
   logo: `${API_CONFIG.BINANCE_LOGO_URL}/${ticker}.png`
 });
 

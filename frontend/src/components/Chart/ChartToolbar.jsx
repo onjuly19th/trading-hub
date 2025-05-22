@@ -1,6 +1,6 @@
 import React from 'react';
 import { MdLightMode, MdDarkMode } from 'react-icons/md';
-import { TIME_FRAMES } from '@/components/Chart/chartConstants'; // 경로 수정
+import { TIME_FRAMES } from '@/components/Chart/chartConstants';
 
 const ChartToolbar = ({ 
   timeFrame,

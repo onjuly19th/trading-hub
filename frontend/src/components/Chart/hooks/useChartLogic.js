@@ -399,4 +399,4 @@ export const useChartLogic = (symbol, timeFrame, isDarkMode, chartContainerRef) 
   }, [tradeData, isDarkMode]);
 
   return { isLoading, error, chartStats, chartRef, candlestickSeriesRef, volumeSeriesRef, ma7SeriesRef, ma25SeriesRef };
-}; 
+};

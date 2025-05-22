@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AuthInput from '../Common/AuthInput';
+import AuthInput from '../../Common/AuthInput';
 import Link from 'next/link';
 
 const LoginForm = ({ onSubmit, error }) => {

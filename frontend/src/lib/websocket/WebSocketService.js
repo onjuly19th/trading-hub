@@ -1,6 +1,6 @@
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-import { processWebSocketData } from '@/lib/websocket/WebSocketDataProcessor';
+import { getCallbackForTopic } from './messageHandlers';
 
 class WebSocketService {
   constructor() {
@@ -54,33 +54,30 @@ class WebSocketService {
   }
 
   subscribe(topic, callback) {
+    console.log(`[WebSocket] Attempting to subscribe to ${topic}`);
+    
     if (!this.client || !this.client.connected) {
-      console.log('WebSocket not connected, attempting to connect...');
+      console.log('[WebSocket] Client not connected, connecting...');
       this.connect();
     }
     
     if (!this.subscriptions.has(topic)) {
+      console.log(`[WebSocket] Creating new subscription for ${topic}`);
       const handlers = new Set();
       handlers.add(callback);
       
       const subscription = this.client.connected ? 
-        this.client.subscribe(topic, message => {
-          //console.log(`Received message on topic ${topic}:`, message.body);
-          try {
-            const rawData = JSON.parse(message.body);
-            const streamType = topic.split('/').pop(); // 예: /btc/ticker -> 'ticker'
-            const processedData = processWebSocketData(streamType, rawData);
-            // console.log(`Processed data for ${topic}:`, processedData);
-            if (processedData) {
-              handlers.forEach(handler => handler(processedData));
-            }
-          } catch (error) {
-            console.error(`Error processing message for ${topic}:`, error);
-          }
-        }) : null;
+        this.client.subscribe(topic, getCallbackForTopic(topic, handlers)) : null;
+      
+      if (subscription) {
+        console.log(`[WebSocket] Successfully subscribed to ${topic}`);
+      } else {
+        console.log(`[WebSocket] Subscription pending for ${topic} (waiting for connection)`);
+      }
       
       this.subscriptions.set(topic, { subscription, handlers });
     } else {
+      console.log(`[WebSocket] Adding handler to existing subscription for ${topic}`);
       const { handlers } = this.subscriptions.get(topic);
       handlers.add(callback);
     }

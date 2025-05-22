@@ -44,3 +44,4 @@ backend/logs/tradinghub.*.log
 backend/src/main/resources/application.properties
 
 /.*/*
+docker-compose.yml

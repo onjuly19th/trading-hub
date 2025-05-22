@@ -16,6 +16,8 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    document.title = 'Trading Hub - 로그인';
+    
     if (isAuthenticated) {
       router.push('/trading');
     }

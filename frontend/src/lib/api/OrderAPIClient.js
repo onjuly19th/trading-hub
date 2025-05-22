@@ -2,17 +2,8 @@ import { BaseAPIClient } from './BaseAPIClient';
 import { ENDPOINTS } from '@/config/constants';
 
 export class OrderAPIClient extends BaseAPIClient {
-  static instance = null;
-
-  static getInstance() {
-    if (!OrderAPIClient.instance) {
-      OrderAPIClient.instance = new OrderAPIClient();
-    }
-    return OrderAPIClient.instance;
-  }
-
-  constructor() {
-    super();
+  constructor(getToken) {
+    super({ getToken });
   }
 
   // 주문 생성

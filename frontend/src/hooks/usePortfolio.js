@@ -1,9 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { PortfolioAPIClient } from '@/lib/api/PortfolioAPIClient';
-
-const authClient = AuthAPIClient.getInstance();
-const portfolioClient = PortfolioAPIClient.getInstance();
 
 export function usePortfolio() {
   const [userBalance, setUserBalance] = useState({
@@ -13,10 +10,17 @@ export function usePortfolio() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { isAuthenticated, logout, getToken } = useAuth();
+
+  // portfolioClient를 useMemo로 생성
+  const portfolioClient = useMemo(() => 
+    new PortfolioAPIClient(getToken),
+    [getToken]
+  );
 
   const fetchUserBalance = useCallback(async () => {
     try {
-      const isLoggedIn = authClient.isAuthenticated();
+      const isLoggedIn = isAuthenticated;
       
       if (!isLoggedIn) {
         setIsLoading(false);
@@ -66,7 +70,7 @@ export function usePortfolio() {
       
       // 심각한 오류 시 (인증 관련) 로그아웃 처리
       if (error.status === 401 || error.status === 403) {
-        authClient.logout();
+        //logout();
       }
     } finally {
       setIsLoading(false);
@@ -75,7 +79,7 @@ export function usePortfolio() {
 
   // 초기 로딩 시에만 데이터를 가져옵니다
   useEffect(() => {
-    if (!isInitialized && authClient.isAuthenticated()) {
+    if (!isInitialized && isAuthenticated) {
       console.log('[usePortfolio] Fetching initial portfolio data');
       fetchUserBalance();
     }

@@ -1,10 +1,10 @@
 import { API_CONFIG } from '@/config/constants';
 
 export class BaseAPIClient {
-  constructor({ getToken }) {
+  constructor({ getToken } = {}) {
     this.baseURL = API_CONFIG.BASE_URL;
     this.debug = process.env.NODE_ENV === 'development';
-    this.getToken = getToken;
+    this.getToken = getToken ?? null;
   }
 
   // 로깅 메서드

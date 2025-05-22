@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { COLORS, TRADING_CONFIG, ENDPOINTS } from '@/config/constants';
 import { OrderAPIClient } from '@/lib/api/OrderAPIClient';
-import { BackendSocketManager } from '@/lib/websocket/BackendSocketManager';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
+import { useWebSocket } from '@/contexts/WebSocketContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function TradeHistory() {
   const [orders, setOrders] = useState([]);
@@ -12,9 +13,14 @@ export default function TradeHistory() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('open'); // 'open' | 'history'
+  const { webSocketService } = useWebSocket();
+  const { userId, username, getToken } = useAuth();
   
   // OrderAPIClient 인스턴스
-  const orderClient = OrderAPIClient.getInstance();
+  const orderClient = useMemo(() => 
+    new OrderAPIClient(getToken),
+    [getToken]
+  );
 
   // REST API로 주문 내역과 거래 내역 모두 조회
   const fetchData = useCallback(async () => {
@@ -121,18 +127,20 @@ export default function TradeHistory() {
     
     // 2. 웹소켓 구독 설정
     console.log('[TradeHistory] 웹소켓 구독 시작');
-    const socketManager = BackendSocketManager.getInstance();
-    
-    // 주문만 구독
-    const unsubscribeOrders = socketManager.subscribeToOrders(handleOrderUpdate);
+
+    webSocketService.subscribe(`/queue/user/${username}/orders`, handleOrderUpdate);
     
     console.log('[TradeHistory] 웹소켓 구독 활성화됨');
     
     return () => {
       console.log('[TradeHistory] 웹소켓 구독 해제');
-      unsubscribeOrders();
+      webSocketService.unsubscribe(`/queue/user/${username}/orders`, handleOrderUpdate);
     };
   }, [fetchData, handleOrderUpdate]);
+
+  useEffect(() => {
+    console.log('[TradeHistory] 주문 내역 업데이트:', orders);
+  }, [orders]);
 
   const getStatusColor = (status) => {
     switch (status) {

@@ -1,16 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { formatCryptoPrice } from '@/utils/formatNumber';
-import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function UserInfo({ username, availableBalance, totalPortfolioValue }) {
-  const router = useRouter();
-  const authClient = AuthAPIClient.getInstance();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    authClient.logout();
-    router.push('/auth/login');
+    logout();
   };
 
   return (

@@ -3,7 +3,6 @@
 import UserInfo from './UserInfo';
 import CryptoList from './CryptoList';
 import AssetsPanel from './AssetsPanel';
-import { MAJOR_CRYPTOS } from '@/config/constants';
 
 export default function Sidebar({ 
   username, 

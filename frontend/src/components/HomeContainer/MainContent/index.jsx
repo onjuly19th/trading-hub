@@ -1,5 +1,5 @@
 import TradingViewChart from '@/components/Chart/TradingViewChart';
-import CryptoCardList from '@/components/Dashboard/CryptoCardList';
+import CryptoCardList from './CryptoCardList';
 
 const MainContent = ({ selectedCrypto, onCryptoSelect }) => {
   return (

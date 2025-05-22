@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import Header from '@/components/Layout/Header';
-import MainContent from '@/components/Home/MainContent';
+import Header from '@/components/HomeContainer/Header';
+import MainContent from '@/components/HomeContainer/MainContent';
 import { TRADING_CONFIG } from '@/config/constants';
 
 export default function HomeContainer() {
@@ -23,4 +23,4 @@ export default function HomeContainer() {
       />
     </div>
   );
-} 
+}

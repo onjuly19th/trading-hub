@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { TRADING_CONFIG, COLORS, ENDPOINTS } from '@/config/constants';
+import { useState, useEffect, useMemo } from 'react';
+import { COLORS } from '@/config/constants';
 import { OrderAPIClient } from '@/lib/api/OrderAPIClient';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
 import { formatCryptoPrice } from '@/utils/formatNumber';
+import { useAuth } from '@/contexts/AuthContext';
 
-export default function OrderForm({ symbol, currentPrice, isConnected, userBalance, refreshBalance, coinBalance }) {
+export default function OrderForm({ symbol, currentPrice, isConnected, userBalance, coinBalance }) {
   const [orderType, setOrderType] = useState('market'); // 'limit' or 'market'
   const [side, setSide] = useState('buy'); // 'buy' or 'sell'
   const [price, setPrice] = useState('');
@@ -15,9 +16,13 @@ export default function OrderForm({ symbol, currentPrice, isConnected, userBalan
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const { getToken } = useAuth();
   
   // OrderAPIClient 인스턴스
-  const orderClient = OrderAPIClient.getInstance();
+  const orderClient = useMemo(() => 
+    new OrderAPIClient(getToken),
+    [getToken]
+  );
 
   // 현재가가 변경될 때 지정가 필드를 현재가로 업데이트 (초기 로드 시)
   useEffect(() => {

@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { TRADING_CONFIG, COLORS, ENDPOINTS } from '@/config/constants';
-import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
-import ErrorMessage from '@/components/Common/ErrorMessage';
-import TradeHistory from './TradeHistory';
+import { TRADING_CONFIG, COLORS } from '@/config/constants';
+import { useWebSocket } from '@/contexts/WebSocketContext';
 import { formatCryptoPrice } from '@/utils/formatNumber';
 
 export default function OrderBook({ 
@@ -22,6 +20,7 @@ export default function OrderBook({
   const [showDepthChart, setShowDepthChart] = useState(false); // 뎁스 차트 표시 여부
   const prevPriceRef = useRef(0); // 이전 가격 저장
   const canvasRef = useRef(null); // 뎁스 차트용 캔버스 ref
+  const { webSocketService } = useWebSocket();
 
   // 가격에 따라 소수점 자릿수 동적 결정
   const getDecimalPlaces = (priceValue) => {
@@ -51,16 +50,15 @@ export default function OrderBook({
 
   // 심볼이 변경될 때마다 orderBook 초기화 및 구독 관리
   useEffect(() => {
-    const manager = WebSocketManager.getInstance();
-    
+    const currentTicker = symbol.replace('USDT', '').toLowerCase();
     // 이전 구독 정리
     if (depthCallbackRef.current) {
-      manager.unsubscribe(currentSymbolRef.current, 'depth20', depthCallbackRef.current);
+      webSocketService.unsubscribe(`/${currentTicker}/depth20`, depthCallbackRef.current);
       depthCallbackRef.current = null;
     }
     
     if (tickerCallbackRef.current) {
-      manager.unsubscribe(currentSymbolRef.current, 'ticker', tickerCallbackRef.current);
+      webSocketService.unsubscribe(`/${currentTicker}/ticker`, tickerCallbackRef.current);
       tickerCallbackRef.current = null;
     }
     
@@ -127,13 +125,14 @@ export default function OrderBook({
     };
     
     // 구독 시작
-    manager.subscribe(symbol, 'depth20', depthCallbackRef.current);
-    manager.subscribe(symbol, 'ticker', tickerCallbackRef.current);
+    webSocketService.subscribe(`/${currentTicker}/depth20`, depthCallbackRef.current);
+    webSocketService.subscribe(`/${currentTicker}/ticker`, tickerCallbackRef.current);
     
     // 언마운트 시 구독 해제
     return () => {
-      manager.unsubscribe(symbol, 'depth20', depthCallbackRef.current);
-      manager.unsubscribe(symbol, 'ticker', tickerCallbackRef.current);
+      const currentTicker = symbol.replace('USDT', '').toLowerCase();
+      webSocketService.unsubscribe(`/${currentTicker}/depth20`, depthCallbackRef.current);
+      webSocketService.unsubscribe(`/${currentTicker}/ticker`, tickerCallbackRef.current);
     };
   }, [symbol, maxAskEntries, maxBidEntries]);
 
@@ -286,13 +285,13 @@ export default function OrderBook({
       <div className="p-3 border-b border-gray-200">
         <div className="flex justify-between items-center text-xs text-gray-600">
           <span>가격(USDT)</span>
-          <span>수량({symbol.replace('USDT', '')})</span>
           <button 
             onClick={() => setShowDepthChart(!showDepthChart)}
             className="text-blue-500 text-xs hover:underline"
           >
             {showDepthChart ? '호가창 보기' : '뎁스차트 보기'}
           </button>
+          <span>수량({symbol.replace('USDT', '')})</span>
         </div>
       </div>
       

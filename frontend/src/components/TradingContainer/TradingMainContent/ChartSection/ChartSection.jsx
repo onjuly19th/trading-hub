@@ -1,7 +1,7 @@
-'use client';
+  'use client';
 
 import TradingViewChart from '@/components/Chart/TradingViewChart';
-import OrderBook from '@/components/Trading/OrderBook';
+import OrderBook from '@/components/TradingContainer/TradingMainContent/ChartSection/OrderBook';
 
 export default function ChartSection({ symbol }) {
   return (

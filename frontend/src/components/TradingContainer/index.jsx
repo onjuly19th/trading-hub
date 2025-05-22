@@ -1,20 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { AuthAPIClient } from '@/lib/api/AuthAPIClient';
-import { WebSocketManager } from '@/lib/websocket/WebSocketManager';
-import { BackendSocketManager } from '@/lib/websocket/BackendSocketManager';
-import { usePortfolio } from '@/hooks/usePortfolio';
-import { MAJOR_CRYPTOS } from '@/config/constants';
 import LoadingSpinner from '@/components/Common/LoadingSpinner';
+import { MAJOR_CRYPTOS } from '@/config/constants';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePortfolio } from '@/hooks/usePortfolio';
+import { useWebSocket } from '@/contexts/WebSocketContext';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Sidebar from './Sidebar';
 import TradingMainContent from './TradingMainContent';
-import { TokenManager } from '@/lib/auth/AuthTokenManager';
 
-// API 클라이언트 인스턴스
-const authClient = AuthAPIClient.getInstance();
-const tokenManager = TokenManager.getInstance();
 
 // throttle 함수 정의
 function throttle(func, limit) {
@@ -45,14 +40,15 @@ export default function TradingContainer() {
     currentPrice: 0,
     priceChangePercent: 0
   })));
-  
+  const { userId, username, isAuthenticated, logout } = useAuth();
+  const { webSocketService } = useWebSocket();
+
   // 참조 관리
   const prevPriceRef = useRef('0');
   const tradeCallbackRef = useRef(null);
   const tickerCallbackRefs = useRef({});
   
   // 인증 정보 및 포트폴리오 데이터
-  const isAuthenticated = authClient.isAuthenticated();
   const { 
     userBalance, 
     refreshBalance, 
@@ -67,19 +63,6 @@ export default function TradingContainer() {
       router.push('/auth/login');
     }
   }, [isAuthenticated, router]);
-
-  // 초기 로딩 시 백엔드 웹소켓 연결 설정
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    console.log('[TradingContainer] Initializing backend socket connection');
-    const backendManager = BackendSocketManager.getInstance();
-    
-    // 연결이 되어 있지 않으면 연결 시도
-    if (!backendManager.isConnected && !backendManager.isConnecting) {
-      backendManager.connect();
-    }
-  }, [isAuthenticated]);
 
   // 메모이제이션된 트레이드 콜백 함수
   const tradeCallback = useCallback((data) => {
@@ -98,12 +81,6 @@ export default function TradingContainer() {
     
     setCurrentPrice(newPrice);
     prevPriceRef.current = newPrice;
-    
-    // 백엔드로 가격 데이터 전송 (지정가 주문 체결용)
-    const backendManager = BackendSocketManager.getInstance();
-    if (backendManager.isConnected) {
-      backendManager.sendPriceUpdate(currentSymbol, newPrice);
-    }
   }, [currentSymbol]);
 
   // 포트폴리오 업데이트 콜백 함수 - 웹소켓을 통해 받은 데이터 처리
@@ -185,72 +162,77 @@ export default function TradingContainer() {
 
   // WebSocket 데이터 구독 (Binance 거래 데이터)
   useEffect(() => {
-    const manager = WebSocketManager.getInstance();
+    const currentTicker = currentSymbol.replace('USDT', '').toLowerCase();
     
     // 이전 구독 취소
     if (tradeCallbackRef.current) {
-      manager.unsubscribe(currentSymbol, 'trade', tradeCallbackRef.current);
+      webSocketService.unsubscribe(`/${currentTicker}/trade`, tradeCallbackRef.current);
     }
     
     // 저장된 콜백 함수 설정
     tradeCallbackRef.current = tradeCallback;
     
     // 새 구독 설정
-    manager.subscribe(currentSymbol, 'trade', tradeCallbackRef.current);
+    webSocketService.subscribe(`/${currentTicker}/trade`, tradeCallbackRef.current);
     
     // 언마운트 시 구독 해제
     return () => {
       if (tradeCallbackRef.current) {
-        manager.unsubscribe(currentSymbol, 'trade', tradeCallbackRef.current);
+        webSocketService.unsubscribe(`/${currentTicker}/trade`, tradeCallbackRef.current);
       }
     };
   }, [currentSymbol, tradeCallback]);
 
   // 백엔드 웹소켓 구독 (포트폴리오 업데이트) - 이 부분은 자산 정보의 실시간 업데이트를 위한 핵심 부분
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      console.log('[Portfolio] 인증되지 않아 구독 건너뜀');
+      return;
+    }
     
-    console.log('[TradingContainer] Setting up portfolio subscription');
-    const backendManager = BackendSocketManager.getInstance();
+    if (!username) {
+      console.log('[Portfolio] username이 없어 구독 건너뜀');
+      return;
+    }
     
-    // 포트폴리오 업데이트 구독
-    const unsubscribePortfolio = backendManager.subscribeToPortfolio(portfolioUpdateCallback);
+    console.log('[Portfolio] WebSocket 구독 시작:', username);
+    webSocketService.subscribe(`/queue/user/${username}/portfolio`, portfolioUpdateCallback);
     
-    console.log('[TradingContainer] Portfolio subscription active');
-    
-    // 언마운트 시 구독 해제
     return () => {
-      console.log('[TradingContainer] Cleaning up portfolio subscription');
-      unsubscribePortfolio();
+      console.log('[Portfolio] WebSocket 구독 해제');
+      webSocketService.unsubscribe(`/queue/user/${username}/portfolio`, portfolioUpdateCallback);
     };
-  }, [isAuthenticated, portfolioUpdateCallback]);
+  }, [isAuthenticated, username, portfolioUpdateCallback]);
 
+  
   // 모든 코인의 ticker 데이터 구독
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      console.log('[Ticker] Not authenticated, skipping ticker subscriptions');
+      return;
+    }
     
-    const manager = WebSocketManager.getInstance();
-    const backendManager = BackendSocketManager.getInstance();
+    console.log('[Ticker] Setting up ticker subscriptions for symbols:', 
+      MAJOR_CRYPTOS.map(crypto => crypto.symbol));
     
     // 각 코인에 대한 ticker 구독 설정
     MAJOR_CRYPTOS.forEach(crypto => {
       const symbol = crypto.symbol;
+      const ticker = crypto.ticker;
+      console.log(`[Symbol] Setting up subscription for ${symbol}`);
       
       // 기존 구독 해제
       if (tickerCallbackRefs.current[symbol]) {
-        manager.unsubscribe(symbol, 'ticker', tickerCallbackRefs.current[symbol]);
+        console.log(`[Ticker] Unsubscribing existing subscription for ${symbol}`);
+        webSocketService.unsubscribe(`/${ticker}/ticker`, tickerCallbackRefs.current[symbol]);
       }
       
       // 새 콜백 함수 설정
-      tickerCallbackRefs.current[symbol] = throttle((data) => {
+      tickerCallbackRefs.current[symbol] = (data) => {
+        //console.log(`[Ticker] Received data for ${symbol}:`, data);
         if (!data) return;
         
         const newPrice = parseFloat(data.price || 0);
-        
-        // 백엔드로 가격 데이터 전송
-        if (backendManager.isConnected) {
-          backendManager.sendPriceUpdate(symbol, newPrice);
-        }
         
         setCryptoData(prevCryptoData => {
           // 이전 코인 데이터 찾기
@@ -282,36 +264,39 @@ export default function TradingContainer() {
               : c
           );
         });
-      }, 300); // 300ms 스로틀링
+      };
       
-      // 구독
-      manager.subscribe(symbol, 'ticker', tickerCallbackRefs.current[symbol]);
+      // 구독 설정
+      console.log(`[Symbol] Subscribing to /${symbol}/ticker`);
+      webSocketService.subscribe(`/${ticker}/ticker`, tickerCallbackRefs.current[symbol]);
     });
     
-    // 컴포넌트 언마운트 시 모든 구독 해제
+    // 클린업
     return () => {
+      console.log('[Ticker] Cleaning up all ticker subscriptions');
       MAJOR_CRYPTOS.forEach(crypto => {
         const symbol = crypto.symbol;
+        const ticker = crypto.ticker;
         if (tickerCallbackRefs.current[symbol]) {
-          manager.unsubscribe(symbol, 'ticker', tickerCallbackRefs.current[symbol]);
+          webSocketService.unsubscribe(`/${ticker}/ticker`, tickerCallbackRefs.current[symbol]);
         }
       });
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, webSocketService]);
 
-  // coinData가 업데이트될 때마다 자산 가격 정보 업데이트
+  // cryptoData가 업데이트될 때마다 자산 가격 정보 업데이트
   useEffect(() => {
     if (userBalance?.assets?.length > 0 && cryptoData.length > 0) {
       
       const updatedAssets = userBalance.assets.map(asset => {
         // 해당 코인의 현재 가격 정보 찾기
-        const coinInfo = cryptoData.find(c => c.symbol === asset.symbol);
+        const cryptoInfo = cryptoData.find(c => c.symbol === asset.symbol);
         
         // 코인 정보가 있으면 currentPrice 업데이트
-        if (coinInfo && coinInfo.currentPrice) {
+        if (cryptoInfo && cryptoInfo.currentPrice) {
           return {
             ...asset,
-            currentPrice: coinInfo.currentPrice
+            currentPrice: cryptoInfo.currentPrice
           };
         }
         
@@ -333,14 +318,13 @@ export default function TradingContainer() {
   }, [cryptoData, userBalance?.assets]);
 
   // 코인 선택 핸들러
-  const handleCoinSelect = (coin) => {
-    setCurrentSymbol(coin.symbol);
+  const handleCryptoSelect = (crypto) => {
+    setCurrentSymbol(crypto.symbol);
   };
 
   // 로그아웃 핸들러
   const handleLogout = () => {
-    authClient.logout();
-    router.push('/auth/login');
+    logout();
   };
 
   // 로딩 중일 때 표시
@@ -366,9 +350,6 @@ export default function TradingContainer() {
   const currentCrypto = MAJOR_CRYPTOS.find(crypto => crypto.symbol === currentSymbol);
   const cryptoLogo = currentCrypto?.logo;
   
-  // 숫자형 현재가격 
-  const numericCurrentPrice = parseFloat(currentPrice);
-  
   // 현재 선택된 코인의 보유량
   const coinBalance = assets.find(asset => asset.symbol === currentSymbol)?.amount || 0;
 
@@ -376,14 +357,14 @@ export default function TradingContainer() {
     <div className="flex h-screen overflow-hidden bg-gray-100">
       {/* 사이드바 컴포넌트 */}
       <Sidebar 
-        username={tokenManager.getUsername()}
+        username={username}
         availableBalance={availableBalance}
         totalPortfolioValue={totalPortfolioValue}
         cryptoData={cryptoData}
         currentSymbol={currentSymbol}
         currentPrice={currentPrice}
         assets={assets}
-        onCryptoSelect={handleCoinSelect}
+        onCryptoSelect={handleCryptoSelect}
       />
       
       {/* 메인 컨텐츠 컴포넌트 */}

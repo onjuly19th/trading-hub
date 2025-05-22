@@ -1,7 +1,7 @@
 'use client';
 
-import OrderForm from '@/components/Trading/OrderForm';
-import TradeHistory from '@/components/Trading/TradeHistory';
+import OrderForm from '@/components/TradingContainer/TradingMainContent/OrderSection/OrderForm';
+import TradeHistory from '@/components/TradingContainer/TradingMainContent/OrderSection/TradeHistory';
 
 export default function OrderSection({ 
   symbol, 

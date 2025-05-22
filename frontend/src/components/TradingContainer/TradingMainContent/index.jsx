@@ -1,9 +1,8 @@
 'use client';
 
 import CryptoHeader from './CryptoHeader';
-import ChartSection from './ChartSection';
-import OrderSection from './OrderSection';
-import { API_CONFIG } from '@/config/constants';
+import ChartSection from './ChartSection/ChartSection';
+import OrderSection from './OrderSection/OrderSection';
 
 export default function TradingMainContent({ 
   currentSymbol, 

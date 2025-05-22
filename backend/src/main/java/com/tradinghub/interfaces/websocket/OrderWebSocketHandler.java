@@ -42,10 +42,6 @@ public class OrderWebSocketHandler {
             log.debug("Preparing WebSocket message - Order {}: orderId={}, symbol={}, status={}", 
                     eventType, order.getId(), order.getSymbol(), order.getStatus());
             
-            // 전체 주문 내역 업데이트
-            messagingTemplate.convertAndSend("/topic/orders", orderResponse);
-            log.debug("WebSocket entire order message sent: /topic/orders");
-            
             // 사용자별 주문 내역 업데이트 (username 사용)
             String destination = "/queue/user/" + order.getUser().getUsername() + "/orders";
             messagingTemplate.convertAndSend(destination, orderResponse);

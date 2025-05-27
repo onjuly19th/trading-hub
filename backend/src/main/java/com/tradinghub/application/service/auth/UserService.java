@@ -7,12 +7,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tradinghub.application.dto.auth.AuthResult;
+import com.tradinghub.application.dto.AuthResult;
 import com.tradinghub.application.event.UserSignedUpEvent;
 import com.tradinghub.application.exception.auth.AuthenticationFailedException;
 import com.tradinghub.application.exception.auth.DuplicateUsernameException;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.UserRepository;
+import com.tradinghub.domain.model.user.UserRepository;
 import com.tradinghub.infrastructure.security.JwtService;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
 

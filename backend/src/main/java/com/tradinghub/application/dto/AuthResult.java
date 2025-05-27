@@ -1,4 +1,4 @@
-package com.tradinghub.application.dto.auth;
+package com.tradinghub.application.dto;
 
 /**
  * 인증 결과를 담은 애플리케이션 계층 DTO

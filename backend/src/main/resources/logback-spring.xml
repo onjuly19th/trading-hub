@@ -12,6 +12,7 @@
             <!-- 기존 패턴 (username, requestId 포함) -->
             <!--<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId}] [%X{username}] - %msg%n</pattern>-->
             <!-- 간소화된 패턴 -->
+            <charset>UTF-8</charset>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
@@ -23,6 +24,7 @@
             <!-- 기존 패턴 (username, requestId 포함) -->
             <!--<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId}] [%X{username}] - %msg%n</pattern>-->
             <!-- 간소화된 패턴 -->
+            <charset>UTF-8</charset>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">

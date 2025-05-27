@@ -1,10 +1,8 @@
-package com.tradinghub.domain.repository;
+package com.tradinghub.domain.model.user;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.tradinghub.domain.model.user.User;
 
 /**
  * 사용자(User) 엔티티에 대한 데이터 액세스 인터페이스

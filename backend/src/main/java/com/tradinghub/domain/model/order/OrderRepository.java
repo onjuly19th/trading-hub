@@ -1,4 +1,4 @@
-package com.tradinghub.domain.repository;
+package com.tradinghub.domain.model.order;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -6,8 +6,6 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import com.tradinghub.domain.model.order.Order;
 
 /**
  * 주문(Order) 엔티티에 대한 데이터 액세스 인터페이스

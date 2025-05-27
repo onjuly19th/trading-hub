@@ -1,10 +1,8 @@
-package com.tradinghub.domain.repository;
+package com.tradinghub.domain.model.portfolio;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.tradinghub.domain.model.portfolio.PortfolioAsset;
 
 /**
  * 포트폴리오 자산(PortfolioAsset) 엔티티에 대한 데이터 액세스 인터페이스

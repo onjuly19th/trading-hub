@@ -13,7 +13,7 @@ import lombok.Getter;
  * 주문이 체결되었을 때 발생하는 이벤트
  */
 @Getter
-public class OrderExecutedEvent implements DomainEvent {
+public class OrderExecutedEvent {
     private final Long orderId;
     private final Long userId;
     private final String symbol;

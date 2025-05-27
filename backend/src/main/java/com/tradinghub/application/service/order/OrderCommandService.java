@@ -10,9 +10,9 @@ import com.tradinghub.application.exception.order.InvalidOrderException;
 import com.tradinghub.application.exception.order.OrderExecutionException;
 import com.tradinghub.application.exception.order.OrderNotFoundException;
 import com.tradinghub.domain.model.order.Order;
+import com.tradinghub.domain.model.order.OrderRepository;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.OrderRepository;
-import com.tradinghub.domain.repository.UserRepository;
+import com.tradinghub.domain.model.user.UserRepository;
 import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
 
 import lombok.RequiredArgsConstructor;

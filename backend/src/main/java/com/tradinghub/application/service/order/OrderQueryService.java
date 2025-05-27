@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.tradinghub.application.exception.order.OrderNotFoundException;
 import com.tradinghub.domain.model.order.Order;
-import com.tradinghub.domain.repository.OrderRepository;
+import com.tradinghub.domain.model.order.OrderRepository;
 import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
 
 import lombok.RequiredArgsConstructor;

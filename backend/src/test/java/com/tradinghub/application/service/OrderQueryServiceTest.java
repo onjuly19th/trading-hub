@@ -24,11 +24,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.tradinghub.application.exception.order.OrderNotFoundException;
 import com.tradinghub.application.service.order.OrderQueryService;
 import com.tradinghub.domain.model.order.Order;
+import com.tradinghub.domain.model.order.OrderRepository;
 import com.tradinghub.domain.model.order.Order.OrderSide;
 import com.tradinghub.domain.model.order.Order.OrderStatus;
 import com.tradinghub.domain.model.order.Order.OrderType;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.OrderRepository;
 
 @ExtendWith(MockitoExtension.class)
 class OrderQueryServiceTest {

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -19,13 +20,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 
-import com.tradinghub.application.service.portfolio.PortfolioService;
+import com.tradinghub.application.service.portfolio.PortfolioCommandService;
+import com.tradinghub.application.service.portfolio.PortfolioOrderHandler;
 import com.tradinghub.domain.model.order.Order.OrderSide;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.portfolio.PortfolioAsset;
+import com.tradinghub.domain.model.portfolio.PortfolioAssetRepository;
+import com.tradinghub.domain.model.portfolio.PortfolioRepository;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.PortfolioAssetRepository;
-import com.tradinghub.domain.repository.PortfolioRepository;
 import com.tradinghub.infrastructure.logging.MethodLogger;
 import com.tradinghub.interfaces.dto.order.OrderExecutionRequest;
 
@@ -38,13 +40,14 @@ class PortfolioServiceTest {
     @Mock
     private PortfolioAssetRepository assetRepository;
 
-    private PortfolioService portfolioService;
+    private PortfolioCommandService portfolioCommandService;
 
     private User user;
     private Portfolio portfolio;
     private PortfolioAsset portfolioAsset;
     private OrderExecutionRequest buyRequest;
     private OrderExecutionRequest sellRequest;
+    private List<PortfolioOrderHandler> orderHandlers;
 
     @BeforeEach
     void setUp() {
@@ -99,7 +102,7 @@ class PortfolioServiceTest {
             .build();
 
         // --- 수동 생성 및 주입 ---
-        portfolioService = new PortfolioService(portfolioRepository, assetRepository);
+        portfolioCommandService = new PortfolioCommandService(portfolioRepository, orderHandlers);
         // -----------------------
     }
 
@@ -108,9 +111,9 @@ class PortfolioServiceTest {
     void createPortfolio_LogExecutionTime() {
         // given
         MethodLogger loggingAspect = new MethodLogger();
-        AspectJProxyFactory factory = new AspectJProxyFactory(portfolioService);
+        AspectJProxyFactory factory = new AspectJProxyFactory(portfolioCommandService);
         factory.addAspect(loggingAspect);
-        PortfolioService proxy = factory.getProxy();
+        PortfolioCommandService proxy = factory.getProxy();
 
         when(portfolioRepository.save(any(Portfolio.class))).thenReturn(portfolio);
 
@@ -127,9 +130,9 @@ class PortfolioServiceTest {
     void updatePortfolioForOrder_Buy_LogExecutionTime() {
         // given
         MethodLogger loggingAspect = new MethodLogger();
-        AspectJProxyFactory factory = new AspectJProxyFactory(portfolioService);
+        AspectJProxyFactory factory = new AspectJProxyFactory(portfolioCommandService);
         factory.addAspect(loggingAspect);
-        PortfolioService proxy = factory.getProxy();
+        PortfolioCommandService proxy = factory.getProxy();
 
         when(portfolioRepository.findByUserIdForUpdate(anyLong())).thenReturn(Optional.of(portfolio));
         
@@ -153,9 +156,9 @@ class PortfolioServiceTest {
     void updatePortfolioForOrder_Sell_LogExecutionTime() {
         // given
         MethodLogger loggingAspect = new MethodLogger();
-        AspectJProxyFactory factory = new AspectJProxyFactory(portfolioService);
+        AspectJProxyFactory factory = new AspectJProxyFactory(portfolioCommandService);
         factory.addAspect(loggingAspect);
-        PortfolioService proxy = factory.getProxy();
+        PortfolioCommandService proxy = factory.getProxy();
 
         when(portfolioRepository.findByUserIdForUpdate(anyLong())).thenReturn(Optional.of(portfolio));
         
@@ -191,7 +194,7 @@ class PortfolioServiceTest {
         when(portfolioRepository.save(any(Portfolio.class))).thenReturn(portfolio);
         
         // when
-        portfolioService.updatePortfolioForOrder(1L, fullSellRequest);
+        portfolioCommandService.updatePortfolioForOrder(1L, fullSellRequest);
         
         // then
         verify(assetRepository).delete(portfolioAsset); // 자산 삭제 확인

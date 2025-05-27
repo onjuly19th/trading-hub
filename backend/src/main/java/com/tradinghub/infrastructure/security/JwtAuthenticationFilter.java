@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.UserRepository;
+import com.tradinghub.domain.model.user.UserRepository;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

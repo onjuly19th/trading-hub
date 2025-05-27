@@ -11,7 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.tradinghub.application.service.portfolio.PortfolioService;
+import com.tradinghub.application.service.portfolio.PortfolioCommandService;
+import com.tradinghub.application.service.portfolio.PortfolioQueryService;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.interfaces.dto.order.OrderExecutionRequest;
@@ -30,7 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PortfolioEventListener {
 
-    private final PortfolioService portfolioService;
+    private final PortfolioQueryService portfolioQueryService;
+    private final PortfolioCommandService portfolioCommandService;
     private final OrderWebSocketHandler webSocketHandler;
     
     /**
@@ -53,9 +55,9 @@ public class PortfolioEventListener {
                 .side(event.getSide())
                 .build();
             
-            portfolioService.updatePortfolioForOrder(event.getUserId(), request);
+            portfolioCommandService.updatePortfolioForOrder(event.getUserId(), request);
             
-            Portfolio portfolio = portfolioService.getPortfolio(event.getUserId());
+            Portfolio portfolio = portfolioQueryService.getPortfolio(event.getUserId());
             webSocketHandler.notifyPortfolioUpdate(portfolio);
             
             log.info("Portfolio updated: symbol={}", event.getSymbol());
@@ -83,7 +85,7 @@ public class PortfolioEventListener {
         User user = event.getUser();
         log.info("Portfolio creation try (User ID: {}, Username: {})...", user.getId(), user.getUsername());
 
-        portfolioService.createPortfolio(user, "USD", new java.math.BigDecimal("1000000"));
+        portfolioCommandService.createPortfolio(user, "USD", new java.math.BigDecimal("1000000"));
 
         log.info("User {} portfolio created successfully", user.getUsername());
     }

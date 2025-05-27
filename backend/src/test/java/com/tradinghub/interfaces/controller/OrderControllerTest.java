@@ -37,7 +37,7 @@ import com.tradinghub.domain.model.order.Order.OrderSide;
 import com.tradinghub.domain.model.order.Order.OrderStatus;
 import com.tradinghub.domain.model.order.Order.OrderType;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.UserRepository;
+import com.tradinghub.domain.model.user.UserRepository;
 import com.tradinghub.infrastructure.security.CustomUserDetailsService;
 import com.tradinghub.infrastructure.security.JwtAuthenticationFilter;
 import com.tradinghub.infrastructure.security.JwtService;

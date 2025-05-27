@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.UserRepository;
+import com.tradinghub.domain.model.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 

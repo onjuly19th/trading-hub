@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tradinghub.domain.repository.OrderRepository;
+import com.tradinghub.domain.model.order.OrderRepository;
 
 import lombok.RequiredArgsConstructor;
 

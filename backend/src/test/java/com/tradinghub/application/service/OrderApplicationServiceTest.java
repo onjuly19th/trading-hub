@@ -24,10 +24,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import com.tradinghub.application.exception.order.InvalidOrderException;
 import com.tradinghub.application.service.order.OrderApplicationService;
 import com.tradinghub.application.service.order.OrderCommandService;
-import com.tradinghub.application.service.portfolio.PortfolioService;
+import com.tradinghub.application.service.portfolio.PortfolioCommandService;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.domain.repository.UserRepository;
+import com.tradinghub.domain.model.user.UserRepository;
 import com.tradinghub.interfaces.dto.order.OrderRequest;
 import com.tradinghub.interfaces.websocket.OrderWebSocketHandler;
 
@@ -41,7 +41,7 @@ public class OrderApplicationServiceTest {
     private UserRepository userRepository;
     
     @Mock
-    private PortfolioService portfolioService;
+    private PortfolioCommandService portfolioCommandService;
     
     @Mock
     private OrderWebSocketHandler webSocketHandler;

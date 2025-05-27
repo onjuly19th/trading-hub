@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.tradinghub.application.exception.order.InvalidOrderException;
 import com.tradinghub.application.exception.portfolio.InsufficientBalanceException;
-import com.tradinghub.application.service.portfolio.PortfolioService;
+import com.tradinghub.application.service.portfolio.PortfolioQueryService;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class OrderValidator {
-    private final PortfolioService portfolioService;
+    private final PortfolioQueryService portfolioQueryService;
     
     /**
      * 주문 생성 시 유효성 검증
@@ -37,7 +37,7 @@ public class OrderValidator {
             throw new InvalidOrderException("Order amount must be greater than zero");
         }
 
-        Portfolio portfolio = portfolioService.getPortfolio(user.getId());
+        Portfolio portfolio = portfolioQueryService.getPortfolio(user.getId());
 
         if (side == Order.OrderSide.BUY) {
             validateBuyOrder(portfolio, price, amount);

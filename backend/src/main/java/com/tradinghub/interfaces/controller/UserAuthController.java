@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tradinghub.application.dto.auth.AuthResult;
+import com.tradinghub.application.dto.AuthResult;
 import com.tradinghub.application.service.auth.UserService;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
 import com.tradinghub.interfaces.dto.auth.AuthResponse;

@@ -16,7 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.tradinghub.application.exception.order.InvalidOrderException;
 import com.tradinghub.application.exception.portfolio.InsufficientBalanceException;
 import com.tradinghub.application.service.order.OrderValidator;
-import com.tradinghub.application.service.portfolio.PortfolioService;
+import com.tradinghub.application.service.portfolio.PortfolioQueryService;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
@@ -26,7 +26,7 @@ import com.tradinghub.interfaces.exception.auth.UnauthorizedOperationException;
 class OrderValidatorTest {
 
     @Mock
-    private PortfolioService portfolioService;
+    private PortfolioQueryService portfolioQueryService;
 
     @InjectMocks
     private OrderValidator orderValidator;
@@ -53,7 +53,7 @@ class OrderValidatorTest {
     @DisplayName("매수 주문 생성 검증 성공")
     void validateOrderCreation_Success_BuyOrder() {
         // GIVEN
-        given(portfolioService.getPortfolio(userId)).willReturn(testPortfolio);
+        given(portfolioQueryService.getPortfolio(userId)).willReturn(testPortfolio);
 
         // WHEN & THEN
         orderValidator.validateOrderCreation(testUser, side, price, amount);
@@ -65,7 +65,7 @@ class OrderValidatorTest {
         // GIVEN
         // 먼저 코인을 구매하여 잔고 확보
         testPortfolio.processBuyOrder(symbol, amount, price, price.multiply(amount));
-        given(portfolioService.getPortfolio(userId)).willReturn(testPortfolio);
+        given(portfolioQueryService.getPortfolio(userId)).willReturn(testPortfolio);
 
         // WHEN & THEN
         orderValidator.validateOrderCreation(testUser, Order.OrderSide.SELL, price, amount);
@@ -96,7 +96,7 @@ class OrderValidatorTest {
     void validateOrderCreation_Failure_InsufficientUsdBalance() {
         // GIVEN
         testPortfolio = Portfolio.createWithBalance(testUser, symbol, new BigDecimal("1000.00")); // 필요한 금액보다 적은 잔고
-        given(portfolioService.getPortfolio(userId)).willReturn(testPortfolio);
+        given(portfolioQueryService.getPortfolio(userId)).willReturn(testPortfolio);
 
         // WHEN & THEN
         assertThatThrownBy(() -> 
@@ -111,7 +111,7 @@ class OrderValidatorTest {
         // GIVEN
         testPortfolio = Portfolio.createWithBalance(testUser, symbol, new BigDecimal("100000.00"));
         testPortfolio.processBuyOrder(symbol, new BigDecimal("0.1"), price, price.multiply(new BigDecimal("0.1"))); // 0.1 BTC 구매
-        given(portfolioService.getPortfolio(userId)).willReturn(testPortfolio);
+        given(portfolioQueryService.getPortfolio(userId)).willReturn(testPortfolio);
 
         // WHEN & THEN
         assertThatThrownBy(() -> 

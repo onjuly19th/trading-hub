@@ -4,7 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import com.tradinghub.application.service.portfolio.PortfolioService;
+import com.tradinghub.application.service.portfolio.PortfolioQueryService;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.interfaces.dto.portfolio.PortfolioResponse;
@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/portfolio")
 @RequiredArgsConstructor
 public class PortfolioController {
-    private final PortfolioService portfolioService;
+    private final PortfolioQueryService portfolioQueryService;
 
     /**
      * 사용자의 포트폴리오를 조회합니다.
@@ -30,7 +30,7 @@ public class PortfolioController {
     @GetMapping
     public ResponseEntity<PortfolioResponse> getPortfolio(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        Portfolio portfolio = portfolioService.getPortfolio(user.getId());
+        Portfolio portfolio = portfolioQueryService.getPortfolio(user.getId());
         return ResponseEntity.ok(PortfolioResponse.from(portfolio));
     }
 } 

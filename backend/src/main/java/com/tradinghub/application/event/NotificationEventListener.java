@@ -40,7 +40,6 @@ public class NotificationEventListener {
             log.info("Sending notification: {}", notificationMessage);
             
             // TODO: 실제 알림 전송 로직 구현
-            // emailService.sendEmail(user.getEmail(), "Order Execution Notification", notificationMessage);
             // pushNotificationService.sendPushNotification(userId, notificationMessage);
         } catch (Exception e) {
             // userId 정보는 MDC에 있음

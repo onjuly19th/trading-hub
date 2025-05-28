@@ -1,11 +1,10 @@
-package com.tradinghub.application;
+package com.tradinghub.application.service.order;
 
 import java.math.BigDecimal;
 
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.tradinghub.application.service.order.OrderExecutionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

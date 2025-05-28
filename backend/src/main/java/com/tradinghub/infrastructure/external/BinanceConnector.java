@@ -1,5 +1,6 @@
 package com.tradinghub.infrastructure.external;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -8,12 +9,16 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.PingMessage;
+import org.springframework.web.socket.PongMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketHttpHeaders;
+import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
-import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.springframework.web.socket.handler.AbstractWebSocketHandler;
+
+import com.tradinghub.common.BinanceConstants;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -25,17 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class BinanceConnector {
 
-    private static final String BINANCE_STREAM_URL = "wss://stream.binance.com:9443/stream?streams=" +
-    "btcusdt@trade/btcusdt@ticker/btcusdt@depth20" +
-    "/ethusdt@trade/ethusdt@ticker/ethusdt@depth20" +
-    "/xrpusdt@trade/xrpusdt@ticker/xrpusdt@depth20" +
-    "/bnbusdt@trade/bnbusdt@ticker/bnbusdt@depth20" +
-    "/solusdt@trade/solusdt@ticker/solusdt@depth20" +
-    "/trxusdt@trade/trxusdt@ticker/trxusdt@depth20" +
-    "/dogeusdt@trade/dogeusdt@ticker/dogeusdt@depth20" +
-    "/adausdt@trade/adausdt@ticker/adausdt@depth20" +
-    "/xlmusdt@trade/xlmusdt@ticker/xlmusdt@depth20" +
-    "/linkusdt@trade/linkusdt@ticker/linkusdt@depth20";
+    private static final String BINANCE_STREAM_URL = BinanceConstants.getBinanceStreamUrl();
     private static final long RECONNECT_DELAY_SEC = 5;
     private static final long PING_INTERVAL_SEC = 30;
 
@@ -61,7 +56,7 @@ public class BinanceConnector {
     private void connectWithRetry() {
         try {
             WebSocketClient client = new StandardWebSocketClient();
-            client.execute(new TextWebSocketHandler() {
+            client.execute(new AbstractWebSocketHandler() {
                 @Override
                 public void afterConnectionEstablished(WebSocketSession session) {
                     BinanceConnector.this.session = session;
@@ -69,8 +64,14 @@ public class BinanceConnector {
                 }
 
                 @Override
-                public void handleTextMessage(WebSocketSession session, TextMessage message) {
-                    handler.handleMessage(message.getPayload());
+                public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
+                    if (message instanceof PingMessage ping) {
+                        session.sendMessage(new PongMessage(ping.getPayload()));
+                    } else if (message instanceof TextMessage text) {
+                        handler.handleMessage(text.getPayload());
+                    } else {
+                        log.warn("Unhandled WebSocket message: {}", message);
+                    }
                 }
 
                 @Override
@@ -93,6 +94,13 @@ public class BinanceConnector {
     }
 
     private void reconnectWithDelay() {
+        if (session != null && session.isOpen()) {
+            try {
+                session.close(CloseStatus.GOING_AWAY);
+            } catch (IOException e) {
+                log.error("Failed to close existing WebSocket session before reconnecting", e);
+            }
+        }
         scheduler.schedule(this::connectWithRetry, RECONNECT_DELAY_SEC, TimeUnit.SECONDS);
     }
 

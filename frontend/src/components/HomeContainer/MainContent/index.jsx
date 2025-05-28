@@ -9,7 +9,7 @@ const MainContent = ({ selectedCrypto, onCryptoSelect }) => {
       </div>
       
       <div className="mt-6">
-        <h2 className="text-xl font-bold mb-4">실시간 시세</h2>
+        <h2 className="text-xl font-bold mb-4">실시간 주요 암호화폐</h2>
         <CryptoCardList onCryptoSelect={onCryptoSelect} />
       </div>
     </div>

@@ -31,24 +31,19 @@ export const formatNumber = (number) => {
  */
 export const formatCryptoPrice = (price) => {
   if (price === undefined || price === null) return '0';
-  
-  // 절댓값으로 숫자 크기 비교하여 소수점 자릿수 결정
+
   const absPrice = Math.abs(price);
-  
-  // 작은 숫자는 더 많은 소수점 자리를 표시
+
   if (absPrice < 0.01) {
-    return price.toFixed(6);
+    return price.toFixed(6); // 아주 작은 수 (ex. 0.000034) → 소수점 6자리
+  } else if (absPrice < 1) {
+    return price.toFixed(4); // 소수 가격 (ex. 0.3547) → 소수점 4자리
+  } else if (absPrice < 10) {
+    return price.toFixed(4); // 중간 가격 (ex. 3.6948) → 소수점 4자리
+  } else {
+    return price.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }); // 큰 가격 (ex. 108901.4) → 천 단위 구분자 + 소수점 2자리
   }
-  else if (absPrice < 1) {
-    return price.toFixed(4);
-  }
-  else if (absPrice < 1000) {
-    return price.toFixed(2);
-  }
-  
-  // 1000 이상의 숫자는 천 단위 구분자 사용
-  return price.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-}; 
+};

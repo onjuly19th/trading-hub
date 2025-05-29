@@ -2,7 +2,9 @@ package com.tradinghub.interfaces.dto.order;
 
 import java.math.BigDecimal;
 
+import com.tradinghub.application.dto.PlaceOrderCommand;
 import com.tradinghub.domain.model.order.Order;
+import com.tradinghub.domain.model.user.User;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -57,4 +59,8 @@ public record OrderRequest(
     @DecimalMin(value = "0.00000001", message = "Amount must be greater than 0")
     @DecimalMax(value = "1000000000", message = "Amount is too high")
     BigDecimal amount
-) {} 
+) {
+    public PlaceOrderCommand toCommand(User user) {
+        return new PlaceOrderCommand(user, symbol, type, side, price, amount);
+    }
+} 

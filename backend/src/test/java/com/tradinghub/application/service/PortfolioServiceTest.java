@@ -86,20 +86,20 @@ class PortfolioServiceTest {
         portfolioAsset.setAveragePrice(new BigDecimal("50000"));
 
         // 매수 요청 설정
-        buyRequest = OrderExecutionRequest.builder()
-            .symbol("BTC")
-            .amount(new BigDecimal("0.1"))
-            .price(new BigDecimal("50000"))
-            .side(OrderSide.BUY)
-            .build();
+        buyRequest = new OrderExecutionRequest(
+            "BTC",
+            new BigDecimal("0.1"),
+            new BigDecimal("50000"),
+            OrderSide.BUY
+        );
 
         // 매도 요청 설정
-        sellRequest = OrderExecutionRequest.builder()
-            .symbol("BTC")
-            .amount(new BigDecimal("0.1"))
-            .price(new BigDecimal("55000"))
-            .side(OrderSide.SELL)
-            .build();
+        sellRequest = new OrderExecutionRequest(
+            "BTC",
+            new BigDecimal("0.1"),
+            new BigDecimal("55000"),
+            OrderSide.SELL
+        );
 
         // --- 수동 생성 및 주입 ---
         portfolioCommandService = new PortfolioCommandService(portfolioRepository, orderHandlers);
@@ -182,12 +182,12 @@ class PortfolioServiceTest {
     void sellAllAssetsShouldDeleteAsset() {
         // given
         // 전체 매도 요청 (1 BTC)
-        OrderExecutionRequest fullSellRequest = OrderExecutionRequest.builder()
-            .symbol("BTC")
-            .amount(new BigDecimal("1.0")) // 전체 수량 매도
-            .price(new BigDecimal("55000"))
-            .side(OrderSide.SELL)
-            .build();
+        OrderExecutionRequest fullSellRequest = new OrderExecutionRequest(
+            "BTC",
+            new BigDecimal("1.0"),
+            new BigDecimal("55000"),
+            OrderSide.SELL
+        );
         
         when(portfolioRepository.findByUserIdForUpdate(anyLong())).thenReturn(Optional.of(portfolio));
         when(assetRepository.findByPortfolioIdAndSymbol(anyLong(), eq("BTC"))).thenReturn(Optional.of(portfolioAsset));

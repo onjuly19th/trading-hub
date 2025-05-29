@@ -153,12 +153,12 @@ class OrderLoadTest {
             if (!coin.equals("USDT")) {
                 try {
                     // 각 코인당 100개씩 매수 주문 처리
-                    OrderExecutionRequest buyRequest = OrderExecutionRequest.builder()
-                        .symbol(coin + "/USDT")
-                        .amount(new BigDecimal("100.0"))
-                        .price(new BigDecimal("1.0"))
-                        .side(OrderSide.BUY)
-                        .build();
+                    OrderExecutionRequest buyRequest = new OrderExecutionRequest(
+                        coin + "/USDT",
+                        new BigDecimal("100.0"),
+                        new BigDecimal("1.0"),
+                        OrderSide.BUY
+                    );
                     portfolioCommandService.updatePortfolioForOrder(testUser.getId(), buyRequest);
                     log.info("코인 초기화 완료: {}, 수량: 100.0", coin);
                 } catch (RuntimeException ex) {

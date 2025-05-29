@@ -2,43 +2,34 @@ package com.tradinghub.interfaces.dto.order;
 
 import java.math.BigDecimal;
 
+import com.tradinghub.application.dto.UpdatePortfolioCommand;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.Order.OrderSide;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**
  * 주문 체결 요청 DTO
  * 시장가/지정가 주문에 필요한 정보를 전달하기 위한 DTO 클래스
  * 주문 체결 시 포트폴리오 업데이트를 위해 사용
  */
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class OrderExecutionRequest {
+public record OrderExecutionRequest(
     @NotBlank(message = "Symbol is required")
-    private String symbol;
+    String symbol,
 
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.00000001", message = "Amount must be greater than 0")
-    private BigDecimal amount;
+    BigDecimal amount,
 
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.00000001", message = "Price must be greater than 0")
-    private BigDecimal price;
+    BigDecimal price,
 
     @NotNull(message = "Order side is required")
-    private OrderSide side;
-
+    OrderSide side
+) {
     /**
      * 매수 주문인지 확인
      * @return 매수 주문이면 true, 매도 주문이면 false
@@ -56,11 +47,15 @@ public class OrderExecutionRequest {
         BigDecimal price = order.getExecutedPrice() != null ? 
             order.getExecutedPrice() : order.getPrice();
             
-        return OrderExecutionRequest.builder()
-            .symbol(order.getSymbol())
-            .amount(order.getAmount())
-            .price(price)
-            .side(order.getSide())
-            .build();
+        return new OrderExecutionRequest(
+            order.getSymbol(),
+            order.getAmount(),
+            price,
+            order.getSide()
+        );
+    }
+
+    public UpdatePortfolioCommand toCommand() {
+        return new UpdatePortfolioCommand(symbol, amount, price, side);
     }
 } 

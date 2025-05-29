@@ -48,12 +48,12 @@ public class PortfolioEventListener {
             log.info("Portfolio update started: orderId={}, symbol={}", 
                 event.getOrderId(), event.getSymbol());
                 
-            OrderExecutionRequest request = OrderExecutionRequest.builder()
-                .symbol(event.getSymbol())
-                .amount(event.getAmount())
-                .price(event.getPrice())
-                .side(event.getSide())
-                .build();
+            OrderExecutionRequest request = new OrderExecutionRequest(
+                event.getSymbol(),
+                event.getAmount(),
+                event.getPrice(),
+                event.getSide()
+            );
             
             portfolioCommandService.updatePortfolioForOrder(event.getUserId(), request);
             

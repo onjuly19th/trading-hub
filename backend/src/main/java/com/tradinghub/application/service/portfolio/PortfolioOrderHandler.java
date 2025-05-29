@@ -1,9 +1,9 @@
 package com.tradinghub.application.service.portfolio;
 
-import com.tradinghub.domain.model.portfolio.Portfolio;
-import com.tradinghub.interfaces.dto.order.OrderExecutionRequest;
-
 import java.math.BigDecimal;
+
+import com.tradinghub.application.dto.UpdatePortfolioCommand;
+import com.tradinghub.domain.model.portfolio.Portfolio;
 
 /**
  * 주문에 대한 포트폴리오 처리 인터페이스
@@ -17,14 +17,14 @@ public interface PortfolioOrderHandler {
      * @param request 주문 실행 요청
      * @return 지원 여부
      */
-    boolean supports(OrderExecutionRequest request);
+    boolean supports(UpdatePortfolioCommand command);
     
     /**
      * 주문을 처리합니다.
      * 
      * @param portfolio 대상 포트폴리오
-     * @param request 주문 실행 요청
+     * @param command 주문 실행 요청
      * @param orderAmount 주문 금액
      */
-    void processOrder(Portfolio portfolio, OrderExecutionRequest request, BigDecimal orderAmount);
+    void processOrder(Portfolio portfolio, UpdatePortfolioCommand command, BigDecimal orderAmount);
 }

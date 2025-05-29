@@ -62,17 +62,17 @@ public class PortfolioCommandService {
         Portfolio portfolio = portfolioRepository.findByUserIdForUpdate(userId)
             .orElseThrow(() -> new PortfolioNotFoundException("Portfolio not found for user: " + userId));
 
-        BigDecimal orderAmount = request.getAmount().multiply(request.getPrice());
+        BigDecimal orderAmount = request.amount().multiply(request.price());
 
         try {
             // 적절한 주문 처리 전략 찾기
             PortfolioOrderHandler handler = orderHandlers.stream()
-                .filter(p -> p.supports(request))
+                .filter(p -> p.supports(request.toCommand()))
                 .findFirst()
                 .orElseThrow(() -> new PortfolioUpdateException("No suitable order handler found"));
             
             // 주문 처리 실행
-            handler.processOrder(portfolio, request, orderAmount);
+            handler.processOrder(portfolio, request.toCommand(), orderAmount);
             
         } catch (Exception e) {
             throw new PortfolioUpdateException("포트폴리오 업데이트 중 오류가 발생했습니다: " + e.getMessage());

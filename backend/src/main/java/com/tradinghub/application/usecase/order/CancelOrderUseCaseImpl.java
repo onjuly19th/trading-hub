@@ -4,10 +4,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tradinghub.application.exception.order.OrderNotFoundException;
-import com.tradinghub.application.service.order.OrderValidator;
+import com.tradinghub.application.port.OrderNotificationPort;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.OrderRepository;
-import com.tradinghub.interfaces.websocket.OrderWebSocketHandler;
+import com.tradinghub.domain.service.OrderValidator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class CancelOrderUseCaseImpl implements CancelOrderUseCase {
     private final OrderRepository orderRepository;
     private final OrderValidator orderValidator;
-    private final OrderWebSocketHandler webSocketHandler; // TODO: 인터페이스 계층으로의 의존성 제거
+    private final OrderNotificationPort orderNotificationPort;
 
     @Override
     @Transactional
@@ -30,7 +30,7 @@ public class CancelOrderUseCaseImpl implements CancelOrderUseCase {
         
         Order savedOrder = orderRepository.save(order);
         
-        webSocketHandler.notifyOrderUpdate(savedOrder);
+        orderNotificationPort.notifyOrderUpdate(savedOrder);
         return savedOrder;
     }
 }

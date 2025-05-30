@@ -7,7 +7,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tradinghub.application.dto.AuthResult;
-import com.tradinghub.application.service.auth.UserService;
+import com.tradinghub.application.dto.LoginCommand;
+import com.tradinghub.application.dto.SignupCommand;
+import com.tradinghub.application.usecase.auth.LoginUseCase;
+import com.tradinghub.application.usecase.auth.SignupUseCase;
 import com.tradinghub.interfaces.dto.auth.AuthRequest;
 import com.tradinghub.interfaces.dto.auth.AuthResponse;
 
@@ -21,7 +24,8 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class UserAuthController {
-    private final UserService userService;
+    private final SignupUseCase signupUseCase;
+    private final LoginUseCase loginUseCase;
 
     /**
      * 새로운 사용자 계정을 생성합니다.
@@ -39,7 +43,8 @@ public class UserAuthController {
      */
     @PostMapping(value = "/signup")
     public ResponseEntity<AuthResponse> signup(@RequestBody AuthRequest request) {
-        AuthResult authResult = userService.signup(request);
+        SignupCommand command = new SignupCommand(request.username(), request.password());
+        AuthResult authResult = signupUseCase.execute(command);
         AuthResponse response = new AuthResponse(
             authResult.userId(), 
             authResult.username(), 
@@ -64,7 +69,8 @@ public class UserAuthController {
      */
     @PostMapping(value = "/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-        AuthResult authResult = userService.login(request);
+        LoginCommand command = new LoginCommand(request.username(), request.password());
+        AuthResult authResult = loginUseCase.execute(command);
         AuthResponse response = new AuthResponse(
             authResult.userId(),
             authResult.username(),

@@ -8,7 +8,8 @@ import com.tradinghub.application.dto.UpdatePortfolioCommand;
 import com.tradinghub.domain.model.order.Order.OrderSide;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.portfolio.PortfolioRepository;
-import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
+import com.tradinghub.domain.service.PortfolioAssetManager;
+import com.tradinghub.domain.service.PortfolioValidator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +30,6 @@ public class BuyOrderHandler implements PortfolioOrderHandler {
     }
     
     @Override
-    @ExecutionTimeLog
     public void processOrder(Portfolio portfolio, UpdatePortfolioCommand command, BigDecimal orderAmount) {
         // 매수 주문 검증
         portfolioValidator.validateBuyOrder(portfolio, orderAmount);

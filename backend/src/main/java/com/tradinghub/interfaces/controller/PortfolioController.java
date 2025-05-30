@@ -1,10 +1,12 @@
 package com.tradinghub.interfaces.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.tradinghub.application.service.portfolio.PortfolioQueryService;
+import com.tradinghub.application.usecase.portfolio.GetPortfolioUseCase;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.interfaces.dto.portfolio.PortfolioResponse;
@@ -18,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/portfolio")
 @RequiredArgsConstructor
 public class PortfolioController {
-    private final PortfolioQueryService portfolioQueryService;
+    private final GetPortfolioUseCase getPortfolioUseCase;
 
     /**
      * 사용자의 포트폴리오를 조회합니다.
@@ -28,9 +30,8 @@ public class PortfolioController {
      * @return 포트폴리오 정보를 담은 응답
      */
     @GetMapping
-    public ResponseEntity<PortfolioResponse> getPortfolio(Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
-        Portfolio portfolio = portfolioQueryService.getPortfolio(user.getId());
+    public ResponseEntity<PortfolioResponse> getPortfolio(@AuthenticationPrincipal User user) {
+        Portfolio portfolio = getPortfolioUseCase.execute(user.getId());
         return ResponseEntity.ok(PortfolioResponse.from(portfolio));
     }
 } 

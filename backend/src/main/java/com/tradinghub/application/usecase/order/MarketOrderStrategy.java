@@ -1,17 +1,16 @@
 package com.tradinghub.application.usecase.order;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tradinghub.application.dto.PlaceOrderCommand;
-import com.tradinghub.application.event.OrderExecutedEvent;
-import com.tradinghub.application.service.order.OrderValidator;
+import com.tradinghub.application.port.OrderEventPublisherPort;
+import com.tradinghub.application.port.OrderNotificationPort;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.Order.OrderType;
 import com.tradinghub.domain.model.order.OrderRepository;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.interfaces.websocket.OrderWebSocketHandler;
+import com.tradinghub.domain.service.OrderValidator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,8 +19,8 @@ import lombok.RequiredArgsConstructor;
 public class MarketOrderStrategy implements OrderStrategy {
     private final OrderValidator orderValidator;
     private final OrderRepository orderRepository;
-    private final OrderWebSocketHandler webSocketHandler; // TODO: 인터페이스 계층으로의 의존성 제거
-    private final ApplicationEventPublisher eventPublisher;
+    private final OrderNotificationPort orderNotificationPort;
+    private final OrderEventPublisherPort orderEventPublisherPort;
     
     @Override
     public boolean supports(PlaceOrderCommand command) {
@@ -46,10 +45,10 @@ public class MarketOrderStrategy implements OrderStrategy {
 
         order.setExecutedPrice(command.price());
         Order savedOrder = orderRepository.save(order);
-        webSocketHandler.notifyNewOrder(savedOrder);
         
-        OrderExecutedEvent event = new OrderExecutedEvent(order);
-        eventPublisher.publishEvent(event); // TODO: 이벤트 퍼블리싱 분리
+        orderNotificationPort.notifyNewOrder(savedOrder);
+        
+        orderEventPublisherPort.publishOrderExecuted(savedOrder);
         
         return order;
     }

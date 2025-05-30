@@ -4,12 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tradinghub.application.dto.PlaceOrderCommand;
-import com.tradinghub.application.service.order.OrderValidator;
+import com.tradinghub.application.port.OrderNotificationPort;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.Order.OrderType;
 import com.tradinghub.domain.model.order.OrderRepository;
 import com.tradinghub.domain.model.user.User;
-import com.tradinghub.interfaces.websocket.OrderWebSocketHandler;
+import com.tradinghub.domain.service.OrderValidator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class LimitOrderStrategy implements OrderStrategy {
     private final OrderValidator orderValidator;
     private final OrderRepository orderRepository;
-    private final OrderWebSocketHandler webSocketHandler; // TODO: 인터페이스 계층으로의 의존성 제거
+    private final OrderNotificationPort orderNotificationPort;
     
     @Override
     public boolean supports(PlaceOrderCommand command) {
@@ -42,7 +42,7 @@ public class LimitOrderStrategy implements OrderStrategy {
                 .build();
                 
         Order savedOrder = orderRepository.save(order);
-        webSocketHandler.notifyNewOrder(savedOrder);
+        orderNotificationPort.notifyNewOrder(savedOrder);
 
         return savedOrder;
     }

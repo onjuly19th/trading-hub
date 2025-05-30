@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import com.tradinghub.application.dto.ParsedBinanceMessage;
 import com.tradinghub.application.handler.BinanceMessagePublisher;
 import com.tradinghub.application.parser.BinanceMessageParser;
-import com.tradinghub.application.service.order.LimitOrderProcessor;
+import com.tradinghub.application.usecase.order.ExecuteReadyOrdersUseCase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ public class BinanceWebSocketHandler {
 
     private final BinanceMessageParser parser;
     private final BinanceMessagePublisher publisher;
-    private final LimitOrderProcessor limitOrderProcessor;
+    private final ExecuteReadyOrdersUseCase executeReadyOrdersUseCase;
 
     public void handleMessage(String payload) {
         try {
@@ -25,7 +25,7 @@ public class BinanceWebSocketHandler {
             
             // trade 스트림인 경우 지정가 주문 처리
             if ("trade".equals(message.streamType())) {
-                limitOrderProcessor.processOrderEvent(message.symbol(), message.data());
+                executeReadyOrdersUseCase.execute(message.symbol(), message.data());
             }
             
             publisher.handle(message);

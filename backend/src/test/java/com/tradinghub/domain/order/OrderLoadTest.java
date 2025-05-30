@@ -30,10 +30,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tradinghub.application.dto.PlaceOrderCommand;
+import com.tradinghub.application.dto.UpdatePortfolioCommand;
 import com.tradinghub.application.exception.portfolio.PortfolioNotFoundException;
-import com.tradinghub.application.service.order.OrderApplicationService;
-import com.tradinghub.application.service.portfolio.PortfolioCommandService;
-import com.tradinghub.application.service.portfolio.PortfolioQueryService;
+import com.tradinghub.application.usecase.order.PlaceOrderUseCase;
+import com.tradinghub.application.usecase.portfolio.CreatePortfolioUseCase;
+import com.tradinghub.application.usecase.portfolio.GetPortfolioUseCase;
+import com.tradinghub.application.usecase.portfolio.UpdatePortfolioUseCase;
 import com.tradinghub.domain.dto.OrderCreateRequest;
 import com.tradinghub.domain.model.order.Order;
 import com.tradinghub.domain.model.order.Order.OrderSide;
@@ -41,7 +44,6 @@ import com.tradinghub.domain.model.order.Order.OrderType;
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.user.User;
 import com.tradinghub.domain.model.user.UserRepository;
-import com.tradinghub.interfaces.dto.order.OrderExecutionRequest;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -54,19 +56,22 @@ class OrderLoadTest {
     private static final int TIMEOUT_MINUTES = 5;
 
     @Autowired
-    private OrderApplicationService orderApplicationService;
-
-    @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private PortfolioCommandService portfolioCommandService;
+    private PlaceOrderUseCase placeOrderUseCase;
 
     @Autowired
-    private PortfolioQueryService portfolioQueryService;
+    private GetPortfolioUseCase getPortfolioUseCase;
+
+    @Autowired
+    private CreatePortfolioUseCase createPortfolioUseCase;
+
+    @Autowired
+    private UpdatePortfolioUseCase updatePortfolioUseCase;
 
     private User testUser;
     private Portfolio testPortfolio;
@@ -87,7 +92,7 @@ class OrderLoadTest {
             boolean portfolioExists = isPortfolioExists(testUser.getId());
             if (portfolioExists) {
                 log.info("기존 포트폴리오가 존재합니다. 포트폴리오 설정을 건너뜁니다.");
-                testPortfolio = portfolioQueryService.getPortfolio(testUser.getId());
+                testPortfolio = getPortfolioUseCase.execute(testUser.getId());
             } else {
                 log.info("포트폴리오가 존재하지 않습니다. 새로 생성합니다.");
                 setupTestPortfolio();
@@ -100,7 +105,7 @@ class OrderLoadTest {
             
             // 트랜잭션이 커밋되도록 명시적으로 저장
             testUser = userRepository.save(testUser);
-            testPortfolio = portfolioQueryService.getPortfolio(testUser.getId());
+            testPortfolio = getPortfolioUseCase.execute(testUser.getId());
         } catch (Exception e) {
             log.error("테스트 환경 초기화 실패: {}", e.getMessage());
             throw e;
@@ -109,7 +114,7 @@ class OrderLoadTest {
 
     private void verifyPortfolio() {
         try {
-            Portfolio portfolio = portfolioQueryService.getPortfolio(testUser.getId());
+            Portfolio portfolio = getPortfolioUseCase.execute(testUser.getId());
             log.info("포트폴리오 검증 완료 - ID: {}, USDT 잔액: {}", 
                 portfolio.getId(), 
                 portfolio.getUsdBalance());
@@ -145,7 +150,7 @@ class OrderLoadTest {
     private void setupTestPortfolio() {
         log.info("새로운 포트폴리오 생성 중...");
         // USDT로 초기 자금 설정
-        testPortfolio = portfolioCommandService.createPortfolio(testUser, "USDT", new BigDecimal("1000000"));
+        testPortfolio = createPortfolioUseCase.execute(testUser, "USDT", new BigDecimal("1000000"));
         
         // 테스트용 코인들 초기화를 위한 매수 주문 처리
         for (String symbol : SYMBOLS) {
@@ -153,13 +158,12 @@ class OrderLoadTest {
             if (!coin.equals("USDT")) {
                 try {
                     // 각 코인당 100개씩 매수 주문 처리
-                    OrderExecutionRequest buyRequest = new OrderExecutionRequest(
+                    updatePortfolioUseCase.execute(testUser.getId(), new UpdatePortfolioCommand(
                         coin + "/USDT",
                         new BigDecimal("100.0"),
                         new BigDecimal("1.0"),
                         OrderSide.BUY
-                    );
-                    portfolioCommandService.updatePortfolioForOrder(testUser.getId(), buyRequest);
+                    ));
                     log.info("코인 초기화 완료: {}, 수량: 100.0", coin);
                 } catch (RuntimeException ex) {
                     log.error("코인 초기화 실패: {}, 오류: {}", coin, ex.getMessage());
@@ -168,7 +172,7 @@ class OrderLoadTest {
         }
         
         // 명시적으로 포트폴리오 저장
-        testPortfolio = portfolioQueryService.getPortfolio(testUser.getId());
+        testPortfolio = getPortfolioUseCase.execute(testUser.getId());
         log.info("새 포트폴리오 생성됨 - ID: {}, 초기 USDT 잔액: {}", 
             testPortfolio.getId(), testPortfolio.getUsdBalance());
     }
@@ -200,13 +204,13 @@ class OrderLoadTest {
             Future<?> future = executorService.submit(() -> {
                 try {
                     OrderCreateRequest request = createRandomOrderRequest();
-                    Order order = orderApplicationService.createLimitOrder(
-                        testUser.getId(),
-                        request.getSymbol(),
-                        request.getSide(),
-                        request.getPrice(),
-                        request.getAmount()
-                    );
+                    Order order = placeOrderUseCase.execute(
+                        new PlaceOrderCommand(testUser, 
+                        request.getSymbol(), 
+                        request.getType(), 
+                        request.getSide(), 
+                        request.getPrice(), 
+                        request.getAmount()));
                     createdOrdersCount.incrementAndGet();
                     log.debug("주문 생성 성공 - ID: {}, 심볼: {}", order.getId(), order.getSymbol());
                 } catch (Exception e) {
@@ -282,7 +286,7 @@ class OrderLoadTest {
      */
     private boolean isPortfolioExists(Long userId) {
         try {
-            portfolioQueryService.getPortfolio(userId);
+            getPortfolioUseCase.execute(userId);
             return true;
         } catch (PortfolioNotFoundException e) {
             return false;

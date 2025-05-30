@@ -9,7 +9,6 @@ import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.portfolio.PortfolioAsset;
 import com.tradinghub.domain.model.portfolio.PortfolioAssetRepository;
 import com.tradinghub.domain.model.portfolio.PortfolioRepository;
-import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,7 +31,6 @@ public class PortfolioAssetManager {
      * @param amount 매수 수량
      * @param price 매수 가격
      */
-    @ExecutionTimeLog
     public void updateAssetOnBuy(Portfolio portfolio, String symbol, BigDecimal amount, BigDecimal price) {
         // 기존 자산 조회 또는 새 자산 생성
         PortfolioAsset asset = assetRepository.findByPortfolioIdAndSymbol(portfolio.getId(), symbol)
@@ -52,7 +50,6 @@ public class PortfolioAssetManager {
      * @param asset 매도할 자산
      * @param amount 매도 수량
      */
-    @ExecutionTimeLog
     public void updateAssetOnSell(Portfolio portfolio, PortfolioAsset asset, BigDecimal amount) {
         // 매도 후 자산 수량 업데이트
         asset.setAmount(asset.getAmount().subtract(amount));
@@ -112,7 +109,6 @@ public class PortfolioAssetManager {
      * @param portfolio 대상 포트폴리오
      * @param asset 제거할 자산
      */
-    @ExecutionTimeLog
     private void removeAsset(Portfolio portfolio, PortfolioAsset asset) {
         // 영속성 관리를 위해 컬렉션에서 제거
         portfolio.removeAsset(asset);

@@ -10,7 +10,6 @@ import com.tradinghub.application.exception.portfolio.InsufficientBalanceExcepti
 import com.tradinghub.domain.model.portfolio.Portfolio;
 import com.tradinghub.domain.model.portfolio.PortfolioAsset;
 import com.tradinghub.domain.model.portfolio.PortfolioAssetRepository;
-import com.tradinghub.infrastructure.logging.ExecutionTimeLog;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,7 +29,6 @@ public class PortfolioValidator {
      * @param orderAmount 주문 금액
      * @throws InsufficientBalanceException 잔고가 부족한 경우
      */
-    @ExecutionTimeLog
     public void validateBuyOrder(Portfolio portfolio, BigDecimal orderAmount) {
         if (portfolio.getAvailableBalance().compareTo(orderAmount) < 0) {
             throw new InsufficientBalanceException(
@@ -50,7 +48,6 @@ public class PortfolioValidator {
      * @throws AssetNotFoundException 자산을 찾을 수 없는 경우
      * @throws InsufficientAssetException 매도할 자산이 부족한 경우
      */
-    @ExecutionTimeLog
     public PortfolioAsset validateSellOrder(Portfolio portfolio, String symbol, BigDecimal amount) {
         PortfolioAsset asset = assetRepository.findByPortfolioIdAndSymbol(portfolio.getId(), symbol)
             .orElseThrow(() -> new AssetNotFoundException("Asset not found: " + symbol));
